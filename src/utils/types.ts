@@ -1,0 +1,1 @@
+// Ortak type ve yardımcılar burada tanımlanacak 
