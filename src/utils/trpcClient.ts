@@ -9,7 +9,7 @@ export function getTrpcClient() {
     links: [
       httpBatchLink({
         url: typeof window === 'undefined'
-          ? 'http://localhost:3002/api/trpc'
+          ? 'http://localhost:3000/api/trpc'
           : '/api/trpc',
       }),
     ],

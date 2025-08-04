@@ -2,23 +2,121 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '../../utils/trpcClient';
+import LocationPicker from '../../components/LocationPicker';
+
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  address: string;
+}
 
 export default function RegisterPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'user' | 'business'>('user');
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    // Temel bilgiler
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'user' as 'user' | 'business',
+    
+    // İşletme bilgileri
+    businessName: '',
+    businessDescription: '',
+    businessPhone: '',
+    businessEmail: '',
+    businessLocation: null as LocationData | null,
+    
+    // Müşteri bilgileri
+    customerPhone: '',
+    customerAddress: '',
+    customerLocation: null as LocationData | null,
+  });
+  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
   const registerMutation = trpc.auth.register.useMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const updateFormData = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLocationSelect = (location: LocationData, type: 'business' | 'customer') => {
+    if (type === 'business') {
+      updateFormData('businessLocation', location);
+    } else {
+      updateFormData('customerLocation', location);
+    }
+  };
+
+  const validateStep1 = () => {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError('Lütfen tüm alanları doldurun');
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Şifreler eşleşmiyor');
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError('Şifre en az 6 karakter olmalıdır');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (formData.role === 'business') {
+      if (!formData.businessName || !formData.businessPhone) {
+        setError('Lütfen işletme adı ve telefon numarasını doldurun');
+        return false;
+      }
+    } else {
+      if (!formData.customerPhone) {
+        setError('Lütfen telefon numaranızı girin');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    setError('');
+    if (step === 1 && validateStep1()) {
+      setStep(2);
+    } else if (step === 2 && validateStep2()) {
+      handleSubmit();
+    }
+  };
+
+  const handleSubmit = async () => {
     setError('');
     setSuccess('');
+    
     try {
-      await registerMutation.mutateAsync({ name, email, password, role });
+      const registerData: any = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      };
+
+      if (formData.role === 'business') {
+        registerData.businessName = formData.businessName;
+        registerData.businessDescription = formData.businessDescription;
+        registerData.businessPhone = formData.businessPhone;
+        registerData.businessEmail = formData.businessEmail;
+        registerData.businessAddress = formData.businessLocation?.address || '';
+        registerData.businessLatitude = formData.businessLocation?.latitude || 41.0082;
+        registerData.businessLongitude = formData.businessLocation?.longitude || 28.9784;
+             } else {
+         registerData.customerPhone = formData.customerPhone;
+         registerData.customerAddress = formData.customerAddress;
+         registerData.customerLocation = formData.customerLocation;
+       }
+
+      await registerMutation.mutateAsync(registerData);
       setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: any) {
@@ -26,34 +124,248 @@ export default function RegisterPage() {
     }
   };
 
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold text-gray-800">Temel Bilgiler</h3>
+      
+      <label className="flex flex-col gap-1 text-gray-700 font-medium">
+        Ad Soyad
+        <input
+          type="text"
+          value={formData.name}
+          onChange={e => updateFormData('name', e.target.value)}
+          required
+          className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+          autoComplete="name"
+        />
+      </label>
+      
+      <label className="flex flex-col gap-1 text-gray-700 font-medium">
+        E-posta
+        <input
+          type="email"
+          value={formData.email}
+          onChange={e => updateFormData('email', e.target.value)}
+          required
+          className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+          autoComplete="email"
+        />
+      </label>
+      
+      <label className="flex flex-col gap-1 text-gray-700 font-medium">
+        Şifre
+        <input
+          type="password"
+          value={formData.password}
+          onChange={e => updateFormData('password', e.target.value)}
+          required
+          className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+          autoComplete="new-password"
+        />
+      </label>
+      
+      <label className="flex flex-col gap-1 text-gray-700 font-medium">
+        Şifre Tekrar
+        <input
+          type="password"
+          value={formData.confirmPassword}
+          onChange={e => updateFormData('confirmPassword', e.target.value)}
+          required
+          className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+          autoComplete="new-password"
+        />
+      </label>
+      
+      <label className="flex flex-col gap-1 text-gray-700 font-medium">
+        Hesap Türü
+        <select
+          value={formData.role}
+          onChange={e => updateFormData('role', e.target.value)}
+          className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+        >
+          <option value="user">Müşteri</option>
+          <option value="business">İşletme</option>
+        </select>
+      </label>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold text-gray-800">
+        {formData.role === 'business' ? 'İşletme Bilgileri' : 'Kişisel Bilgiler'}
+      </h3>
+      
+      {formData.role === 'business' ? (
+        <>
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            İşletme Adı
+            <input
+              type="text"
+              value={formData.businessName}
+              onChange={e => updateFormData('businessName', e.target.value)}
+              required
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </label>
+          
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            İşletme Açıklaması
+            <textarea
+              value={formData.businessDescription}
+              onChange={e => updateFormData('businessDescription', e.target.value)}
+              rows={3}
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
+              placeholder="İşletmeniz hakkında kısa bir açıklama..."
+            />
+          </label>
+          
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            İşletme Telefonu
+            <input
+              type="tel"
+              value={formData.businessPhone}
+              onChange={e => updateFormData('businessPhone', e.target.value)}
+              required
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </label>
+          
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            İşletme E-posta (Opsiyonel)
+            <input
+              type="email"
+              value={formData.businessEmail}
+              onChange={e => updateFormData('businessEmail', e.target.value)}
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </label>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              İşletme Konumu
+            </label>
+                         <LocationPicker
+               onLocationSelect={(location: LocationData) => handleLocationSelect(location, 'business')}
+             />
+          </div>
+        </>
+      ) : (
+        <>
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            Telefon Numarası
+            <input
+              type="tel"
+              value={formData.customerPhone}
+              onChange={e => updateFormData('customerPhone', e.target.value)}
+              required
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </label>
+          
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            Adres (Opsiyonel)
+            <textarea
+              value={formData.customerAddress}
+              onChange={e => updateFormData('customerAddress', e.target.value)}
+              rows={3}
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
+              placeholder="Ev adresiniz..."
+            />
+          </label>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Konum (Opsiyonel)
+            </label>
+                         <LocationPicker
+               onLocationSelect={(location: LocationData) => handleLocationSelect(location, 'customer')}
+             />
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-full max-w-sm flex flex-col gap-4">
-        <h2 className="text-2xl font-bold mb-2">Kayıt Ol</h2>
-        <label className="flex flex-col gap-1">
-          İsim
-          <input type="text" value={name} onChange={e => setName(e.target.value)} required className="border rounded px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1">
-          E-posta
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="border rounded px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1">
-          Şifre
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="border rounded px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1">
-          Rol
-          <select value={role} onChange={e => setRole(e.target.value as 'user' | 'business')} className="border rounded px-3 py-2">
-            <option value="user">Müşteri</option>
-            <option value="business">İşletme</option>
-          </select>
-        </label>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-        {success && <div className="text-green-600 text-sm">{success}</div>}
-        <button type="submit" className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Kayıt Ol</button>
-        <a href="/login" className="text-blue-600 hover:underline text-sm text-center">Zaten hesabınız var mı? Giriş yapın</a>
-      </form>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-pink-50 px-4 py-8">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 animate-fade-in">
+        <h2 className="text-3xl font-extrabold text-center bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent mb-6 select-none">
+          Kayıt Ol
+        </h2>
+        
+        {/* Step indicator */}
+        <div className="flex items-center justify-center mb-8">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+            step >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            1
+          </div>
+          <div className={`w-16 h-1 mx-2 ${
+            step >= 2 ? 'bg-blue-500' : 'bg-gray-200'
+          }`}></div>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+            step >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            2
+          </div>
+        </div>
+        
+        {/* Form content */}
+        {step === 1 ? renderStep1() : renderStep2()}
+        
+        {/* Error and success messages */}
+        {error && <div className="text-red-600 text-sm text-center mt-4 animate-shake">{error}</div>}
+        {success && <div className="text-green-600 text-sm text-center mt-4 animate-fade-in">{success}</div>}
+        
+        {/* Navigation buttons */}
+        <div className="flex gap-4 mt-8">
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="flex-1 py-3 rounded-full bg-gray-500 text-white font-semibold text-lg shadow-lg hover:bg-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Geri
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={registerMutation.isPending}
+            className="flex-1 py-3 rounded-full bg-pink-500 text-white font-semibold text-lg shadow-lg hover:bg-pink-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {registerMutation.isPending ? 'Kaydediliyor...' : step === 1 ? 'İleri' : 'Kayıt Ol'}
+          </button>
+        </div>
+        
+        <button
+          type="button"
+          className="w-full py-3 rounded-full bg-blue-600 text-white font-semibold text-lg shadow-lg hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 mt-4"
+          onClick={() => router.push('/login')}
+        >
+          Zaten hesabım var - Giriş Yap
+        </button>
+      </div>
+      
+      <style jsx global>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(40px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 1s cubic-bezier(0.4,0,0.2,1) both;
+        }
+        @keyframes shake {
+          10%, 90% { transform: translateX(-2px); }
+          20%, 80% { transform: translateX(4px); }
+          30%, 50%, 70% { transform: translateX(-8px); }
+          40%, 60% { transform: translateX(8px); }
+        }
+        .animate-shake {
+          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+      `}</style>
     </main>
   );
 } 

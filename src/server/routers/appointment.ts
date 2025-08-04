@@ -94,4 +94,42 @@ export const appointmentRouter = t.router({
       );
       return result.rows[0];
     }),
+  getEmployeeConflicts: t.procedure.use(isAuthed)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      date: z.string(), // YYYY-MM-DD
+      durationMinutes: z.number(),
+    }))
+    .query(async ({ input }) => {
+      // O gün için tüm randevuları çek
+      const startOfDay = new Date(input.date + 'T00:00:00');
+      const endOfDay = new Date(input.date + 'T23:59:59');
+      const result = await pool.query(
+        `SELECT appointment_datetime, service_id FROM appointments WHERE employee_id = $1 AND status IN ('pending','confirmed') AND appointment_datetime >= $2 AND appointment_datetime <= $3`,
+        [input.employeeId, startOfDay.toISOString(), endOfDay.toISOString()]
+      );
+      // Her randevunun başlangıç ve bitişini hesapla
+      const busySlots: Array<{ start: Date; end: Date }> = [];
+      for (const row of result.rows) {
+        // Hizmet süresini bul
+        const serviceRes = await pool.query(`SELECT duration_minutes FROM services WHERE id = $1`, [row.service_id]);
+        const dur = serviceRes.rows[0]?.duration_minutes || input.durationMinutes;
+        const start = new Date(row.appointment_datetime);
+        const end = new Date(start.getTime() + dur * 60000);
+        busySlots.push({ start, end });
+      }
+      // 00:00-23:59 arası 15dk slotları üret
+      const slots: Record<string, boolean> = {};
+      for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 15) {
+          const slot = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+          const slotStart = new Date(input.date + 'T' + slot + ':00');
+          const slotEnd = new Date(slotStart.getTime() + input.durationMinutes * 60000);
+          // Çakışan randevu var mı?
+          const conflict = busySlots.some(b => slotStart < b.end && slotEnd > b.start);
+          slots[slot] = conflict;
+        }
+      }
+      return slots;
+    }),
 }); 
