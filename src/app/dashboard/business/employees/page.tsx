@@ -21,6 +21,14 @@ export default function BusinessEmployeesPage() {
   const createAvailability = trpc.business.createEmployeeAvailability.useMutation();
   const updateAvailability = trpc.business.updateEmployeeAvailability.useMutation();
   const deleteAvailability = trpc.business.deleteEmployeeAvailability.useMutation();
+  
+  // Hizmet yönetimi için yeni query'ler
+  const { data: services } = trpc.business.getServices.useQuery(
+    businessId ? { businessId } : undefined,
+    { enabled: !!businessId }
+  );
+  const assignService = trpc.business.assignServiceToEmployee.useMutation();
+  const removeService = trpc.business.removeServiceFromEmployee.useMutation();
 
   const [form, setForm] = useState({ id: '', name: '', email: '', phone: '' });
   const [editing, setEditing] = useState(false);
@@ -31,6 +39,10 @@ export default function BusinessEmployeesPage() {
   const [availabilityForm, setAvailabilityForm] = useState({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' });
   const [editingAvailability, setEditingAvailability] = useState(false);
   const [deleteAvailabilityId, setDeleteAvailabilityId] = useState<string | null>(null);
+  
+  // Hizmet yönetimi için yeni state'ler
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [showServiceModal, setShowServiceModal] = useState(false);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -132,9 +144,56 @@ export default function BusinessEmployeesPage() {
     }
   };
 
+  // Hizmet yönetimi fonksiyonları
+  const handleServiceModal = (employee: any) => {
+    setSelectedEmployee(employee);
+    setShowServiceModal(true);
+    setSelectedServices([]);
+  };
+
+  const handleAssignService = async (serviceId: string) => {
+    if (!selectedEmployee || !businessId) return;
+    try {
+      await assignService.mutateAsync({ 
+        employeeId: selectedEmployee.id, 
+        serviceId, 
+        businessId 
+      });
+      setSuccess('Hizmet çalışana atandı!');
+      setTimeout(() => setSuccess(''), 1200);
+    } catch (err: any) {
+      setError(err.message || 'Hizmet atama başarısız');
+    }
+  };
+
+  const handleRemoveService = async (serviceId: string) => {
+    if (!selectedEmployee || !businessId) return;
+    try {
+      await removeService.mutateAsync({ 
+        employeeId: selectedEmployee.id, 
+        serviceId, 
+        businessId 
+      });
+      setSuccess('Hizmet çalışandan kaldırıldı!');
+      setTimeout(() => setSuccess(''), 1200);
+    } catch (err: any) {
+      setError(err.message || 'Hizmet kaldırma başarısız');
+    }
+  };
+
   return (
     <main className="max-w-2xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-fade-in">
-      <h1 className="text-2xl font-extrabold mb-6 text-center bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">Çalışanlar</h1>
+      <div className="flex items-center justify-between mb-6">
+        <button 
+          onClick={() => router.push('/dashboard/business')}
+          className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 text-gray-700 font-semibold"
+        >
+          <span>←</span>
+          <span>Geri Dön</span>
+        </button>
+        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">Çalışanlar</h1>
+        <div className="w-24"></div> {/* Spacer for centering */}
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-xl mb-8 animate-fade-in">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1 text-gray-700 font-medium">
@@ -175,10 +234,11 @@ export default function BusinessEmployeesPage() {
             <span className="font-bold text-lg text-pink-700">{e.name}</span>
             <span className="text-gray-500 text-sm">{e.email}</span>
             <span className="text-gray-400 text-xs">{e.phone}</span>
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-2 flex-wrap">
               <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-semibold hover:bg-blue-200 transition" onClick={() => handleEdit(e)}>Düzenle</button>
               <button className="px-4 py-2 bg-red-100 text-red-700 rounded-full font-semibold hover:bg-red-200 transition" onClick={() => handleDelete(e.id)}>Sil</button>
               <button className="px-4 py-2 bg-green-100 text-green-700 rounded-full font-semibold hover:bg-green-200 transition" onClick={() => setSelectedEmployee(e)}>Uygunluk</button>
+              <button className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-semibold hover:bg-purple-200 transition" onClick={() => handleServiceModal(e)}>Hizmetler</button>
             </div>
           </li>
         ))}
@@ -198,7 +258,7 @@ export default function BusinessEmployeesPage() {
         </div>
       )}
       {/* Uygunluk yönetimi modalı */}
-      {selectedEmployee && (
+      {selectedEmployee && !showServiceModal && (
         <EmployeeAvailabilityModal
           employee={selectedEmployee}
           onClose={() => setSelectedEmployee(null)}
@@ -212,6 +272,17 @@ export default function BusinessEmployeesPage() {
           handleDeleteAvailability={handleDeleteAvailability}
           deleteAvailabilityId={deleteAvailabilityId}
           confirmDeleteAvailability={confirmDeleteAvailability}
+        />
+      )}
+
+      {/* Hizmet yönetimi modalı */}
+      {showServiceModal && selectedEmployee && (
+        <EmployeeServiceModal
+          employee={selectedEmployee}
+          services={services}
+          onClose={() => setShowServiceModal(false)}
+          onAssign={handleAssignService}
+          onRemove={handleRemoveService}
         />
       )}
       <style jsx global>{`
@@ -233,6 +304,95 @@ export default function BusinessEmployeesPage() {
         }
       `}</style>
     </main>
+  );
+}
+
+function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove }: any) {
+  const { data: employeeServices } = trpc.business.getEmployeeServices.useQuery(
+    { employeeId: employee.id },
+    { enabled: !!employee.id }
+  );
+
+  const assignedServiceIds = employeeServices?.map((s: any) => s.id) || [];
+  const availableServices = services?.filter((s: any) => !assignedServiceIds.includes(s.id)) || [];
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
+      <div className="bg-white p-6 rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {employee.name} - Hizmet Yönetimi
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Atanmış Hizmetler */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Atanmış Hizmetler</h3>
+            {employeeServices?.length > 0 ? (
+              <div className="space-y-3">
+                {employeeServices.map((service: any) => (
+                  <div key={service.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div>
+                      <p className="font-medium text-green-800">{service.name}</p>
+                      <p className="text-sm text-green-600">₺{service.price} • {service.duration_minutes} dk</p>
+                    </div>
+                    <button
+                      onClick={() => onRemove(service.id)}
+                      className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm hover:bg-red-200 transition"
+                    >
+                      Kaldır
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Henüz hizmet atanmamış</p>
+            )}
+          </div>
+
+          {/* Mevcut Hizmetler */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Mevcut Hizmetler</h3>
+            {availableServices.length > 0 ? (
+              <div className="space-y-3">
+                {availableServices.map((service: any) => (
+                  <div key={service.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <p className="font-medium text-blue-800">{service.name}</p>
+                      <p className="text-sm text-blue-600">₺{service.price} • {service.duration_minutes} dk</p>
+                    </div>
+                    <button
+                      onClick={() => onAssign(service.id)}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition"
+                    >
+                      Ata
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Tüm hizmetler atanmış</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-300 transition"
+          >
+            Kapat
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

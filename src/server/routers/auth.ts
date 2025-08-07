@@ -15,7 +15,7 @@ const registerSchema = z.object({
   businessLatitude: z.number().optional(),
   businessLongitude: z.number().optional(),
   businessPhone: z.string().optional(),
-  businessEmail: z.string().email().optional(),
+  businessEmail: z.string().email().optional().or(z.literal('')),
   // Müşteri bilgileri (sadece user rolü için)
   customerPhone: z.string().optional(),
   customerAddress: z.string().optional(),
@@ -74,6 +74,8 @@ export const authRouter = t.router({
     .input(registerSchema)
     .mutation(async ({ input }) => {
       try {
+        console.log('Registration attempt for:', input.email);
+        
         // Şifre hashle
         const password_hash = await bcrypt.hash(input.password, 10);
         
@@ -87,33 +89,46 @@ export const authRouter = t.router({
             input.role
           ]
         );
-      const user = result.rows[0];
+        
+        const user = result.rows[0];
+        console.log('User created:', user.id);
       
-      // Eğer business ise, işletme bilgileriyle birlikte oluştur
-      if (input.role === 'business') {
-        try {
-          await pool.query(
-            `INSERT INTO businesses (owner_user_id, name, description, address, latitude, longitude, phone, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [
-              user.id, 
-              input.businessName || `${input.name}'ın İşletmesi`, 
-              input.businessDescription || '',
-              input.businessAddress || 'Adres belirtilmedi',
-              input.businessLatitude || 40.9695,
-              input.businessLongitude || 29.2725,
-              input.businessPhone || '',
-              input.businessEmail || input.email
-            ]
-          );
-        } catch (businessError) {
-          console.error('Business creation error:', businessError);
-          // Business oluşturulamazsa bile user'ı döndür
+        // Eğer business ise, işletme bilgileriyle birlikte oluştur
+        if (input.role === 'business') {
+          try {
+            console.log('Creating business for user:', user.id);
+            await pool.query(
+              `INSERT INTO businesses (owner_user_id, name, description, address, latitude, longitude, phone, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              [
+                user.id, 
+                input.businessName || `${input.name}'ın İşletmesi`, 
+                input.businessDescription || '',
+                input.businessAddress || 'Adres belirtilmedi',
+                input.businessLatitude || 40.9695,
+                input.businessLongitude || 29.2725,
+                input.businessPhone || '',
+                input.businessEmail || input.email
+              ]
+            );
+            console.log('Business created successfully');
+          } catch (businessError) {
+            console.error('Business creation error:', businessError);
+            // Business oluşturulamazsa bile user'ı döndür
+          }
         }
-      }
       
-            return { id: user.id, name: user.name, email: user.email, role: user.role };
-        } catch (error) {
+        console.log('Registration completed successfully');
+        return { id: user.id, name: user.name, email: user.email, role: user.role };
+      } catch (error) {
         console.error('Registration error:', error);
+        if (error instanceof Error) {
+          if (error.message.includes('duplicate key')) {
+            throw new Error('Bu e-posta adresi zaten kullanılıyor.');
+          }
+          if (error.message.includes('violates')) {
+            throw new Error('Geçersiz veri formatı. Lütfen tüm alanları doğru şekilde doldurun.');
+          }
+        }
         throw new Error('Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.');
       }
     }),

@@ -29,6 +29,18 @@ CREATE TABLE businesses (
 );
 CREATE INDEX idx_businesses_owner_user_id ON businesses(owner_user_id);
 
+-- BUSINESS IMAGES (for slider)
+CREATE TABLE business_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    image_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_business_images_business_id ON business_images(business_id);
+
 -- SERVICES
 CREATE TABLE services (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -82,19 +94,48 @@ CREATE INDEX idx_appointments_user_id ON appointments(user_id);
 CREATE INDEX idx_appointments_business_id ON appointments(business_id);
 CREATE INDEX idx_appointments_employee_id ON appointments(employee_id);
 
--- (Optional) REVIEWS
+-- REVIEWS (Enhanced for service and employee ratings)
 CREATE TABLE reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    comment TEXT,
+    service_rating INTEGER NOT NULL CHECK (service_rating BETWEEN 1 AND 5),
+    employee_rating INTEGER NOT NULL CHECK (employee_rating BETWEEN 1 AND 5),
+    comment TEXT NOT NULL CHECK (length(comment) >= 20),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(appointment_id) -- Bir randevuya sadece bir yorum yapılabilir
 );
 CREATE INDEX idx_reviews_business_id ON reviews(business_id);
 CREATE INDEX idx_reviews_user_id ON reviews(user_id);
+CREATE INDEX idx_reviews_appointment_id ON reviews(appointment_id);
+CREATE INDEX idx_reviews_created_at ON reviews(created_at);
+
+-- BUSINESS RATINGS (Cached for performance)
+CREATE TABLE business_ratings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    average_service_rating NUMERIC(3,2) NOT NULL DEFAULT 0,
+    average_employee_rating NUMERIC(3,2) NOT NULL DEFAULT 0,
+    overall_rating NUMERIC(3,2) NOT NULL DEFAULT 0,
+    total_reviews INTEGER NOT NULL DEFAULT 0,
+    last_6_months_rating NUMERIC(3,2) NOT NULL DEFAULT 0,
+    last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(business_id)
+);
+CREATE INDEX idx_business_ratings_business_id ON business_ratings(business_id);
+
+-- EMPLOYEE RATINGS (Cached for performance)
+CREATE TABLE employee_ratings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    average_rating NUMERIC(3,2) NOT NULL DEFAULT 0,
+    total_reviews INTEGER NOT NULL DEFAULT 0,
+    last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(employee_id)
+);
+CREATE INDEX idx_employee_ratings_employee_id ON employee_ratings(employee_id);
 
 -- (Optional) NOTIFICATIONS
 CREATE TABLE notifications (

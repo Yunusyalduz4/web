@@ -3,10 +3,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/dashboard/business", label: "Panel", icon: "📊" },
+  { href: "/dashboard/business", label: "Panel", icon: "🏠" },
+  { href: "/dashboard/business/appointments", label: "Randevular", icon: "📅" },
+  { href: "/dashboard/business/analytics", label: "İstatistikler", icon: "📊" },
   { href: "/dashboard/business/services", label: "Hizmetler", icon: "💈" },
   { href: "/dashboard/business/employees", label: "Çalışanlar", icon: "🧑‍💼" },
-  { href: "/dashboard/business/appointments", label: "Randevular", icon: "📅" },
+  { href: "/dashboard/business/reviews", label: "Değerlendirmeler", icon: "⭐" },
+  { href: "/dashboard/business/profile", label: "Profil", icon: "👤" },
 ];
 
 export default function BusinessBottomNav() {

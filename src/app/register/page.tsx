@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '../../utils/trpcClient';
-import LocationPicker from '../../components/LocationPicker';
+
 
 interface LocationData {
   latitude: number;
@@ -42,13 +42,7 @@ export default function RegisterPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleLocationSelect = (location: LocationData, type: 'business' | 'customer') => {
-    if (type === 'business') {
-      updateFormData('businessLocation', location);
-    } else {
-      updateFormData('customerLocation', location);
-    }
-  };
+
 
   const validateStep1 = () => {
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -95,32 +89,52 @@ export default function RegisterPage() {
     setSuccess('');
     
     try {
+      // Önce test endpoint'ini kontrol et
+      try {
+        const testResponse = await fetch('/api/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ test: true })
+        });
+        console.log('Test API response:', await testResponse.json());
+      } catch (testErr) {
+        console.error('Test API failed:', testErr);
+      }
+
       const registerData: any = {
-        name: formData.name,
-        email: formData.email,
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: formData.role,
       };
 
       if (formData.role === 'business') {
-        registerData.businessName = formData.businessName;
-        registerData.businessDescription = formData.businessDescription;
-        registerData.businessPhone = formData.businessPhone;
-        registerData.businessEmail = formData.businessEmail;
-        registerData.businessAddress = formData.businessLocation?.address || '';
+        registerData.businessName = formData.businessName?.trim() || '';
+        registerData.businessDescription = formData.businessDescription?.trim() || '';
+        registerData.businessPhone = formData.businessPhone?.trim() || '';
+        registerData.businessEmail = formData.businessEmail?.trim() || '';
+        registerData.businessAddress = formData.businessLocation?.address?.trim() || 'Adres belirtilmedi';
         registerData.businessLatitude = formData.businessLocation?.latitude || 41.0082;
         registerData.businessLongitude = formData.businessLocation?.longitude || 28.9784;
-             } else {
-         registerData.customerPhone = formData.customerPhone;
-         registerData.customerAddress = formData.customerAddress;
-         registerData.customerLocation = formData.customerLocation;
-       }
+      } else {
+        registerData.customerPhone = formData.customerPhone?.trim() || '';
+        registerData.customerAddress = formData.customerAddress?.trim() || '';
+        registerData.customerLocation = formData.customerLocation;
+      }
 
+      console.log('Sending registration data:', registerData);
       await registerMutation.mutateAsync(registerData);
       setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: any) {
-      setError(err.message || 'Kayıt başarısız');
+      console.error('Registration error:', err);
+      if (err.message?.includes('pattern')) {
+        setError('Geçersiz veri formatı. Lütfen tüm alanları doğru şekilde doldurun.');
+      } else if (err.message?.includes('405')) {
+        setError('API endpoint çalışmıyor. Lütfen daha sonra tekrar deneyin.');
+      } else {
+        setError(err.message || 'Kayıt başarısız. Lütfen tekrar deneyin.');
+      }
     }
   };
 
@@ -241,14 +255,23 @@ export default function RegisterPage() {
             />
           </label>
           
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              İşletme Konumu
-            </label>
-                         <LocationPicker
-               onLocationSelect={(location: LocationData) => handleLocationSelect(location, 'business')}
-             />
-          </div>
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            İşletme Adresi
+            <textarea
+              value={formData.businessLocation?.address || ''}
+              onChange={e => {
+                const address = e.target.value;
+                updateFormData('businessLocation', {
+                  latitude: 41.0082,
+                  longitude: 28.9784,
+                  address: address
+                });
+              }}
+              rows={3}
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
+              placeholder="İşletme adresinizi girin..."
+            />
+          </label>
         </>
       ) : (
         <>
@@ -274,14 +297,23 @@ export default function RegisterPage() {
             />
           </label>
           
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Konum (Opsiyonel)
-            </label>
-                         <LocationPicker
-               onLocationSelect={(location: LocationData) => handleLocationSelect(location, 'customer')}
-             />
-          </div>
+          <label className="flex flex-col gap-1 text-gray-700 font-medium">
+            Konum (Opsiyonel)
+            <textarea
+              value={formData.customerLocation?.address || ''}
+              onChange={e => {
+                const address = e.target.value;
+                updateFormData('customerLocation', {
+                  latitude: 41.0082,
+                  longitude: 28.9784,
+                  address: address
+                });
+              }}
+              rows={3}
+              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
+              placeholder="Konum bilginizi girin..."
+            />
+          </label>
         </>
       )}
     </div>

@@ -79,7 +79,17 @@ export default function BusinessServicesPage() {
 
   return (
     <main className="max-w-2xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-fade-in">
-      <h1 className="text-2xl font-extrabold mb-6 text-center bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">Hizmetler</h1>
+      <div className="flex items-center justify-between mb-6">
+        <button 
+          onClick={() => router.push('/dashboard/business')}
+          className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 text-gray-700 font-semibold"
+        >
+          <span>←</span>
+          <span>Geri Dön</span>
+        </button>
+        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">Hizmetler</h1>
+        <div className="w-24"></div> {/* Spacer for centering */}
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-xl mb-8 animate-fade-in">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1 text-gray-700 font-medium">
