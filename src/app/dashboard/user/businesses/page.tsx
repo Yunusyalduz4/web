@@ -1,39 +1,26 @@
 "use client";
 import { trpc } from '../../../../utils/trpcClient';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import { FaListUl, FaMapMarkedAlt } from 'react-icons/fa';
-
-const mapContainerStyle = {
-  width: '100%',
-  height: '300px',
-  borderRadius: '1rem',
-  marginBottom: '2rem',
-};
+import Map from '../../../../components/Map';
 
 export default function UserBusinessesPage() {
   const { data: businesses, isLoading } = trpc.business.getBusinesses.useQuery();
   const [view, setView] = useState<'list' | 'map'>('list');
   const router = useRouter();
-  const center = { lat: 39.0, lng: 35.0 };
 
-  // Google Maps Marker rendering
-  function renderMap(map: google.maps.Map) {
-    if (!businesses) return;
-    businesses.forEach((b: any) => {
-      if (b.latitude && b.longitude) {
-        const marker = new window.google.maps.Marker({
-          position: { lat: b.latitude, lng: b.longitude },
-          map,
-          title: b.name,
-        });
-        marker.addListener('click', () => {
-          router.push(`/dashboard/user/businesses/${b.id}`);
-        });
-      }
-    });
-  }
+  // İşletmeleri harita marker'larına çevir
+  const mapMarkers = businesses?.map((b: any) => ({
+    id: b.id,
+    position: { lat: b.latitude || 39.9334, lng: b.longitude || 32.8597 },
+    title: b.name,
+    color: '#3b82f6'
+  })) || [];
+
+  const handleMarkerClick = (markerId: string) => {
+    router.push(`/dashboard/user/businesses/${markerId}`);
+  };
 
   return (
     <main className="max-w-4xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
@@ -64,35 +51,102 @@ export default function UserBusinessesPage() {
       )}
       <div className="transition-all duration-500">
         {view === 'list' && (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
             {businesses?.map((b: any) => (
-              <li key={b.id} className="border rounded-2xl p-5 bg-white shadow hover:shadow-xl transition-shadow flex flex-col gap-2 animate-fade-in">
-                <span className="font-bold text-lg text-blue-700">{b.name}</span>
-                <span className="text-gray-500 text-sm">{b.address}</span>
-                <span className="text-gray-400 text-xs">{b.phone}</span>
-                <span className="text-gray-400 text-xs">{b.email}</span>
-                <button
-                  className="mt-2 px-4 py-2 bg-pink-500 text-white rounded-full font-semibold hover:bg-pink-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-300"
-                  onClick={() => router.push(`/dashboard/user/businesses/${b.id}`)}
-                >
-                  Detay
-                </button>
-              </li>
+              <div
+                key={b.id}
+                className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-white/20 hover:border-blue-200/50 animate-fade-in cursor-pointer"
+                onClick={() => router.push(`/dashboard/user/businesses/${b.id}`)}
+              >
+                {/* Glassmorphism Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-sm"></div>
+                
+                {/* Subtle Border Glow */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/10 group-hover:via-purple-500/10 group-hover:to-pink-500/10 transition-all duration-500"></div>
+                
+                {/* Main Content */}
+                <div className="relative p-5">
+                  {/* Business Name & Icon */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300 truncate flex-1">
+                      {b.name}
+                    </h3>
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg group-hover:scale-110 transition-all duration-300 ml-3">
+                      🏢
+                    </div>
+                  </div>
+
+                  {/* Contact Info - Modern */}
+                  <div className="space-y-3 mb-5">
+                    <div className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl border border-blue-100/30">
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs">
+                        📍
+                      </div>
+                      <span className="text-sm text-gray-700 truncate font-medium">{b.address}</span>
+                    </div>
+                    
+                    {b.phone && (
+                      <div className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl border border-green-100/30">
+                        <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white text-xs">
+                          📞
+                        </div>
+                        <span className="text-sm text-gray-700 font-medium">{b.phone}</span>
+                      </div>
+                    )}
+                    
+                    {b.email && (
+                      <div className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl border border-purple-100/30">
+                        <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-xs">
+                          ✉️
+                        </div>
+                        <span className="text-sm text-gray-700 truncate font-medium">{b.email}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2 text-sm group-hover:scale-105"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/dashboard/user/businesses/${b.id}`);
+                    }}
+                  >
+                    <span className="text-base">👀</span>
+                    Detayları Gör
+                  </button>
+                </div>
+
+                {/* Subtle Hover Glow */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/5 group-hover:via-purple-500/5 group-hover:to-pink-500/5 transition-all duration-500 pointer-events-none"></div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
         {view === 'map' && (
           <div className="w-full h-[70vh] min-h-[300px] rounded-2xl overflow-hidden animate-fade-in">
-            <Wrapper apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''} render={renderMapStatus}>
-              <GoogleMapWithMarkers
-                businesses={businesses ?? []}
-                center={center}
-                onMarkerClick={id => router.push(`/dashboard/user/businesses/${id}`)}
-              />
-            </Wrapper>
+            <Map
+              center={{ lat: 39.9334, lng: 32.8597 }} // Ankara merkez
+              zoom={10}
+              markers={mapMarkers}
+              onMarkerClick={handleMarkerClick}
+              showUserLocation={true}
+              className="w-full h-full"
+            />
           </div>
         )}
       </div>
+      {(!businesses || businesses.length === 0) && !isLoading && (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500 animate-fade-in">
+          <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-pink-100 rounded-full flex items-center justify-center mb-4">
+            <span className="text-4xl">🏢</span>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">Henüz İşletme Yok</h3>
+          <p className="text-gray-500 text-center max-w-md">
+            Şu anda sistemde kayıtlı işletme bulunmuyor. Daha sonra tekrar kontrol edebilirsiniz.
+          </p>
+        </div>
+      )}
       <style jsx global>{`
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(40px); }
@@ -104,37 +158,4 @@ export default function UserBusinessesPage() {
       `}</style>
     </main>
   );
-}
-
-// GoogleMapWithMarkers component
-function GoogleMapWithMarkers({ businesses, center, onMarkerClick }: { businesses: any[]; center: { lat: number; lng: number }; onMarkerClick: (id: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!window.google || !ref.current) return;
-    const map = new window.google.maps.Map(ref.current, {
-      center,
-      zoom: 6,
-      mapId: 'DEMO_MAP_ID',
-      disableDefaultUI: true,
-    });
-    if (businesses) {
-      businesses.forEach((b: any) => {
-        if (b.latitude && b.longitude) {
-          const marker = new window.google.maps.Marker({
-            position: { lat: b.latitude, lng: b.longitude },
-            map,
-            title: b.name,
-          });
-          marker.addListener('click', () => onMarkerClick(b.id));
-        }
-      });
-    }
-  }, [businesses, center, onMarkerClick]);
-  return <div ref={ref} className="w-full h-full" />;
-}
-
-function renderMapStatus(status: Status) {
-  if (status === Status.LOADING) return <div className="text-center">Harita yükleniyor...</div>;
-  if (status === Status.FAILURE) return <div className="text-center text-red-600">Harita yüklenemedi</div>;
-  return <div />;
 } 

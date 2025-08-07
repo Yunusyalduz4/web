@@ -4,7 +4,7 @@ import { pool } from '../db';
 import bcrypt from 'bcrypt';
 
 export const userRouter = t.router({
-  getProfile: t.procedure.use(isUser)
+  getProfile: t.procedure.use(isAuthed)
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
@@ -17,7 +17,17 @@ export const userRouter = t.router({
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
-        `SELECT * FROM appointments WHERE user_id = $1 ORDER BY appointment_datetime DESC`,
+        `SELECT 
+          a.*,
+          b.name as business_name,
+          s.name as service_name,
+          e.name as employee_name
+        FROM appointments a
+        LEFT JOIN businesses b ON a.business_id = b.id
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN employees e ON a.employee_id = e.id
+        WHERE a.user_id = $1 
+        ORDER BY a.appointment_datetime DESC`,
         [input.userId]
       );
       return result.rows;

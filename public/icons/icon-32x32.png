@@ -1,0 +1,35 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="128" fill="url(#gradient)"/>
+  
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Scissors Icon -->
+  <g transform="translate(128, 128) scale(0.5)">
+    <!-- Left Scissor Blade -->
+    <path d="M 80 40 L 120 80 L 80 120 L 40 80 Z" fill="white" stroke="white" stroke-width="4"/>
+    
+    <!-- Right Scissor Blade -->
+    <path d="M 200 40 L 240 80 L 200 120 L 160 80 Z" fill="white" stroke="white" stroke-width="4"/>
+    
+    <!-- Scissor Handles -->
+    <circle cx="60" cy="80" r="20" fill="white"/>
+    <circle cx="220" cy="80" r="20" fill="white"/>
+    
+    <!-- Hair Styling Lines -->
+    <path d="M 140 60 Q 150 50 160 60" stroke="white" stroke-width="3" fill="none"/>
+    <path d="M 140 80 Q 150 70 160 80" stroke="white" stroke-width="3" fill="none"/>
+    <path d="M 140 100 Q 150 90 160 100" stroke="white" stroke-width="3" fill="none"/>
+  </g>
+  
+  <!-- App Name -->
+  <text x="256" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">
+    KUA
+  </text>
+</svg>
