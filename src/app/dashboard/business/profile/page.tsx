@@ -11,16 +11,15 @@ export default function BusinessProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const userId = session?.user.id;
-  const { data: profile, isLoading } = trpc.user.getProfile.useQuery(userId ? { userId } : skipToken);
   const { data: business, isLoading: businessLoading } = trpc.business.getBusinessByUserId.useQuery(userId ? { userId } : skipToken);
-  const updateMutation = trpc.user.updateProfile.useMutation();
+  const updateMutation = trpc.business.updateBusinessProfile.useMutation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Push notification hook
+  // Push notification hook - her zaman çağır, business null olsa bile
   const {
     isSupported,
     isSubscribed,
@@ -28,33 +27,28 @@ export default function BusinessProfilePage() {
     error: pushError,
     subscribe,
     unsubscribe
-  } = usePushNotifications(business?.id);
-
-  // Show loading if business is still loading
-  if (businessLoading) {
-    return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-pulse">
-        <span className="text-5xl mb-2">⏳</span>
-        <span className="text-lg text-gray-400">İşletme bilgileri yükleniyor...</span>
-      </main>
-    );
-  }
+  } = usePushNotifications(business?.id || null);
 
   // Profil yüklendiğinde inputlara aktar
   React.useEffect(() => {
-    if (profile) {
-      setName(profile.name || '');
-      setEmail(profile.email || '');
+    if (business) {
+      setName(business.name || '');
+      setEmail(business.email || '');
     }
-  }, [profile]);
+  }, [business]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (!userId) return;
+    if (!business?.id) return;
     try {
-      await updateMutation.mutateAsync({ userId, name, email, password: password || undefined });
+      await updateMutation.mutateAsync({ 
+        businessId: business.id, 
+        name, 
+        email, 
+        password: password || undefined 
+      });
       setSuccess('Profil başarıyla güncellendi!');
       setPassword('');
       setTimeout(() => router.refresh(), 1200);
@@ -71,14 +65,17 @@ export default function BusinessProfilePage() {
     }
   };
 
-  if (isLoading) {
+  // Show loading if business is still loading
+  if (businessLoading) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-pulse">
         <span className="text-5xl mb-2">⏳</span>
-        <span className="text-lg text-gray-400">Profil yükleniyor...</span>
+        <span className="text-lg text-gray-400">İşletme bilgileri yükleniyor...</span>
       </main>
     );
   }
+
+
 
   return (
     <main className="max-w-md mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 flex flex-col items-center justify-center animate-fade-in">

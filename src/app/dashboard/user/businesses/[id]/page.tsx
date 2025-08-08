@@ -155,10 +155,18 @@ export default function BusinessDetailPage() {
                   className="object-cover w-full h-full select-none"
                   draggable={false}
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Resim+Yüklenemedi';
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                {/* Fallback for failed images */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center hidden">
+                  <div className="text-center text-gray-500">
+                    <div className="text-4xl mb-2">🖼️</div>
+                    <div className="text-sm">Resim Yüklenemedi</div>
+                  </div>
+                </div>
               </div>
             </SwiperSlide>
           ))}

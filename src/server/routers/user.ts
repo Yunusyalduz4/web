@@ -4,7 +4,7 @@ import { pool } from '../db';
 import bcrypt from 'bcrypt';
 
 export const userRouter = t.router({
-  getProfile: t.procedure.use(isAuthed)
+  getProfile: t.procedure.use(isUser)
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
@@ -20,13 +20,17 @@ export const userRouter = t.router({
         `SELECT 
           a.*,
           b.name as business_name,
-          s.name as service_name,
-          e.name as employee_name
+          COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
+          COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
+          COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
+          COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations
         FROM appointments a
         LEFT JOIN businesses b ON a.business_id = b.id
-        LEFT JOIN services s ON a.service_id = s.id
-        LEFT JOIN employees e ON a.employee_id = e.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN services s ON aps.service_id = s.id
+        LEFT JOIN employees e ON aps.employee_id = e.id
         WHERE a.user_id = $1 
+        GROUP BY a.id, b.name
         ORDER BY a.appointment_datetime DESC`,
         [input.userId]
       );

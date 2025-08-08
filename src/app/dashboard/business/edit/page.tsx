@@ -293,9 +293,17 @@ export default function BusinessEditPage() {
                 alt={`Slider resim ${index + 1}`}
                 className="w-full h-48 object-cover rounded-lg"
                 onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Resim+Yüklenemedi';
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
                 }}
               />
+              {/* Fallback for failed images */}
+              <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center hidden">
+                <div className="text-center text-gray-500">
+                  <div className="text-2xl mb-1">🖼️</div>
+                  <div className="text-xs">Resim Yüklenemedi</div>
+                </div>
+              </div>
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                   <button

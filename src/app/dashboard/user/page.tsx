@@ -48,8 +48,12 @@ export default function UserDashboard() {
       isOpen: true,
       appointmentId: appointment.id,
       businessName: appointment.business_name || 'Bilinmiyor',
-      serviceName: appointment.service_name || 'Bilinmiyor',
-      employeeName: appointment.employee_name || 'Bilinmiyor'
+      serviceName: appointment.service_names && appointment.service_names.length > 0 
+        ? appointment.service_names.join(', ') 
+        : 'Bilinmiyor',
+      employeeName: appointment.employee_names && appointment.employee_names.length > 0 
+        ? appointment.employee_names.join(', ') 
+        : 'Bilinmiyor'
     });
   };
 
@@ -141,7 +145,11 @@ export default function UserDashboard() {
                   </div>
                   <div>
                     <p className="text-xs text-purple-600 font-medium">Hizmet</p>
-                    <p className="font-semibold text-gray-800">{a.service_name || 'Bilinmiyor'}</p>
+                    <p className="font-semibold text-gray-800">
+                      {a.service_names && a.service_names.length > 0 
+                        ? a.service_names.join(', ') 
+                        : 'Bilinmiyor'}
+                    </p>
                   </div>
                 </div>
 
@@ -151,7 +159,11 @@ export default function UserDashboard() {
                   </div>
                   <div>
                     <p className="text-xs text-green-600 font-medium">Çalışan</p>
-                    <p className="font-semibold text-gray-800">{a.employee_name || 'Bilinmiyor'}</p>
+                    <p className="font-semibold text-gray-800">
+                      {a.employee_names && a.employee_names.length > 0 
+                        ? a.employee_names.join(', ') 
+                        : 'Bilinmiyor'}
+                    </p>
                   </div>
                 </div>
               </div>

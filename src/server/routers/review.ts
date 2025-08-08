@@ -27,11 +27,15 @@ export const reviewRouter = t.router({
 
       // Check if appointment exists and belongs to user
       const appointmentCheck = await pool.query(
-        `SELECT a.*, b.id as business_id, e.id as employee_id 
+        `SELECT a.*, b.id as business_id, 
+                COALESCE(array_agg(DISTINCT e.id) FILTER (WHERE e.id IS NOT NULL), ARRAY[]::uuid[]) as employee_ids,
+                COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names
          FROM appointments a 
          JOIN businesses b ON a.business_id = b.id 
-         JOIN employees e ON a.employee_id = e.id 
-         WHERE a.id = $1 AND a.user_id = $2 AND a.status = 'completed'`,
+         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+         LEFT JOIN employees e ON aps.employee_id = e.id 
+         WHERE a.id = $1 AND a.user_id = $2 AND a.status = 'completed'
+         GROUP BY a.id, b.id`,
         [appointmentId, userId]
       );
 
@@ -40,6 +44,9 @@ export const reviewRouter = t.router({
       }
 
       const appointment = appointmentCheck.rows[0];
+
+      // Get first employee for rating (since we can't rate multiple employees separately yet)
+      const firstEmployeeId = appointment.employee_ids?.[0] || null;
 
       // Check if review already exists
       const existingReview = await pool.query(
@@ -78,8 +85,10 @@ export const reviewRouter = t.router({
       // Update business ratings
       await updateBusinessRatings(appointment.business_id);
       
-      // Update employee ratings
-      await updateEmployeeRatings(appointment.employee_id);
+      // Update employee ratings if employee exists
+      if (firstEmployeeId) {
+        await updateEmployeeRatings(firstEmployeeId);
+      }
 
       return result.rows[0];
     }),

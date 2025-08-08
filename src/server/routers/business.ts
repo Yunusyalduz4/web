@@ -1,4 +1,4 @@
-import { t, isBusiness, isAuthed } from '../trpc/trpc';
+import { t, isBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 
@@ -35,6 +35,13 @@ const businessUpdateSchema = z.object({
   longitude: z.number(),
 });
 
+const businessProfileUpdateSchema = z.object({
+  businessId: z.string().uuid(),
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6).optional(),
+});
+
 const businessImageSchema = z.object({
   businessId: z.string().uuid(),
   imageUrl: z.string().url(),
@@ -60,6 +67,36 @@ export const businessRouter = t.router({
         `UPDATE businesses SET name = $1, description = $2, address = $3, phone = $4, email = $5, latitude = $6, longitude = $7, updated_at = NOW() WHERE id = $8 RETURNING *`,
         [input.name, input.description || '', input.address, input.phone || '', input.email || '', input.latitude, input.longitude, input.id]
       );
+      return result.rows[0];
+    }),
+  updateBusinessProfile: t.procedure.use(isBusiness)
+    .input(businessProfileUpdateSchema)
+    .mutation(async ({ input }) => {
+      // Önce business'i bul
+      const businessResult = await pool.query(
+        `SELECT * FROM businesses WHERE id = $1`,
+        [input.businessId]
+      );
+      
+      if (businessResult.rows.length === 0) {
+        throw new Error('İşletme bulunamadı');
+      }
+
+      const business = businessResult.rows[0];
+
+      // Şifre güncellenecekse hash'le
+      let passwordHash = business.password;
+      if (input.password) {
+        const bcrypt = require('bcrypt');
+        passwordHash = await bcrypt.hash(input.password, 10);
+      }
+
+      // Business'i güncelle
+      const result = await pool.query(
+        `UPDATE businesses SET name = $1, email = $2, password = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
+        [input.name, input.email, passwordHash, input.businessId]
+      );
+      
       return result.rows[0];
     }),
   getBusinessImages: t.procedure
@@ -286,7 +323,7 @@ export const businessRouter = t.router({
       return result.rows;
     }),
 
-  getBusinessByUserId: t.procedure.use(isAuthed)
+  getBusinessByUserId: t.procedure.use(isBusiness)
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(

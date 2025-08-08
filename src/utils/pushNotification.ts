@@ -6,11 +6,16 @@ const vapidKeys = {
   privateKey: process.env.VAPID_PRIVATE_KEY || 'YOUR_PRIVATE_KEY'
 };
 
-webpush.setVapidDetails(
-  'mailto:your-email@example.com',
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
+// VAPID details'i güvenli şekilde set et
+try {
+  webpush.setVapidDetails(
+    'mailto:your-email@example.com',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+  );
+} catch (error) {
+  console.warn('VAPID keys not configured, push notifications disabled:', error);
+}
 
 export interface PushSubscription {
   endpoint: string;
