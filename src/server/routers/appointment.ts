@@ -1,4 +1,4 @@
-import { t, isUser, isBusiness, isAuthed } from '../trpc/trpc';
+import { t, isUser, isBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 import { TRPCError } from '@trpc/server';
@@ -112,10 +112,10 @@ export const appointmentRouter = t.router({
         `SELECT 
           a.*,
           b.name as business_name,
-          array_agg(s.name) as service_names,
-          array_agg(e.name) as employee_names,
-          array_agg(aps.price) as prices,
-          array_agg(aps.duration_minutes) as durations
+          COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
+          COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
+          COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
+          COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations
         FROM appointments a
         LEFT JOIN businesses b ON a.business_id = b.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
@@ -135,10 +135,10 @@ export const appointmentRouter = t.router({
         `SELECT 
           a.*,
           u.name as user_name,
-          array_agg(s.name) as service_names,
-          array_agg(e.name) as employee_names,
-          array_agg(aps.price) as prices,
-          array_agg(aps.duration_minutes) as durations
+          COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
+          COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
+          COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
+          COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
@@ -160,7 +160,7 @@ export const appointmentRouter = t.router({
       );
       return result.rows[0];
     }),
-  checkEmployeeConflict: t.procedure.use(isAuthed)
+  checkEmployeeConflict: t.procedure.use(isUser)
     .input(z.object({
       employeeId: z.string().uuid(),
       appointmentDatetime: z.string(),
@@ -187,7 +187,7 @@ export const appointmentRouter = t.router({
       );
       return result.rows[0];
     }),
-  getEmployeeConflicts: t.procedure.use(isAuthed)
+  getEmployeeConflicts: t.procedure.use(isUser)
     .input(z.object({
       employeeId: z.string().uuid(),
       date: z.string(), // YYYY-MM-DD

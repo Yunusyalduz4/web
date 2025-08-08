@@ -36,14 +36,16 @@ export default function BookAppointmentPage() {
   // Seçili hizmetlerin toplam süresini hesapla
   const totalDuration = useMemo(() => {
     return selectedServices.reduce((total, selection) => {
-      return total + (selection.service?.duration_minutes || 0);
+      const duration = selection.service?.duration_minutes;
+      return total + (typeof duration === 'number' ? duration : 0);
     }, 0);
   }, [selectedServices]);
 
   // Seçili hizmetlerin toplam fiyatını hesapla
   const totalPrice = useMemo(() => {
     return selectedServices.reduce((total, selection) => {
-      return total + (selection.service?.price || 0);
+      const price = selection.service?.price;
+      return total + (typeof price === 'number' ? price : 0);
     }, 0);
   }, [selectedServices]);
 

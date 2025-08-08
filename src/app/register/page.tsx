@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '../../utils/trpcClient';
+import LocationPicker from '../../components/LocationPicker';
 
 
 interface LocationData {
@@ -256,20 +257,21 @@ export default function RegisterPage() {
           </label>
           
           <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            İşletme Adresi
-            <textarea
-              value={formData.businessLocation?.address || ''}
-              onChange={e => {
-                const address = e.target.value;
+            İşletme Konumu
+            <LocationPicker
+              onLocationSelect={(location) => {
                 updateFormData('businessLocation', {
-                  latitude: 41.0082,
-                  longitude: 28.9784,
-                  address: address
+                  latitude: location.lat,
+                  longitude: location.lng,
+                  address: location.address
                 });
               }}
-              rows={3}
-              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
-              placeholder="İşletme adresinizi girin..."
+              defaultLocation={formData.businessLocation ? {
+                lat: formData.businessLocation.latitude,
+                lng: formData.businessLocation.longitude,
+                address: formData.businessLocation.address
+              } : undefined}
+              className="mt-2"
             />
           </label>
         </>
@@ -299,19 +301,20 @@ export default function RegisterPage() {
           
           <label className="flex flex-col gap-1 text-gray-700 font-medium">
             Konum (Opsiyonel)
-            <textarea
-              value={formData.customerLocation?.address || ''}
-              onChange={e => {
-                const address = e.target.value;
+            <LocationPicker
+              onLocationSelect={(location) => {
                 updateFormData('customerLocation', {
-                  latitude: 41.0082,
-                  longitude: 28.9784,
-                  address: address
+                  latitude: location.lat,
+                  longitude: location.lng,
+                  address: location.address
                 });
               }}
-              rows={3}
-              className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
-              placeholder="Konum bilginizi girin..."
+              defaultLocation={formData.customerLocation ? {
+                lat: formData.customerLocation.latitude,
+                lng: formData.customerLocation.longitude,
+                address: formData.customerLocation.address
+              } : undefined}
+              className="mt-2"
             />
           </label>
         </>

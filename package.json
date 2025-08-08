@@ -27,6 +27,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
+    "sharp": "^0.34.3",
     "sql-template-tag": "^5.2.1",
     "swiper": "^11.2.10",
     "web-push": "^3.6.7",

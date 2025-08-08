@@ -207,8 +207,8 @@ export default function BusinessAnalyticsPage() {
                     <div className="text-right">
                       <p className="font-bold text-purple-600">₺{employee.totalRevenue.toFixed(2)}</p>
                     </div>
-                  </div>
-                ))}
+                </div>
+              ))}
               </div>
             </div>
           </div>
