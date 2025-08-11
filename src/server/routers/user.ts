@@ -8,7 +8,7 @@ export const userRouter = t.router({
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
-        `SELECT id, name, email, role, created_at FROM users WHERE id = $1`,
+        `SELECT id, name, email, role, phone, address, created_at FROM users WHERE id = $1`,
         [input.userId]
       );
       return result.rows[0];
@@ -42,17 +42,36 @@ export const userRouter = t.router({
       name: z.string().min(2),
       email: z.string().email(),
       password: z.string().min(6).optional(),
+      phone: z.string().optional(),
+      address: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      let passwordHash;
+      const updates: string[] = [];
+      const values: any[] = [];
+      let param = 1;
+
+      updates.push(`name = $${param++}`);
+      values.push(input.name);
+      updates.push(`email = $${param++}`);
+      values.push(input.email);
+
       if (input.password) {
-        passwordHash = await bcrypt.hash(input.password, 10);
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        updates.push(`password_hash = $${param++}`);
+        values.push(passwordHash);
       }
+      if (input.phone !== undefined) {
+        updates.push(`phone = $${param++}`);
+        values.push(input.phone);
+      }
+      if (input.address !== undefined) {
+        updates.push(`address = $${param++}`);
+        values.push(input.address);
+      }
+
       const result = await pool.query(
-        `UPDATE users SET name = $1, email = $2${input.password ? ', password_hash = $3' : ''} WHERE id = $4 RETURNING id, name, email, role, created_at`,
-        input.password
-          ? [input.name, input.email, passwordHash, input.userId]
-          : [input.name, input.email, input.userId]
+        `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${param} RETURNING id, name, email, role, phone, address, created_at`,
+        [...values, input.userId]
       );
       return result.rows[0];
     }),
