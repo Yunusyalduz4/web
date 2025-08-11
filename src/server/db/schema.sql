@@ -137,6 +137,17 @@ CREATE TABLE employee_ratings (
 );
 CREATE INDEX idx_employee_ratings_employee_id ON employee_ratings(employee_id);
 
+-- FAVORITES (Users can favorite businesses)
+CREATE TABLE favorites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, business_id)
+);
+CREATE INDEX idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX idx_favorites_business_id ON favorites(business_id);
+
 -- (Optional) NOTIFICATIONS
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

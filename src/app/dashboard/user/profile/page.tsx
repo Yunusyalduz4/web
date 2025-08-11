@@ -15,6 +15,8 @@ export default function UserProfilePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -23,6 +25,8 @@ export default function UserProfilePage() {
     if (profile) {
       setName(profile.name || '');
       setEmail(profile.email || '');
+      setPhone(profile.phone || '');
+      setAddress(profile.address || '');
     }
   }, [profile]);
 
@@ -32,7 +36,7 @@ export default function UserProfilePage() {
     setSuccess('');
     if (!userId) return;
     try {
-      await updateMutation.mutateAsync({ userId, name, email, password: password || undefined });
+      await updateMutation.mutateAsync({ userId, name, email, password: password || undefined, phone, address });
       setSuccess('Profil başarıyla güncellendi!');
       setPassword('');
       setTimeout(() => router.refresh(), 1200);
@@ -134,6 +138,47 @@ export default function UserProfilePage() {
                 autoComplete="email"
                 aria-label="E-posta"
                 placeholder="E-posta adresiniz"
+              />
+            </div>
+          </div>
+
+          {/* Phone Input */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-3 text-gray-700 font-semibold text-sm">
+              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white text-sm">
+                📞
+              </div>
+              Telefon
+            </label>
+            <div className="relative">
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                autoComplete="tel"
+                aria-label="Telefon"
+                placeholder="05xx xxx xx xx"
+              />
+            </div>
+          </div>
+
+          {/* Address Input */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-3 text-gray-700 font-semibold text-sm">
+              <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center text-white text-sm">
+                📍
+              </div>
+              Adres
+            </label>
+            <div className="relative">
+              <textarea
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                rows={3}
+                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                aria-label="Adres"
+                placeholder="Adresinizi girin"
               />
             </div>
           </div>

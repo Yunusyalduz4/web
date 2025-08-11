@@ -3,7 +3,8 @@ import { trpc } from '@utils/trpcClient';
 import { useRouter, useParams } from 'next/navigation';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 // Inline StarRating Component
 interface StarRatingProps {
@@ -85,6 +86,7 @@ export default function BusinessDetailPage() {
   const router = useRouter();
   const params = useParams();
   const businessId = params?.id as string;
+  const { data: session } = useSession();
 
   const { data: business, isLoading } = trpc.business.getBusinessById.useQuery({ businessId }, { enabled: !!businessId });
   const { data: services } = trpc.business.getServices.useQuery({ businessId }, { enabled: !!businessId });
@@ -92,6 +94,8 @@ export default function BusinessDetailPage() {
   const { data: businessImages } = trpc.business.getBusinessImages.useQuery({ businessId }, { enabled: !!businessId });
   const { data: businessRating } = trpc.review.getBusinessRating.useQuery({ businessId }, { enabled: !!businessId });
   const { data: reviewsData } = trpc.review.getByBusiness.useQuery({ businessId, page: 1, limit: 5 }, { enabled: !!businessId });
+  const { data: favStatus, refetch: refetchFav } = trpc.favorites.isFavorite.useQuery({ businessId }, { enabled: !!businessId && !!session?.user });
+  const toggleFavorite = trpc.favorites.toggle.useMutation();
 
   if (isLoading) {
     return (
@@ -128,8 +132,21 @@ export default function BusinessDetailPage() {
         </div>
       </div>
 
-      {/* Image Slider - Mobile Optimized */}
-      <div className="mb-6 md:mb-8 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl md:shadow-2xl bg-white/80 backdrop-blur-sm border border-white/20">
+      {/* Favorite toggle + Image Slider - Mobile Optimized */}
+      <div className="relative mb-6 md:mb-8 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl md:shadow-2xl bg-white/80 backdrop-blur-sm border border-white/20">
+        <div className="absolute right-4 top-4 z-10">
+          <button
+            disabled={!session?.user}
+            onClick={async () => {
+              await toggleFavorite.mutateAsync({ businessId });
+              await refetchFav();
+            }}
+            className={`px-3 py-2 rounded-full shadow transition-all ${favStatus?.isFavorite ? 'bg-red-500 text-white' : 'bg-white text-gray-700 border'}`}
+            title={session?.user ? (favStatus?.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle') : 'Giriş yapmalısınız'}
+          >
+            {favStatus?.isFavorite ? '❤️ Favoride' : '🤍 Favoriye Ekle'}
+          </button>
+        </div>
         <Swiper 
           spaceBetween={0} 
           slidesPerView={1} 

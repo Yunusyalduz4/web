@@ -51,7 +51,19 @@ const businessImageSchema = z.object({
 export const businessRouter = t.router({
   getBusinesses: t.procedure
     .query(async () => {
-      const result = await pool.query(`SELECT * FROM businesses`);
+      const result = await pool.query(`
+        SELECT 
+          b.*,
+          COALESCE(br.overall_rating, 0) AS overall_rating,
+          COALESCE(br.total_reviews, 0) AS total_reviews,
+          (
+            SELECT COUNT(*)::int 
+            FROM favorites f 
+            WHERE f.business_id = b.id
+          ) AS favorites_count
+        FROM businesses b
+        LEFT JOIN business_ratings br ON br.business_id = b.id
+      `);
       return result.rows;
     }),
   getBusinessById: t.procedure
