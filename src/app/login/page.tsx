@@ -27,7 +27,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-3">
       <div className="w-full max-w-md">
-        <div className="mb-3 text-center text-sm font-bold text-gray-800 select-none">kuado</div>
+        <div className="mb-3 text-center text-sm font-bold text-gray-800 select-none">KUADO</div>
         <form
           onSubmit={handleSubmit}
           className="w-full bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-3 flex flex-col gap-3 animate-fade-in"

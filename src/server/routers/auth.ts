@@ -2,6 +2,7 @@ import { t } from '../trpc/trpc';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { pool } from '../db';
+import crypto from 'crypto';
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -148,5 +149,71 @@ export const authRouter = t.router({
       // TODO: Session/token yönetimi eklenecek
       return { id: user.id, name: user.name, email: user.email, role: user.role };
     }),
-  // logout ve session endpointleri ileride eklenecek
+  // Request email verification (on register or change email)
+  requestEmailVerification: t.procedure
+    .input(z.object({ userId: z.string().uuid(), email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      const token = crypto.randomBytes(24).toString('hex');
+      const expires = new Date(Date.now() + 1000 * 60 * 30); // 30 dk
+      await pool.query(
+        `INSERT INTO email_tokens (user_id, token, type, new_email, expires_at) VALUES ($1,$2,'verify',$3,$4)`,
+        [input.userId, token, input.email, expires]
+      );
+      return { token }; // Email gönderim servisine verilecek payload
+    }),
+  verifyEmail: t.procedure
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `SELECT * FROM email_tokens WHERE token=$1 AND type IN ('verify','email_change') AND used_at IS NULL AND expires_at>NOW()`,
+        [input.token]
+      );
+      const row = res.rows[0];
+      if (!row) throw new Error('Token geçersiz veya süresi dolmuş');
+      await pool.query('BEGIN');
+      try {
+        await pool.query(`UPDATE users SET email = COALESCE($1, email), email_verified = TRUE WHERE id = $2`, [row.new_email, row.user_id]);
+        await pool.query(`UPDATE email_tokens SET used_at = NOW() WHERE id = $1`, [row.id]);
+        await pool.query('COMMIT');
+      } catch (e) {
+        await pool.query('ROLLBACK');
+        throw e;
+      }
+      return { success: true };
+    }),
+  // Password reset: request token
+  requestPasswordReset: t.procedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      const user = await pool.query(`SELECT id FROM users WHERE email=$1`, [input.email]);
+      if (user.rows.length === 0) return { success: true }; // leak engelle
+      const token = crypto.randomBytes(24).toString('hex');
+      const expires = new Date(Date.now() + 1000 * 60 * 30);
+      await pool.query(
+        `INSERT INTO email_tokens (user_id, token, type, expires_at) VALUES ($1,$2,'reset',$3)`,
+        [user.rows[0].id, token, expires]
+      );
+      return { token };
+    }),
+  resetPassword: t.procedure
+    .input(z.object({ token: z.string(), newPassword: z.string().min(6) }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `SELECT * FROM email_tokens WHERE token=$1 AND type='reset' AND used_at IS NULL AND expires_at>NOW()`,
+        [input.token]
+      );
+      const row = res.rows[0];
+      if (!row) throw new Error('Token geçersiz veya süresi dolmuş');
+      const hash = await bcrypt.hash(input.newPassword, 10);
+      await pool.query('BEGIN');
+      try {
+        await pool.query(`UPDATE users SET password_hash=$1 WHERE id=$2`, [hash, row.user_id]);
+        await pool.query(`UPDATE email_tokens SET used_at=NOW() WHERE id=$1`, [row.id]);
+        await pool.query('COMMIT');
+      } catch (e) {
+        await pool.query('ROLLBACK');
+        throw e;
+      }
+      return { success: true };
+    }),
 }); 

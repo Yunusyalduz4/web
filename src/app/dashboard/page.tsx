@@ -12,6 +12,8 @@ export default function DashboardPage() {
     if (!session) router.replace('/login');
     else if (session.user.role === 'business') router.replace('/dashboard/business');
     else if (session.user.role === 'user') router.replace('/dashboard/user');
+    else if (session.user.role === 'admin') router.replace('/dashboard/admin');
+    else router.replace('/unauthorized');
   }, [session, status, router]);
 
   return (
