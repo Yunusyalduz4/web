@@ -48,3 +48,10 @@ export const isUser = t.middleware(async ({ ctx, next }) => {
   }
   return next({ ctx: { user: ctx.session.user } });
 }); 
+
+export const isAdmin = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user || ctx.session.user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece yöneticiler erişebilir' });
+  }
+  return next({ ctx: { user: ctx.session.user } });
+});

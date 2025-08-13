@@ -93,16 +93,43 @@ export default function BusinessEditPage() {
 
   // File upload -> base64 -> upload API -> directly add to business images
 
+  // Image resize helper to keep payloads small
+  const resizeImageToDataUrl = async (file: File, maxSize = 1600, quality = 0.8): Promise<string> => {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Dosya okunamadı'));
+      reader.readAsDataURL(file);
+    });
+
+    const img = document.createElement('img');
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+      img.src = dataUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    let { width, height } = img;
+    const scale = Math.min(1, maxSize / Math.max(width, height));
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas desteklenmiyor');
+    ctx.drawImage(img, 0, 0, width, height);
+    const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
+    const out = canvas.toDataURL(mime, quality);
+    return out;
+  };
+
   const handleFileSelect = async (file: File) => {
     if (!file || !business) return;
     setUploading(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Dosya okunamadı'));
-        reader.readAsDataURL(file);
-      });
+      // Resize before upload to avoid 413
+      let dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
 
       const resp = await fetch('/api/upload_base64', {
         method: 'POST',
@@ -113,7 +140,23 @@ export default function BusinessEditPage() {
       if (!resp.ok) throw new Error(json.error || 'Upload failed');
       setNewImageUrl(json.url);
 
-      const absoluteUrl = typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url;
+      // If API returned data URL fallback, try more compression and retry once to avoid huge payloads in DB
+      if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
+        dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        const resp2 = await fetch('/api/upload_base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, filename: file.name })
+        });
+        const json2 = await resp2.json();
+        if (resp2.ok && json2.url && typeof json2.url === 'string' && json2.url.startsWith('http')) {
+          json.url = json2.url;
+        } else {
+          throw new Error('Görsel çok büyük. Lütfen daha küçük bir görsel yükleyin.');
+        }
+      }
+
+      const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
 
       // Directly add uploaded image to business gallery
       await addBusinessImageMutation.mutateAsync({
@@ -134,12 +177,8 @@ export default function BusinessEditPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Dosya okunamadı'));
-        reader.readAsDataURL(file);
-      });
+      // Resize before upload to avoid 413
+      let dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
 
       const resp = await fetch('/api/upload_base64', {
         method: 'POST',
@@ -148,7 +187,22 @@ export default function BusinessEditPage() {
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || 'Upload failed');
-      const absoluteUrl = typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url;
+      // If API returned data URL fallback, try stronger compression and retry once
+      if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
+        dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        const resp2 = await fetch('/api/upload_base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, filename: file.name })
+        });
+        const json2 = await resp2.json();
+        if (resp2.ok && json2.url && typeof json2.url === 'string' && json2.url.startsWith('http')) {
+          json.url = json2.url;
+        } else {
+          throw new Error('Görsel çok büyük. Lütfen daha küçük bir görsel yükleyin.');
+        }
+      }
+      const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
       setFormData(prev => ({ ...prev, profileImageUrl: absoluteUrl }));
     } catch (e: any) {
       alert(e.message || 'Profil fotoğrafı yüklenemedi');

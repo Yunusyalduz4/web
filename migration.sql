@@ -8,6 +8,30 @@ ADD COLUMN IF NOT EXISTS address TEXT,
 ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
 ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
+-- Allow admin role
+ALTER TABLE users
+  DROP CONSTRAINT IF EXISTS users_role_check,
+  ADD CONSTRAINT users_role_check CHECK (role IN ('user','business','admin'));
+
+-- Email verification support
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS pending_email TEXT;
+
+-- Token table for email verification, password reset, email change
+CREATE TABLE IF NOT EXISTS email_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('verify','reset','email_change')),
+  new_email TEXT,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_email_tokens_user_id ON email_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_tokens_token ON email_tokens(token);
+
 -- Update existing users to have default values for new columns
 UPDATE users 
 SET 

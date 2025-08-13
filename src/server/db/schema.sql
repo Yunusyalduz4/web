@@ -4,7 +4,7 @@ CREATE TABLE users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('user', 'business')),
+    role TEXT NOT NULL CHECK (role IN ('user', 'business', 'admin')),
     phone TEXT,
     address TEXT,
     latitude DOUBLE PRECISION,

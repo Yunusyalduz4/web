@@ -8,12 +8,12 @@ export default function LandingPage() {
       <div className="w-full max-w-md py-10 animate-fade-in">
         {/* Brand */}
         <div className="text-center mb-6">
-          <div className="text-xs font-semibold tracking-wide text-gray-700 select-none">kuado</div>
+          <div className="text-xs font-semibold tracking-wide text-gray-700 select-none">KUADO</div>
         </div>
 
         {/* Hero */}
         <div className="text-center">
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</h1>
+          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">KUADO</h1>
           <p className="mt-3 text-gray-700 text-base leading-6 max-w-sm mx-auto">
             Kuaför randevunu saniyeler içinde oluştur. En yakın işletmeleri keşfet, favorilerine ekle, bildirimleri al.
           </p>
@@ -90,7 +90,7 @@ export default function LandingPage() {
 
         {/* Footer */}
         <div className="mt-6 text-center">
-          <div className="text-[11px] text-gray-500">© {new Date().getFullYear()} kuado</div>
+          <div className="text-[11px] text-gray-500">© {new Date().getFullYear()} KUADO</div>
         </div>
       </div>
       <style jsx global>{`
