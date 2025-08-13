@@ -323,83 +323,119 @@ export default function RegisterPage() {
   );
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-pink-50 px-4 py-8">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 animate-fade-in">
-        <h2 className="text-3xl font-extrabold text-center bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent mb-6 select-none">
-          Kayıt Ol
-        </h2>
-        
-        {/* Step indicator */}
-        <div className="flex items-center justify-center mb-8">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-            step >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
-          }`}>
-            1
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-3 py-8">
+      <div className="w-full max-w-md">
+        <div className="mb-3 text-center text-sm font-bold text-gray-800 select-none">kuado</div>
+        <div className="w-full bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-3 animate-fade-in">
+          <h2 className="text-lg font-semibold text-center text-gray-900 mb-2">Kayıt Ol</h2>
+          {/* Steps */}
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className={`w-6 h-6 rounded-full grid place-items-center text-[11px] font-semibold ${step>=1?'bg-rose-600 text-white':'bg-white/70 text-gray-600 border border-white/50'}`}>1</div>
+            <div className={`h-0.5 w-8 ${step>=2?'bg-rose-600':'bg-white/50'}`}></div>
+            <div className={`w-6 h-6 rounded-full grid place-items-center text-[11px] font-semibold ${step>=2?'bg-rose-600 text-white':'bg-white/70 text-gray-600 border border-white/50'}`}>2</div>
           </div>
-          <div className={`w-16 h-1 mx-2 ${
-            step >= 2 ? 'bg-blue-500' : 'bg-gray-200'
-          }`}></div>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-            step >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
-          }`}>
-            2
+          <div className="space-y-3">
+            {step === 1 ? (
+              <>
+                <label className="block">
+                  <span className="block text-[11px] text-gray-600 mb-1">Ad Soyad</span>
+                  <input type="text" value={formData.name} onChange={e => updateFormData('name', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] text-gray-600 mb-1">E-posta</span>
+                  <input type="email" value={formData.email} onChange={e => updateFormData('email', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] text-gray-600 mb-1">Şifre</span>
+                  <input type="password" value={formData.password} onChange={e => updateFormData('password', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] text-gray-600 mb-1">Şifre Tekrar</span>
+                  <input type="password" value={formData.confirmPassword} onChange={e => updateFormData('confirmPassword', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] text-gray-600 mb-1">Hesap Türü</span>
+                  <select value={formData.role} onChange={e => updateFormData('role', e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    <option value="user">Müşteri</option>
+                    <option value="business">İşletme</option>
+                  </select>
+                </label>
+              </>
+            ) : (
+              <>
+                {formData.role === 'business' ? (
+                  <>
+                    <label className="block">
+                      <span className="block text-[11px] text-gray-600 mb-1">İşletme Adı</span>
+                      <input type="text" value={formData.businessName} onChange={e => updateFormData('businessName', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                    </label>
+                    <label className="block">
+                      <span className="block text-[11px] text-gray-600 mb-1">İşletme Açıklaması</span>
+                      <textarea value={formData.businessDescription} onChange={e => updateFormData('businessDescription', e.target.value)} rows={3} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 resize-none" />
+                    </label>
+                    <label className="block">
+                      <span className="block text-[11px] text-gray-600 mb-1">İşletme Telefonu</span>
+                      <input type="tel" value={formData.businessPhone} onChange={e => updateFormData('businessPhone', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                    </label>
+                    <label className="block">
+                      <span className="block text-[11px] text-gray-600 mb-1">İşletme E-posta (Opsiyonel)</span>
+                      <input type="email" value={formData.businessEmail} onChange={e => updateFormData('businessEmail', e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                    </label>
+                    <div>
+                      <span className="block text-[11px] text-gray-600 mb-1">İşletme Konumu</span>
+                      <LocationPicker
+                        onLocationSelect={(location) => updateFormData('businessLocation', { latitude: location.lat, longitude: location.lng, address: location.address })}
+                        defaultLocation={formData.businessLocation ? { lat: formData.businessLocation.latitude, lng: formData.businessLocation.longitude, address: formData.businessLocation.address } : undefined}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <label className="block">
+                      <span className="block text-[11px] text-gray-600 mb-1">Telefon Numarası</span>
+                      <input type="tel" value={formData.customerPhone} onChange={e => updateFormData('customerPhone', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                    </label>
+                    <label className="block">
+                      <span className="block text-[11px] text-gray-600 mb-1">Adres (Opsiyonel)</span>
+                      <textarea value={formData.customerAddress} onChange={e => updateFormData('customerAddress', e.target.value)} rows={3} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 resize-none" />
+                    </label>
+                    <div>
+                      <span className="block text-[11px] text-gray-600 mb-1">Konum (Opsiyonel)</span>
+                      <LocationPicker
+                        onLocationSelect={(location) => updateFormData('customerLocation', { latitude: location.lat, longitude: location.lng, address: location.address })}
+                        defaultLocation={formData.customerLocation ? { lat: formData.customerLocation.latitude, lng: formData.customerLocation.longitude, address: formData.customerLocation.address } : undefined}
+                      />
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </div>
-        </div>
-        
-        {/* Form content */}
-        {step === 1 ? renderStep1() : renderStep2()}
-        
-        {/* Error and success messages */}
-        {error && <div className="text-red-600 text-sm text-center mt-4 animate-shake">{error}</div>}
-        {success && <div className="text-green-600 text-sm text-center mt-4 animate-fade-in">{success}</div>}
-        
-        {/* Navigation buttons */}
-        <div className="flex gap-4 mt-8">
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="flex-1 py-3 rounded-full bg-gray-500 text-white font-semibold text-lg shadow-lg hover:bg-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
-            >
-              Geri
+
+          {/* Messages */}
+          {error && <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">{error}</div>}
+          {success && <div className="mt-2 px-3 py-2 rounded-lg border border-green-200 bg-green-50 text-[12px] text-green-700 text-center">{success}</div>}
+
+          {/* Nav buttons */}
+          <div className="flex gap-2 mt-3">
+            {step > 1 && (
+              <button type="button" onClick={() => setStep(step - 1)} className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm">Geri</button>
+            )}
+            <button type="button" onClick={handleNext} disabled={registerMutation.isPending} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition disabled:opacity-60">
+              {registerMutation.isPending ? 'Kaydediliyor…' : step === 1 ? 'İleri' : 'Kayıt Ol'}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={registerMutation.isPending}
-            className="flex-1 py-3 rounded-full bg-pink-500 text-white font-semibold text-lg shadow-lg hover:bg-pink-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {registerMutation.isPending ? 'Kaydediliyor...' : step === 1 ? 'İleri' : 'Kayıt Ol'}
+          </div>
+          <button type="button" className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm mt-2" onClick={() => router.push('/login')}>
+            Zaten hesabım var - Giriş Yap
           </button>
         </div>
-        
-        <button
-          type="button"
-          className="w-full py-3 rounded-full bg-blue-600 text-white font-semibold text-lg shadow-lg hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 mt-4"
-          onClick={() => router.push('/login')}
-        >
-          Zaten hesabım var - Giriş Yap
-        </button>
       </div>
-      
       <style jsx global>{`
         @keyframes fade-in {
-          from { opacity: 0; transform: translateY(40px); }
+          from { opacity: 0; transform: translateY(24px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-          animation: fade-in 1s cubic-bezier(0.4,0,0.2,1) both;
-        }
-        @keyframes shake {
-          10%, 90% { transform: translateX(-2px); }
-          20%, 80% { transform: translateX(4px); }
-          30%, 50%, 70% { transform: translateX(-8px); }
-          40%, 60% { transform: translateX(8px); }
-        }
-        .animate-shake {
-          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
+        .animate-fade-in { animation: fade-in .5s cubic-bezier(0.4,0,0.2,1) both; }
       `}</style>
     </main>
   );

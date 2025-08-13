@@ -246,33 +246,25 @@ export default function BusinessEmployeesPage() {
           <span className="text-lg">Çalışanlar yükleniyor...</span>
         </div>
       )}
-      <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <ul className="grid grid-cols-1 gap-3">
         {employees?.map((e: any) => (
-          <li key={e.id} className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow p-5 flex flex-col gap-2 hover:shadow-lg transition animate-fade-in">
-            <span className="font-semibold text-base text-gray-900">{e.name}</span>
-            <span className="text-gray-600 text-sm">{e.email}</span>
-            <span className="text-gray-500 text-xs">{e.phone}</span>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-white/40 text-gray-900 text-xs font-semibold hover:bg-white/90 transition" onClick={() => handleEdit(e)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="1.5"/></svg>
-                Düzenle
-              </button>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-white/40 text-gray-900 text-xs font-semibold hover:bg-white/90 transition" onClick={() => { setSelectedEmployee(e); setShowAvailabilityModal(true); }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 10h5v5H7z" fill="currentColor"/><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H5V9h14Z" fill="currentColor"/></svg>
-                Uygunluk
-              </button>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-white/40 text-gray-900 text-xs font-semibold hover:bg-white/90 transition" onClick={() => handleServiceModal(e)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" fill="currentColor"/></svg>
-                Hizmetler
-              </button>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition" onClick={() => handleDelete(e.id)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z" fill="currentColor"/></svg>
-                Sil
-              </button>
+          <li key={e.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">{e.name}</div>
+                <div className="text-[11px] text-gray-600 truncate">{e.email || '—'}</div>
+              </div>
+              {e.phone && <span className="shrink-0 text-[11px] text-gray-700">{e.phone}</span>}
+            </div>
+            <div className="mt-1 flex items-center gap-4 text-[13px] flex-wrap">
+              <button className="text-gray-900 font-medium" onClick={() => handleEdit(e)}>Düzenle</button>
+              <button className="text-gray-900 font-medium" onClick={() => { setSelectedEmployee(e); setShowAvailabilityModal(true); }}>Uygunluk</button>
+              <button className="text-gray-900 font-medium" onClick={() => handleServiceModal(e)}>Hizmetler</button>
+              <button className="text-rose-700 font-medium" onClick={() => handleDelete(e.id)}>Sil</button>
             </div>
           </li>
         ))}
-        {(!employees || employees.length === 0) && !isLoading && <li className="text-gray-400 text-center col-span-2">Henüz çalışan eklenmedi.</li>}
+        {(!employees || employees.length === 0) && !isLoading && <li className="text-gray-400 text-center">Henüz çalışan eklenmedi.</li>}
       </ul>
       {/* Silme onay modalı */}
       {deleteId && (

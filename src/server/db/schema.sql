@@ -24,6 +24,7 @@ CREATE TABLE businesses (
     longitude DOUBLE PRECISION NOT NULL,
     phone TEXT,
     email TEXT,
+    profile_image_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

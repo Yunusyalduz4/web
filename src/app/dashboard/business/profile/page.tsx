@@ -78,143 +78,58 @@ export default function BusinessProfilePage() {
 
 
   return (
-    <main className="relative max-w-md mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
+    <main className="relative max-w-md mx-auto p-3 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
-          <button
-            onClick={() => router.push('/dashboard/business')}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
-          >
-            <span className="text-base">←</span>
-            <span className="hidden sm:inline text-sm font-medium">Geri</span>
+          <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs">
+            <span>←</span>
+            <span className="hidden sm:inline">Geri</span>
           </button>
+          <div className="text-sm font-bold tracking-tight text-gray-800">İşletme Profili</div>
+          <div className="w-6" />
         </div>
-        <div className="mt-3 text-sm font-semibold text-gray-800">İşletme Profili</div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white/60 backdrop-blur-md border border-white/40 p-6 rounded-2xl shadow w-full animate-fade-in">
-        <h2 className="text-xl font-bold mb-2 text-center text-gray-800">Hesap Bilgileri</h2>
-        
-        <label className="flex flex-col gap-1 text-gray-700 font-medium">
-          Ad Soyad
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            className="rounded-lg px-4 py-3 text-base bg-white/70 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
-            autoComplete="name"
-            aria-label="Ad Soyad"
-          />
-        </label>
-        
-        <label className="flex flex-col gap-1 text-gray-700 font-medium">
-          E-posta
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="rounded-lg px-4 py-3 text-base bg-white/70 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
-            autoComplete="email"
-            aria-label="E-posta"
-          />
-        </label>
-        
-        <label className="flex flex-col gap-1 text-gray-700 font-medium">
-          Yeni Şifre (Opsiyonel)
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="rounded-lg px-4 py-3 text-base bg-white/70 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
-            autoComplete="new-password"
-            aria-label="Yeni Şifre"
-          />
-        </label>
-        
-        {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
-        {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
-        
-        <button
-          type="submit"
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200"
-        >
-          Profili Güncelle
-        </button>
-      </form>
-      
-      {/* Push Notification Settings */}
-      {isSupported && business && (
-        <div className="mt-6 w-full bg-white/60 backdrop-blur-md border border-white/40 p-6 rounded-2xl shadow">
-          <h3 className="text-lg font-bold mb-4 text-gray-800">Bildirim Ayarları</h3>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-gray-700 font-medium">Push Bildirimleri</p>
-              <p className="text-sm text-gray-500">
-                {isSubscribed 
-                  ? 'Yeni randevular için bildirim alıyorsunuz' 
-                  : 'Yeni randevular için bildirim almak istiyor musunuz?'
-                }
-              </p>
-            </div>
-            <button
-              onClick={isSubscribed ? unsubscribe : subscribe}
-              disabled={pushLoading}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                isSubscribed
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-green-500 hover:bg-green-600 text-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {pushLoading ? '⏳' : isSubscribed ? '❌ Kapat' : '🔔 Aç'}
-            </button>
+      {/* Form - Minimal */}
+      <section className="mt-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
+        <form onSubmit={handleSubmit} className="space-y-2.5">
+          <div>
+            <label className="block text-[11px] text-gray-600 mb-1">Ad Soyad</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
           </div>
-          
-          {pushError && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-              {pushError}
+          <div>
+            <label className="block text-[11px] text-gray-600 mb-1">E-posta</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+          </div>
+          <div>
+            <label className="block text-[11px] text-gray-600 mb-1">Yeni Şifre (opsiyonel)</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+          </div>
+          {error && <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700">{error}</div>}
+          {success && <div className="px-3 py-2 rounded-lg border border-green-200 bg-green-50 text-[12px] text-green-700">{success}</div>}
+          <button type="submit" className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition">Kaydet</button>
+        </form>
+      </section>
+
+      {/* Push Notification - Minimal */}
+      {isSupported && business && (
+        <section className="mt-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-gray-800">Push Bildirimleri</div>
+              <div className="text-[12px] text-gray-600">{isSubscribed ? 'Yeni randevular için bildirim alınıyor' : 'Yeni randevular için bildirim almak ister misiniz?'}</div>
             </div>
-          )}
-          
-          {!isSupported && (
-            <div className="text-yellow-600 text-sm bg-yellow-50 p-3 rounded-lg">
-              Bu tarayıcı push bildirimlerini desteklemiyor
-            </div>
-          )}
-        </div>
+            <button onClick={isSubscribed ? unsubscribe : subscribe} disabled={pushLoading} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isSubscribed ? 'bg-red-500 text-white' : 'bg-green-500 text-white'} disabled:opacity-50`}>{pushLoading ? '⏳' : isSubscribed ? 'Kapat' : 'Aç'}</button>
+          </div>
+          {pushError && <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700">{pushError}</div>}
+        </section>
       )}
 
-      {/* No Business Warning */}
-      {isSupported && !business && !businessLoading && (
-        <div className="mt-6 w-full bg-yellow-50 p-6 rounded-2xl shadow-xl border border-yellow-200">
-          <h3 className="text-lg font-bold mb-4 text-yellow-800">İşletme Hesabı Gerekli</h3>
-          <p className="text-yellow-700 mb-4">
-            Push bildirimleri sadece işletme hesapları için kullanılabilir. 
-            Bu hesap bir işletme hesabı değil.
-          </p>
-          <button
-            onClick={() => router.push('/dashboard/business/edit')}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-all"
-          >
-            İşletme Oluştur
-          </button>
-        </div>
-      )}
-
-      {/* Logout Button */}
-      <div className="mt-6 w-full">
-        <button
-          onClick={handleLogout}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 flex items-center justify-center gap-2"
-        >
-          <span>🚪</span>
-          Çıkış Yap
-        </button>
-      </div>
+      {/* Logout */}
+      <section className="mt-3">
+        <button onClick={handleLogout} className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm">Çıkış Yap</button>
+      </section>
     </main>
   );
 } 

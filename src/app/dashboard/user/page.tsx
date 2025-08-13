@@ -139,92 +139,68 @@ export default function UserDashboard() {
         {activeAppointments.map((a: any) => (
           <div
             key={a.id}
-            className="group relative bg-white/60 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-white/30 animate-soft-in"
+            className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3"
           >
-            {/* Status Badge */}
-            <div className="absolute top-4 right-4 z-10">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
-                a.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                a.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-200' :
-                a.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
-                'bg-blue-100 text-blue-800 border border-blue-200'
-              }`}>
-                {a.status === 'pending' && '⏳ Bekliyor'}
-                {a.status === 'confirmed' && '✅ Onaylandı'}
-                {a.status === 'cancelled' && '❌ İptal'}
-                {a.status === 'completed' && '🎉 Tamamlandı'}
-              </span>
-            </div>
-
-            {/* Main Content */}
-              <div className="p-4">
-              {/* Date & Time */}
-              <div className="mb-2">
-                <div className="flex items-center gap-1 text-gray-600 mb-0.5">
-                  <span className="text-sm">📅</span>
-                  <span className="font-medium text-gray-900 text-sm" suppressHydrationWarning>
-                    {typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(a.appointment_datetime))}
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">{a.business_name || 'Bilinmiyor'}</div>
+                <div className="text-[12px] text-gray-600 flex items-center gap-1" suppressHydrationWarning>
+                  <span>📅</span>
+                  <span>
+                    {typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}
                   </span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-600">
-                  <span className="text-sm">🕐</span>
-                  <span className="font-medium text-gray-900 text-sm" suppressHydrationWarning>
+                  <span className="mx-1 text-gray-400">•</span>
+                  <span>🕐</span>
+                  <span>
                     {typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}
                   </span>
                 </div>
               </div>
-
-              {/* Business, Service & Employee Info - Compact */}
-              <div className="grid grid-cols-1 gap-1.5 mb-3">
-                <div className="flex items-center gap-2 text-[13px] leading-5">
-                  <span className="w-5 h-5 rounded-md bg-indigo-500 text-white grid place-items-center">🏢</span>
-                  <span className="font-medium text-gray-900 truncate">{a.business_name || 'Bilinmiyor'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[13px] leading-5">
-                  <span className="w-5 h-5 rounded-md bg-purple-500 text-white grid place-items-center">💇‍♂️</span>
-                  <span className="text-gray-800 truncate">{a.service_names?.length ? a.service_names.join(', ') : 'Bilinmiyor'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[13px] leading-5">
-                  <span className="w-5 h-5 rounded-md bg-green-500 text-white grid place-items-center">✂️</span>
-                  <span className="text-gray-800 truncate">{a.employee_names?.length ? a.employee_names.join(', ') : 'Bilinmiyor'}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                {a.status === 'pending' && (
-                  <button
-                    className="flex-1 py-2 px-3 rounded-xl text-sm font-semibold active:scale-95 transition flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md hover:shadow-lg"
-                    onClick={() => handleCancel(a.id)}
-                  >
-                    <span>❌</span>
-                    İptal Et
-                  </button>
-                )}
-                {a.status === 'confirmed' && (
-                  <div className="flex-1 text-center py-2 px-3 rounded-xl bg-green-50 text-green-700 text-sm font-medium border border-green-200">
-                    ✅ Randevunuz onaylandı! Hazır olun.
-                  </div>
-                )}
-                {a.status === 'completed' && (
-                  <button
-                    className="flex-1 py-2 px-3 rounded-xl text-sm font-semibold active:scale-95 transition flex items-center justify-center gap-2 bg-white/50 backdrop-blur-md border border-white/40 text-gray-900 shadow hover:shadow-md"
-                    onClick={() => handleReviewClick(a)}
-                  >
-                    <span>⭐</span>
-                    Değerlendir
-                  </button>
-                )}
-                {a.status === 'cancelled' && (
-                  <div className="flex-1 text-center py-2 px-3 rounded-xl bg-gray-50 text-gray-700 text-sm font-medium border border-gray-200">
-                    ❌ Randevu iptal edildi.
-                  </div>
-                )}
-              </div>
+              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] border ${
+                a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-200' :
+                a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                'bg-blue-50 text-blue-800 border-blue-200'
+              }`}>
+                {a.status === 'pending' && 'Bekliyor'}
+                {a.status === 'confirmed' && 'Onaylandı'}
+                {a.status === 'cancelled' && 'İptal'}
+                {a.status === 'completed' && 'Tamamlandı'}
+              </span>
             </div>
 
-            {/* Decorative Elements */}
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500"></div>
+            {/* Details */}
+            <div className="space-y-1.5 mb-2">
+              <div className="text-[13px] text-gray-800 truncate">Hizmet: {a.service_names?.length ? a.service_names.join(', ') : '—'}</div>
+              <div className="text-[13px] text-gray-800 truncate">Çalışan: {a.employee_names?.length ? a.employee_names.join(', ') : '—'}</div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-6">
+              {a.status === 'pending' && (
+                <button
+                  className="text-[13px] font-medium text-rose-700"
+                  onClick={() => handleCancel(a.id)}
+                >
+                  İptal Et
+                </button>
+              )}
+              {a.status === 'completed' && (
+                <button
+                  className="text-[13px] font-medium text-gray-900"
+                  onClick={() => handleReviewClick(a)}
+                >
+                  Değerlendir
+                </button>
+              )}
+              {a.status === 'confirmed' && (
+                <div className="text-[13px] text-green-700">Onaylandı</div>
+              )}
+              {a.status === 'cancelled' && (
+                <div className="text-[13px] text-gray-600">İptal edildi</div>
+              )}
+            </div>
           </div>
         ))}
       </div>

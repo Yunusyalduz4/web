@@ -78,38 +78,39 @@ export default function FavoritesPage() {
         {list.map((b: any) => (
           <div key={b.id} className="group bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow hover:shadow-lg transition cursor-pointer" onClick={() => router.push(`/dashboard/user/businesses/${b.id}`)}>
             <div className="p-4">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="text-base font-semibold text-gray-900 truncate flex-1">{b.name}</h3>
-                <span className="text-[11px] px-2 py-1 rounded-full bg-rose-50 text-rose-700">{new Date(b.favorited_at).toLocaleDateString('tr-TR')}</span>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/70 border border-white/50 shrink-0">
+                    {b.profile_image_url ? (
+                      <img src={b.profile_image_url} alt={b.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full grid place-items-center text-xs text-gray-700">🏢</div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">{b.name}</h3>
+                      <span className="inline-flex items-center gap-1 text-[11px] text-gray-700">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        {parseFloat(b.overall_rating || 0).toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-gray-600 truncate">{new Date(b.favorited_at).toLocaleDateString('tr-TR')}</div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-700 mb-2">
-                <span className="inline-flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> {parseFloat(b.overall_rating || 0).toFixed(1)}</span>
-                <span className="inline-flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e11d48"><path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z"/></svg> {b.favorites_count || 0}</span>
-                <span className="inline-flex items-center gap-1">🗳️ {b.total_reviews || 0}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-600 text-xs mb-3">
+              <div className="flex items-center gap-2 text-gray-700 text-[12px] mb-2">
                 <span>📍</span>
                 <span className="truncate">{b.address}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-gray-900">
-                <button
-                  className="px-4 py-2 rounded-xl border border-white/40 bg-white/50 backdrop-blur-md shadow hover:shadow-md font-medium"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/dashboard/user/businesses/${b.id}`);
-                  }}
-                >
-                  Detaylar
-                </button>
-                <button
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold shadow hover:shadow-lg"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/dashboard/user/businesses/${b.id}/book`);
-                  }}
-                >
-                  Randevu Al
-                </button>
+              <div className="flex items-center gap-2 text-[11px] text-gray-700">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/60 border border-white/40">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="#e11d48"><path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z"/></svg>
+                  {b.favorites_count || 0}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/60 border border-white/40">
+                  🗳️ {b.total_reviews || 0}
+                </span>
               </div>
             </div>
           </div>
