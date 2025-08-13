@@ -16,6 +16,7 @@ export const appointmentRouter = t.router({
       })).min(1), // En az 1 hizmet olmalı
     }))
     .mutation(async ({ input }) => {
+      const BUFFER_MINUTES = 10; // Randevular arasında tampon süre
       // 1. Tüm hizmetlerin süresini al ve toplam süreyi hesapla
       let totalDuration = 0;
       for (const serviceItem of input.services) {
@@ -31,19 +32,58 @@ export const appointmentRouter = t.router({
 
       const start = new Date(input.appointmentDatetime);
       const end = new Date(start.getTime() + totalDuration * 60000);
+      const startBuffered = new Date(start.getTime() - BUFFER_MINUTES * 60000);
+      const endBuffered = new Date(end.getTime() + BUFFER_MINUTES * 60000);
+
+      // Geçmiş zamana randevu alınamaz
+      const now = new Date();
+      if (start.getTime() <= now.getTime()) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
+      }
 
       // 2. Tüm çalışanlar için çakışma kontrolü
       for (const serviceItem of input.services) {
         const conflictRes = await pool.query(
-          `SELECT * FROM appointments a
+          `SELECT a.id
+           FROM appointments a
            JOIN appointment_services aps ON a.id = aps.appointment_id
-           WHERE aps.employee_id = $1 AND a.status IN ('pending','confirmed')
-           AND a.appointment_datetime < $3 AND (a.appointment_datetime + (aps.duration_minutes || ' minutes')::interval) > $2`,
-          [serviceItem.employeeId, start.toISOString(), end.toISOString()]
+           WHERE a.status IN ('pending','confirmed') AND aps.employee_id = $1
+           GROUP BY a.id, a.appointment_datetime
+           HAVING a.appointment_datetime < $3 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $2`,
+          [serviceItem.employeeId, startBuffered.toISOString(), endBuffered.toISOString()]
         );
         if (conflictRes.rows.length > 0) {
           throw new TRPCError({ code: 'CONFLICT', message: 'Bu saat dolu, lütfen başka bir saat seçin.' });
         }
+      }
+
+      // Kullanıcının aynı anda başka randevusu olmasın
+      const userOverlap = await pool.query(
+        `SELECT a.id
+         FROM appointments a
+         JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE a.user_id = $1 AND a.status IN ('pending','confirmed')
+         GROUP BY a.id, a.appointment_datetime
+         HAVING a.appointment_datetime < $3 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $2`,
+        [input.userId, startBuffered.toISOString(), endBuffered.toISOString()]
+      );
+      if (userOverlap.rows.length > 0) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Bu saat için mevcut bir randevunuz var' });
+      }
+
+      // Aynı kullanıcının ardışık çok randevuyu sınırlama (ör: 2 randevu limiti)
+      const CONSECUTIVE_LIMIT = 2;
+      const windowStart = new Date(start.getTime() - 2 * 60 * 60000); // 2 saat önce
+      const windowEnd = new Date(end.getTime() + 2 * 60 * 60000);     // 2 saat sonra
+      const userWindow = await pool.query(
+        `SELECT a.id
+         FROM appointments a
+         WHERE a.user_id = $1 AND a.status IN ('pending','confirmed')
+           AND a.appointment_datetime BETWEEN $2 AND $3`,
+        [input.userId, windowStart.toISOString(), windowEnd.toISOString()]
+      );
+      if (userWindow.rows.length >= CONSECUTIVE_LIMIT) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Aynı zaman diliminde çok fazla randevu talebi' });
       }
 
       // 3. Ana randevuyu oluştur
@@ -214,7 +254,7 @@ export const appointmentRouter = t.router({
       // 00:00-23:59 arası 15dk slotları üret
       const slots: Record<string, boolean> = {};
       for (let h = 0; h < 24; h++) {
-        for (let m = 0; m < 60; m += 15) {
+        for (let m = 0; m < 60; m += 30) {
           const slot = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
           const slotStart = new Date(input.date + 'T' + slot + ':00');
           const slotEnd = new Date(slotStart.getTime() + input.durationMinutes * 60000);
@@ -224,5 +264,39 @@ export const appointmentRouter = t.router({
         }
       }
       return slots;
+    }),
+
+  // Yeni: Birden çok çalışan için gün boyu meşgul slotları döndür (15dk çözünürlük)
+  getBusySlotsForEmployees: t.procedure.use(isUser)
+    .input(z.object({
+      employeeIds: z.array(z.string().uuid()).min(1),
+      date: z.string(), // YYYY-MM-DD
+      durationMinutes: z.number().min(1),
+    }))
+    .query(async ({ input }) => {
+      const startOfDay = new Date(input.date + 'T00:00:00');
+      const endOfDay = new Date(input.date + 'T23:59:59');
+      const res = await pool.query(
+        `SELECT a.id, a.appointment_datetime, SUM(aps.duration_minutes) AS total_duration
+         FROM appointments a
+         JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE a.status IN ('pending','confirmed')
+           AND aps.employee_id = ANY($1::uuid[])
+           AND a.appointment_datetime >= $2 AND a.appointment_datetime <= $3
+         GROUP BY a.id, a.appointment_datetime`,
+        [input.employeeIds, startOfDay.toISOString(), endOfDay.toISOString()]
+      );
+      const busy: Record<string, boolean> = {};
+      for (const row of res.rows) {
+        const s = new Date(row.appointment_datetime);
+        const dur = Number(row.total_duration) || input.durationMinutes;
+        const e = new Date(s.getTime() + dur * 60000);
+        for (let t = new Date(s); t < e; t = new Date(t.getTime() + 15 * 60000)) {
+          const hh = String(t.getHours()).padStart(2, '0');
+          const mm = String(t.getMinutes()).padStart(2, '0');
+          busy[`${hh}:${mm}`] = true;
+        }
+      }
+      return busy;
     }),
 }); 

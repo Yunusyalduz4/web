@@ -65,28 +65,28 @@ export default function UserProfilePage() {
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4 pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <button 
-          onClick={() => router.back()}
-          className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-white/30 hover:border-blue-200/50"
-        >
-          <span className="text-lg">←</span>
-          <span className="font-medium text-gray-700">Geri Dön</span>
-        </button>
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg">
-          👤
+    <main className="relative max-w-2xl mx-auto p-4 pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-white/40"
+          >
+            <span className="text-lg">←</span>
+            <span className="font-medium text-gray-700">Geri</span>
+          </button>
         </div>
       </div>
 
       {/* Profile Header Card */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 mb-8 border border-white/20 animate-fade-in">
+      <div className="bg-white/60 backdrop-blur-md rounded-3xl shadow-xl p-8 mb-8 border border-white/40 animate-fade-in">
         <div className="text-center mb-6">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-2xl mx-auto mb-4">
+          <div className="w-24 h-24 bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-2xl mx-auto mb-4">
             {profile?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent select-none mb-2">
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none mb-2">
             Profilim
           </h1>
           <p className="text-gray-600 text-sm">
@@ -96,12 +96,12 @@ export default function UserProfilePage() {
       </div>
 
       {/* Profile Form */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-white/20 animate-fade-in">
+      <div className="bg-white/60 backdrop-blur-md rounded-3xl shadow-xl p-8 border border-white/40 animate-fade-in">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Input */}
           <div className="space-y-2">
-            <label className="flex items-center gap-3 text-gray-700 font-semibold text-sm">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
+            <label className="flex items-center gap-3 text-gray-800 font-semibold text-sm">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg flex items-center justify-center text-white text-sm">
                 👤
               </div>
               Ad Soyad
@@ -112,7 +112,7 @@ export default function UserProfilePage() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
-                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                className="w-full border border-white/40 rounded-2xl px-6 py-4 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100 transition-all duration-300 bg-white/60 backdrop-blur-md"
                 autoComplete="name"
                 aria-label="Ad Soyad"
                 placeholder="Adınız ve soyadınız"
@@ -122,8 +122,8 @@ export default function UserProfilePage() {
 
           {/* Email Input */}
           <div className="space-y-2">
-            <label className="flex items-center gap-3 text-gray-700 font-semibold text-sm">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white text-sm">
+            <label className="flex items-center gap-3 text-gray-800 font-semibold text-sm">
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center text-white text-sm">
                 ✉️
               </div>
               E-posta
@@ -134,7 +134,7 @@ export default function UserProfilePage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-green-400 focus:ring-4 focus:ring-green-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                className="w-full border border-white/40 rounded-2xl px-6 py-4 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 transition-all duration-300 bg-white/60 backdrop-blur-md"
                 autoComplete="email"
                 aria-label="E-posta"
                 placeholder="E-posta adresiniz"
@@ -155,7 +155,7 @@ export default function UserProfilePage() {
                 type="tel"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                className="w-full border border-white/40 rounded-2xl px-6 py-4 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 transition-all duration-300 bg-white/60 backdrop-blur-md"
                 autoComplete="tel"
                 aria-label="Telefon"
                 placeholder="05xx xxx xx xx"
@@ -176,7 +176,7 @@ export default function UserProfilePage() {
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 rows={3}
-                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                className="w-full border border-white/40 rounded-2xl px-6 py-4 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-100 transition-all duration-300 bg-white/60 backdrop-blur-md"
                 aria-label="Adres"
                 placeholder="Adresinizi girin"
               />
@@ -185,8 +185,8 @@ export default function UserProfilePage() {
 
           {/* Password Input */}
           <div className="space-y-2">
-            <label className="flex items-center gap-3 text-gray-700 font-semibold text-sm">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm">
+            <label className="flex items-center gap-3 text-gray-800 font-semibold text-sm">
+              <div className="w-8 h-8 bg-gradient-to-br from-fuchsia-600 to-fuchsia-700 rounded-lg flex items-center justify-center text-white text-sm">
                 🔒
               </div>
               Yeni Şifre (Opsiyonel)
@@ -196,7 +196,7 @@ export default function UserProfilePage() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                className="w-full border border-white/40 rounded-2xl px-6 py-4 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100 transition-all duration-300 bg-white/60 backdrop-blur-md"
                 autoComplete="new-password"
                 aria-label="Yeni Şifre"
                 placeholder="Yeni şifrenizi girin"
@@ -223,7 +223,7 @@ export default function UserProfilePage() {
           <button
             type="submit"
             disabled={updateMutation.isLoading}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-3"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-rose-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-3"
           >
             {updateMutation.isLoading ? (
               <>
@@ -241,9 +241,9 @@ export default function UserProfilePage() {
       </div>
 
       {/* Logout Section */}
-      <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-white/20 animate-fade-in">
+      <div className="mt-8 bg-white/60 backdrop-blur-md rounded-3xl shadow-xl p-8 border border-white/40 animate-fade-in">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-rose-600 to-rose-700 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
             🚪
           </div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">Oturumu Kapat</h2>
@@ -254,7 +254,7 @@ export default function UserProfilePage() {
         
         <button
           onClick={handleLogout}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-red-200 transform hover:scale-105 flex items-center justify-center gap-3"
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-rose-200 transform hover:scale-105 flex items-center justify-center gap-3"
         >
           <span className="text-xl">🚪</span>
           <span>Çıkış Yap</span>
@@ -278,6 +278,11 @@ export default function UserProfilePage() {
         .animate-shake {
           animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
         }
+      `}</style>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
       `}</style>
     </main>
   );

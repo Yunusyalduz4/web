@@ -28,7 +28,7 @@ export default function BusinessAnalyticsPage() {
 
   if (!business) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
         <span className="text-5xl mb-2">🏢</span>
         <span className="text-lg text-gray-500">İşletme bulunamadı.</span>
       </main>
@@ -37,7 +37,7 @@ export default function BusinessAnalyticsPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-pulse">
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-pulse">
         <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4">
           <span className="text-3xl">📊</span>
         </div>
@@ -50,24 +50,21 @@ export default function BusinessAnalyticsPage() {
   const weekDaysShort = ['Paz', 'Pzt', 'Sal', 'Çrş', 'Prş', 'Cum', 'Cmt'];
 
   return (
-    <main className="max-w-7xl mx-auto p-4 pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <button 
-          onClick={() => router.push('/dashboard/business')}
-          className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-white/30 hover:border-blue-200/50"
-        >
-          <span className="text-lg">←</span>
-          <span className="font-medium text-gray-700">Geri Dön</span>
-        </button>
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg">
-          📊
+    <main className="relative max-w-7xl mx-auto p-4 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-6">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <button 
+            onClick={() => router.push('/dashboard/business')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
+          >
+            <span className="text-base">←</span>
+            <span className="hidden sm:inline text-sm font-medium">Geri</span>
+          </button>
         </div>
+        <div className="mt-3 text-sm font-semibold text-gray-800">{business.name} • Analitikler</div>
       </div>
-
-      <h1 className="text-3xl font-extrabold mb-8 text-center bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent select-none">
-        {business.name} - İşletme Analitikleri
-      </h1>
 
       {analytics && (
         <>
@@ -221,11 +218,11 @@ export default function BusinessAnalyticsPage() {
                 {analytics.monthlyRevenue.map((month, index) => {
                   const maxRevenue = Math.max(...analytics.monthlyRevenue.map(m => m.revenue), 1);
                   const height = (month.revenue / maxRevenue) * 200;
-                  const monthName = new Date(month.month).toLocaleDateString('tr-TR', { month: 'short' });
+                  const monthLabel = typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { month: 'short' }).format(new Date(month.month));
                   
                   return (
                     <div key={index} className="flex flex-col items-center">
-                      <div className="text-sm text-gray-600 mb-2">{monthName}</div>
+                      <div className="text-sm text-gray-600 mb-2" suppressHydrationWarning>{monthLabel}</div>
                       <div className="relative">
                         <div
                           className="w-16 rounded-t bg-gradient-to-b from-green-400 to-green-600 flex items-end justify-center min-h-[20px] transition-all duration-500"
@@ -319,15 +316,6 @@ export default function BusinessAnalyticsPage() {
         </>
       )}
 
-      <style jsx global>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1) both;
-        }
-      `}</style>
     </main>
   );
 }

@@ -43,6 +43,7 @@ export default function Map(props: MapProps) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [userMarker, setUserMarker] = useState<any>(null);
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
+  const isStartingRef = useRef(false);
   const watchIdRef = useRef<number | null>(null);
 
   // Default center - güvenli şekilde
@@ -51,86 +52,76 @@ export default function Map(props: MapProps) {
     ? center 
     : defaultCenter;
 
-  // Konum takibini başlat - tarayıcının kendi popup'ını kullan
-  const startLocationTracking = () => {
+  // Konum takibini başlat - tek sefer guard + iki aşamalı deneme
+  const startLocationTracking = async () => {
     if (!navigator.geolocation) {
       console.log('Geolocation desteklenmiyor');
       return;
     }
 
-    if (isTrackingLocation) {
-      return; // Zaten takip ediliyor
+    if (isStartingRef.current || isTrackingLocation) {
+      return; // Zaten başlatılıyor veya aktif
     }
-
-    setIsTrackingLocation(true);
+    isStartingRef.current = true;
     console.log('Konum takibi başlatılıyor...');
 
-    // İlk konumu al - bu tarayıcının popup'ını tetikler
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const userPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        console.log('İlk konum alındı:', userPos);
-        setUserLocation(userPos);
-        
-        // Haritayı kullanıcı konumuna odakla
-        if (map) {
-          map.setCenter(userPos);
-          map.setZoom(15);
-          updateUserMarker(userPos);
-        }
-      },
-      (error) => {
-        console.error('İlk konum alınamadı:', error);
-        setIsTrackingLocation(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            console.log('Kullanıcı konum iznini reddetti');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            console.log('Konum bilgisi mevcut değil');
-            break;
-          case error.TIMEOUT:
-            console.log('Konum alma zaman aşımına uğradı');
-            break;
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
+    // Önce düşük doğruluk (daha hızlı) → başarısız olursa yüksek doğruluk dene
+    const tryGetPosition = (opts: PositionOptions) =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, opts);
+      });
 
-    // Sürekli konum takibi
+    const lowAccuracy: PositionOptions = { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 };
+    const highAccuracy: PositionOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+
+    let firstFix: GeolocationPosition | null = null;
+    try {
+      firstFix = await tryGetPosition(lowAccuracy);
+    } catch (e1: any) {
+      console.warn('Düşük doğruluk zaman aşımı/başarısızlık, yüksek doğruluk deneniyor...', e1);
+      try {
+        firstFix = await tryGetPosition(highAccuracy);
+      } catch (e2: any) {
+        console.error('İlk konum alınamadı:', e2);
+        isStartingRef.current = false;
+        setIsTrackingLocation(false);
+        return;
+      }
+    }
+
+    if (firstFix) {
+      const userPos = { lat: firstFix.coords.latitude, lng: firstFix.coords.longitude };
+      setUserLocation(userPos);
+      if (map) {
+        map.setCenter(userPos);
+        map.setZoom(15);
+        updateUserMarker(userPos);
+      }
+    }
+
+    // Varsa eski watcher'ı temizle
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const userPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        console.log('Konum güncellendi:', userPos);
+        const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
         setUserLocation(userPos);
-        
-        // Harita açıksa marker'ı güncelle
-        if (map) {
-          updateUserMarker(userPos);
-        }
+        if (map) updateUserMarker(userPos);
       },
       (error) => {
         console.error('Konum takibi hatası:', error);
         setIsTrackingLocation(false);
+        isStartingRef.current = false;
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
     );
 
     watchIdRef.current = watchId;
+    setIsTrackingLocation(true);
+    isStartingRef.current = false;
   };
 
   // Konum takibini durdur
@@ -306,7 +297,7 @@ export default function Map(props: MapProps) {
 
   // Harita hazır olduğunda otomatik konum takibini başlat
   useEffect(() => {
-    if (map && showUserLocation && !isTrackingLocation) {
+    if (map && showUserLocation && !isTrackingLocation && !isStartingRef.current) {
       console.log('Harita hazır, otomatik konum takibi başlatılıyor...');
       // 1 saniye bekle ve sonra konum izni iste
       setTimeout(() => {

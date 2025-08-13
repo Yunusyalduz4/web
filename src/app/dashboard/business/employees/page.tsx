@@ -24,14 +24,14 @@ export default function BusinessEmployeesPage() {
   
   // Hizmet yönetimi için yeni query'ler
   const { data: services } = trpc.business.getServices.useQuery(
-    businessId ? { businessId } : undefined,
-    { enabled: !!businessId }
+    businessId ? { businessId } : skipToken
   );
   const assignService = trpc.business.assignServiceToEmployee.useMutation();
   const removeService = trpc.business.removeServiceFromEmployee.useMutation();
 
   const [form, setForm] = useState({ id: '', name: '', email: '', phone: '' });
   const [editing, setEditing] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -43,6 +43,7 @@ export default function BusinessEmployeesPage() {
   // Hizmet yönetimi için yeni state'ler
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -78,6 +79,7 @@ export default function BusinessEmployeesPage() {
     setEditing(true);
     setError('');
     setSuccess('');
+    setAddOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -182,46 +184,62 @@ export default function BusinessEmployeesPage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <button 
-          onClick={() => router.push('/dashboard/business')}
-          className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 text-gray-700 font-semibold"
-        >
-          <span>←</span>
-          <span>Geri Dön</span>
-        </button>
-        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">Çalışanlar</h1>
-        <div className="w-24"></div> {/* Spacer for centering */}
-      </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-xl mb-8 animate-fade-in">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            Adı
-            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-          </label>
-          <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            E-posta
-            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-          </label>
-          <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            Telefon
-            <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-          </label>
-        </div>
-        {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
-        {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
-        <div className="flex gap-2 mt-2">
-          <button type="submit" className="w-full py-3 rounded-full bg-blue-600 text-white font-semibold text-lg shadow-lg hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
-            {editing ? 'Güncelle' : 'Ekle'}
+    <main className="relative max-w-3xl mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <button 
+            onClick={() => router.push('/dashboard/business')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
+          >
+            <span className="text-base">←</span>
+            <span className="hidden sm:inline text-sm font-medium">Geri</span>
           </button>
-          {editing && (
-            <button type="button" className="w-full py-3 rounded-full bg-gray-200 text-gray-700 font-semibold text-lg shadow hover:bg-gray-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400" onClick={() => { setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); }}>
-              İptal
-            </button>
-          )}
         </div>
-      </form>
+      </div>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-lg font-semibold text-gray-900">Çalışanlar</h1>
+        <button onClick={() => { setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); setSelectedEmployee(null); setShowServiceModal(false); setAddOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow hover:shadow-lg">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Yeni Çalışan
+        </button>
+      </div>
+      {/* Create/Edit Modal */}
+      {addOpen && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setAddOpen(false)} />
+          <div className="relative mx-auto my-8 max-w-lg w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</h2>
+            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setAddOpen(false);}} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1 text-gray-800 font-medium">
+                  Adı
+                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
+                </label>
+                <label className="flex flex-col gap-1 text-gray-800 font-medium">
+                  E-posta
+                  <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
+                </label>
+                <label className="flex flex-col gap-1 text-gray-800 font-medium md:col-span-2">
+                  Telefon
+                  <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
+                </label>
+              </div>
+              {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
+              {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
+              <div className="flex gap-2 mt-2">
+                <button type="submit" className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200">
+                  {editing ? 'Güncelle' : 'Ekle'}
+                </button>
+                <button type="button" className="w-full py-3 rounded-2xl bg-white/70 border border-white/40 text-gray-800 font-semibold text-base shadow hover:shadow-md transition-all duration-200 focus:outline-none" onClick={() => { setAddOpen(false); setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); }}>
+                  İptal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 animate-pulse">
           <span className="text-5xl mb-2">⏳</span>
@@ -230,15 +248,27 @@ export default function BusinessEmployeesPage() {
       )}
       <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {employees?.map((e: any) => (
-          <li key={e.id} className="bg-white rounded-2xl shadow p-5 flex flex-col gap-2 border hover:shadow-xl transition-shadow animate-fade-in">
-            <span className="font-bold text-lg text-pink-700">{e.name}</span>
-            <span className="text-gray-500 text-sm">{e.email}</span>
-            <span className="text-gray-400 text-xs">{e.phone}</span>
+          <li key={e.id} className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow p-5 flex flex-col gap-2 hover:shadow-lg transition animate-fade-in">
+            <span className="font-semibold text-base text-gray-900">{e.name}</span>
+            <span className="text-gray-600 text-sm">{e.email}</span>
+            <span className="text-gray-500 text-xs">{e.phone}</span>
             <div className="flex gap-2 mt-2 flex-wrap">
-              <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-semibold hover:bg-blue-200 transition" onClick={() => handleEdit(e)}>Düzenle</button>
-              <button className="px-4 py-2 bg-red-100 text-red-700 rounded-full font-semibold hover:bg-red-200 transition" onClick={() => handleDelete(e.id)}>Sil</button>
-              <button className="px-4 py-2 bg-green-100 text-green-700 rounded-full font-semibold hover:bg-green-200 transition" onClick={() => setSelectedEmployee(e)}>Uygunluk</button>
-              <button className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-semibold hover:bg-purple-200 transition" onClick={() => handleServiceModal(e)}>Hizmetler</button>
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-white/40 text-gray-900 text-xs font-semibold hover:bg-white/90 transition" onClick={() => handleEdit(e)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="1.5"/></svg>
+                Düzenle
+              </button>
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-white/40 text-gray-900 text-xs font-semibold hover:bg-white/90 transition" onClick={() => { setSelectedEmployee(e); setShowAvailabilityModal(true); }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 10h5v5H7z" fill="currentColor"/><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H5V9h14Z" fill="currentColor"/></svg>
+                Uygunluk
+              </button>
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-white/40 text-gray-900 text-xs font-semibold hover:bg-white/90 transition" onClick={() => handleServiceModal(e)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" fill="currentColor"/></svg>
+                Hizmetler
+              </button>
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition" onClick={() => handleDelete(e.id)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z" fill="currentColor"/></svg>
+                Sil
+              </button>
             </div>
           </li>
         ))}
@@ -246,22 +276,23 @@ export default function BusinessEmployeesPage() {
       </ul>
       {/* Silme onay modalı */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full flex flex-col items-center gap-4">
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
+          <div className="relative mx-auto my-8 max-w-sm w-[90%] bg-white/70 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl p-6 flex flex-col items-center gap-4">
             <span className="text-3xl mb-2">⚠️</span>
             <span className="text-lg font-semibold text-gray-700 text-center">Bu çalışanı silmek istediğinize emin misiniz?</span>
             <div className="flex gap-4 mt-4">
-              <button className="px-6 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition" onClick={confirmDelete}>Evet, Sil</button>
-              <button className="px-6 py-2 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition" onClick={() => setDeleteId(null)}>Vazgeç</button>
+              <button className="px-6 py-2 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700 transition" onClick={confirmDelete}>Evet, Sil</button>
+              <button className="px-6 py-2 rounded-xl bg-white/70 border border-white/40 text-gray-800 font-semibold hover:bg-white transition" onClick={() => setDeleteId(null)}>Vazgeç</button>
             </div>
           </div>
         </div>
       )}
       {/* Uygunluk yönetimi modalı */}
-      {selectedEmployee && !showServiceModal && (
+      {showAvailabilityModal && selectedEmployee && (
         <EmployeeAvailabilityModal
           employee={selectedEmployee}
-          onClose={() => setSelectedEmployee(null)}
+          onClose={() => { setSelectedEmployee(null); setShowAvailabilityModal(false); }}
           getAvailability={getAvailability}
           availabilityForm={availabilityForm}
           setAvailabilityForm={setAvailabilityForm}
@@ -280,7 +311,7 @@ export default function BusinessEmployeesPage() {
         <EmployeeServiceModal
           employee={selectedEmployee}
           services={services}
-          onClose={() => setShowServiceModal(false)}
+          onClose={() => { setShowServiceModal(false); setSelectedEmployee(null); }}
           onAssign={handleAssignService}
           onRemove={handleRemoveService}
         />
@@ -317,79 +348,50 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
   const availableServices = services?.filter((s: any) => !assignedServiceIds.includes(s.id)) || [];
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white p-6 rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {employee.name} - Hizmet Yönetimi
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative mx-auto my-8 max-w-lg w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">{employee.name} • Hizmetler</h2>
+          <button onClick={onClose} className="px-2 py-1 rounded-md bg-rose-600 text-white text-xs">Kapat</button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Atanmış Hizmetler */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Atanmış Hizmetler</h3>
-            {employeeServices?.length > 0 ? (
-              <div className="space-y-3">
-                {employeeServices.map((service: any) => (
-                  <div key={service.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">Atanmış</h3>
+            {employeeServices && employeeServices.length > 0 ? (
+              <div className="space-y-2">
+                {employeeServices!.map((service: any) => (
+                  <div key={service.id} className="flex items-center justify-between p-2 bg-white/80 border border-white/40 rounded-lg">
                     <div>
-                      <p className="font-medium text-green-800">{service.name}</p>
-                      <p className="text-sm text-green-600">₺{service.price} • {service.duration_minutes} dk</p>
+                      <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                      <p className="text-xs text-gray-600">₺{service.price} • {service.duration_minutes} dk</p>
                     </div>
-                    <button
-                      onClick={() => onRemove(service.id)}
-                      className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm hover:bg-red-200 transition"
-                    >
-                      Kaldır
-                    </button>
+                    <button onClick={() => onRemove(service.id)} className="px-2 py-1 bg-rose-600 text-white rounded text-xs">Kaldır</button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">Henüz hizmet atanmamış</p>
+              <p className="text-xs text-gray-500">Henüz hizmet atanmamış</p>
             )}
           </div>
-
-          {/* Mevcut Hizmetler */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Mevcut Hizmetler</h3>
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">Mevcut</h3>
             {availableServices.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {availableServices.map((service: any) => (
-                  <div key={service.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div key={service.id} className="flex items-center justify-between p-2 bg-white/80 border border-white/40 rounded-lg">
                     <div>
-                      <p className="font-medium text-blue-800">{service.name}</p>
-                      <p className="text-sm text-blue-600">₺{service.price} • {service.duration_minutes} dk</p>
+                      <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                      <p className="text-xs text-gray-600">₺{service.price} • {service.duration_minutes} dk</p>
                     </div>
-                    <button
-                      onClick={() => onAssign(service.id)}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition"
-                    >
-                      Ata
-                    </button>
+                    <button onClick={() => onAssign(service.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">Ata</button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">Tüm hizmetler atanmış</p>
+              <p className="text-xs text-gray-500">Tüm hizmetler atanmış</p>
             )}
           </div>
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-300 transition"
-          >
-            Kapat
-          </button>
         </div>
       </div>
     </div>
@@ -399,10 +401,14 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
 function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availabilityForm, setAvailabilityForm, editingAvailability, setEditingAvailability, handleAvailabilitySubmit, handleEditAvailability, handleDeleteAvailability, deleteAvailabilityId, confirmDeleteAvailability }: any) {
   const { data: availability, isLoading } = getAvailability({ employeeId: employee.id });
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full flex flex-col gap-4">
-        <h2 className="text-xl font-bold mb-2 text-pink-700">{employee.name} - Uygunluk</h2>
-        <form onSubmit={handleAvailabilitySubmit} className="flex flex-col gap-2 mb-4">
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative mx-auto my-8 max-w-md w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-900">{employee.name} • Uygunluk</h2>
+          <button onClick={onClose} className="px-2 py-1 rounded-md bg-rose-600 text-white text-xs">Kapat</button>
+        </div>
+        <form onSubmit={handleAvailabilitySubmit} className="flex flex-col gap-2 mb-2">
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-gray-700 font-medium">
               Gün
@@ -426,8 +432,8 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
             </label>
           </div>
           <div className="flex gap-2 mt-2">
-            <button type="submit" className="w-full py-2 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700 transition">{editingAvailability ? 'Güncelle' : 'Ekle'}</button>
-            {editingAvailability && <button type="button" className="w-full py-2 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition" onClick={() => { setEditingAvailability(false); setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' }); }}>İptal</button>}
+            <button type="submit" className="w-full py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition">{editingAvailability ? 'Güncelle' : 'Ekle'}</button>
+            {editingAvailability && <button type="button" className="w-full py-2 rounded-lg bg-white/80 border border-white/50 text-gray-800 text-sm font-semibold hover:bg-white transition" onClick={() => { setEditingAvailability(false); setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' }); }}>İptal</button>}
           </div>
         </form>
         <ul className="space-y-2">
@@ -444,18 +450,19 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
         </ul>
         {/* Uygunluk silme onay modalı */}
         {deleteAvailabilityId && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-xs w-full flex flex-col items-center gap-4">
+          <div className="fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" />
+            <div className="relative mx-auto my-8 max-w-xs w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-4 flex flex-col items-center gap-3">
               <span className="text-2xl mb-2">⚠️</span>
-              <span className="text-base font-semibold text-gray-700 text-center">Bu uygunluğu silmek istediğinize emin misiniz?</span>
-              <div className="flex gap-4 mt-4">
-                <button className="px-4 py-1 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition" onClick={confirmDeleteAvailability}>Evet, Sil</button>
-                <button className="px-4 py-1 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition" onClick={() => handleDeleteAvailability(null)}>Vazgeç</button>
+              <span className="text-sm font-semibold text-gray-700 text-center">Bu uygunluğu silmek istediğinize emin misiniz?</span>
+              <div className="flex gap-2 mt-2">
+                <button className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition" onClick={confirmDeleteAvailability}>Evet, Sil</button>
+                <button className="px-3 py-1.5 rounded-lg bg-white/80 border border-white/50 text-gray-800 text-xs font-semibold hover:bg-white transition" onClick={() => handleDeleteAvailability(null)}>Vazgeç</button>
               </div>
             </div>
           </div>
         )}
-        <button className="mt-6 px-6 py-2 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition" onClick={onClose}>Kapat</button>
+       
       </div>
     </div>
   );

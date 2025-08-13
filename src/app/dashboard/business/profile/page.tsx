@@ -78,21 +78,23 @@ export default function BusinessProfilePage() {
 
 
   return (
-    <main className="max-w-md mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 flex flex-col items-center justify-center animate-fade-in">
-      <div className="flex items-center justify-between w-full mb-6">
-        <button
-          onClick={() => router.push('/dashboard/business')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          ← Geri
-        </button>
-        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-500 bg-clip-text text-transparent">
-          İşletme Profili
-        </h1>
-        <div className="w-16"></div> {/* Spacer for centering */}
+    <main className="relative max-w-md mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <button
+            onClick={() => router.push('/dashboard/business')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
+          >
+            <span className="text-base">←</span>
+            <span className="hidden sm:inline text-sm font-medium">Geri</span>
+          </button>
+        </div>
+        <div className="mt-3 text-sm font-semibold text-gray-800">İşletme Profili</div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white p-8 rounded-2xl shadow-xl w-full animate-fade-in">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white/60 backdrop-blur-md border border-white/40 p-6 rounded-2xl shadow w-full animate-fade-in">
         <h2 className="text-xl font-bold mb-2 text-center text-gray-800">Hesap Bilgileri</h2>
         
         <label className="flex flex-col gap-1 text-gray-700 font-medium">
@@ -102,7 +104,7 @@ export default function BusinessProfilePage() {
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            className="rounded-lg px-4 py-3 text-base bg-white/70 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
             autoComplete="name"
             aria-label="Ad Soyad"
           />
@@ -115,7 +117,7 @@ export default function BusinessProfilePage() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            className="rounded-lg px-4 py-3 text-base bg-white/70 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
             autoComplete="email"
             aria-label="E-posta"
           />
@@ -127,7 +129,7 @@ export default function BusinessProfilePage() {
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            className="rounded-lg px-4 py-3 text-base bg-white/70 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
             autoComplete="new-password"
             aria-label="Yeni Şifre"
           />
@@ -138,7 +140,7 @@ export default function BusinessProfilePage() {
         
         <button
           type="submit"
-          className="w-full py-3 rounded-full bg-indigo-600 text-white font-semibold text-lg shadow-lg hover:bg-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200"
         >
           Profili Güncelle
         </button>
@@ -146,7 +148,7 @@ export default function BusinessProfilePage() {
       
       {/* Push Notification Settings */}
       {isSupported && business && (
-        <div className="mt-6 w-full bg-white p-6 rounded-2xl shadow-xl">
+        <div className="mt-6 w-full bg-white/60 backdrop-blur-md border border-white/40 p-6 rounded-2xl shadow">
           <h3 className="text-lg font-bold mb-4 text-gray-800">Bildirim Ayarları</h3>
           
           <div className="flex items-center justify-between mb-4">
@@ -207,31 +209,12 @@ export default function BusinessProfilePage() {
       <div className="mt-6 w-full">
         <button
           onClick={handleLogout}
-          className="w-full py-3 rounded-full bg-red-500 text-white font-semibold text-lg shadow-lg hover:bg-red-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400 flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 flex items-center justify-center gap-2"
         >
           <span>🚪</span>
           Çıkış Yap
         </button>
       </div>
-
-      <style jsx global>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1) both;
-        }
-        @keyframes shake {
-          10%, 90% { transform: translateX(-2px); }
-          20%, 80% { transform: translateX(4px); }
-          30%, 50%, 70% { transform: translateX(-8px); }
-          40%, 60% { transform: translateX(8px); }
-        }
-        .animate-shake {
-          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-      `}</style>
     </main>
   );
 } 
