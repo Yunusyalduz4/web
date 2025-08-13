@@ -10,6 +10,7 @@
     "vercel-build": "next build"
   },
   "dependencies": {
+    "@fluentui/svg-icons": "^1.1.307",
     "@googlemaps/react-wrapper": "^1.2.0",
     "@react-google-maps/api": "^2.20.7",
     "@tanstack/react-query": "^5.83.0",

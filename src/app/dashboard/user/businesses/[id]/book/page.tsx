@@ -36,16 +36,18 @@ export default function BookAppointmentPage() {
   // Seçili hizmetlerin toplam süresini hesapla
   const totalDuration = useMemo(() => {
     return selectedServices.reduce((total, selection) => {
-      const duration = selection.service?.duration_minutes;
-      return total + (typeof duration === 'number' ? duration : 0);
+      const raw = selection.service?.duration_minutes as any;
+      const value = typeof raw === 'number' ? raw : parseInt(String(raw ?? '0'), 10);
+      return total + (Number.isFinite(value) ? value : 0);
     }, 0);
   }, [selectedServices]);
 
   // Seçili hizmetlerin toplam fiyatını hesapla
   const totalPrice = useMemo(() => {
     return selectedServices.reduce((total, selection) => {
-      const price = selection.service?.price;
-      return total + (typeof price === 'number' ? price : 0);
+      const raw = (selection.service as any)?.price;
+      const value = typeof raw === 'number' ? raw : parseFloat(String(raw ?? '0').replace(',', '.'));
+      return total + (Number.isFinite(value) ? value : 0);
     }, 0);
   }, [selectedServices]);
 
@@ -102,6 +104,16 @@ export default function BookAppointmentPage() {
     { enabled: !!allEmployeeIds[0] }
   );
 
+  // Meşgul slotları backend'den al (birden fazla çalışan seçimine göre)
+  const { data: busySlots } = trpc.appointment.getBusySlotsForEmployees.useQuery(
+    {
+      employeeIds: allEmployeeIds.length ? allEmployeeIds : ([] as string[]),
+      date: date || new Date().toISOString().split('T')[0],
+      durationMinutes: totalDuration || 15,
+    },
+    { enabled: !!date && allEmployeeIds.length > 0 }
+  );
+
   const availableTimes = useMemo(() => {
     if (!allAvailability || !date || allEmployeeIds.length === 0) return [];
     const dayOfWeek = getDayOfWeek(date);
@@ -111,13 +123,39 @@ export default function BookAppointmentPage() {
       let [h, m] = slot.start_time.split(":").map(Number);
       const [eh, em] = slot.end_time.split(":").map(Number);
       while (h < eh || (h === eh && m < em)) {
-        slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+        const token = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        // Geçmiş saatleri ve meşgul slotları atla
+        const slotDate = new Date(`${date}T${token}:00`);
+        const isPast = slotDate.getTime() <= Date.now();
+        const isBusy = busySlots?.[token];
+        if (!isPast && !isBusy) {
+          slots.push(token);
+        }
         m += 15;
         if (m >= 60) { h++; m = 0; }
       }
     });
     return slots;
-  }, [allAvailability, date, allEmployeeIds]);
+  }, [allAvailability, date, allEmployeeIds, busySlots]);
+
+  // Takvim: önümüzdeki 14 gün için slot butonları
+  const nextDays = useMemo(() => {
+    const days: { dateStr: string; label: string; weekday: string }[] = [];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('tr-TR', { weekday: 'short', day: '2-digit', month: 'short' });
+      const weekday = d.toLocaleDateString('tr-TR', { weekday: 'short' });
+      days.push({ dateStr, label, weekday });
+    }
+    return days;
+  }, []);
+
+  const availableWeekdays = useMemo(() => {
+    if (!allAvailability) return new Set<number>();
+    return new Set(allAvailability.map((a: any) => a.day_of_week));
+  }, [allAvailability]);
 
   // Hizmete göre çalışanları getir
   const { data: employeesByService } = trpc.business.getEmployeesByService.useQuery(
@@ -168,20 +206,39 @@ export default function BookAppointmentPage() {
     }
   };
 
+  const startDateTime = date && time ? new Date(`${date}T${time}:00`) : null;
+  const endDateTime = startDateTime ? new Date(startDateTime.getTime() + totalDuration * 60000) : null;
+
   return (
-    <main className="max-w-2xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white p-8 rounded-2xl shadow-xl w-full animate-fade-in">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">
-            Randevu Al
-          </h1>
+    <main className="relative max-w-2xl mx-auto p-4 min-h-screen pb-24 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
           >
-            ← Geri
+            <span className="text-base">←</span>
+            <span className="hidden sm:inline text-sm font-medium">Geri</span>
           </button>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white/60 backdrop-blur-md border border-white/40 p-6 md:p-8 rounded-2xl shadow-xl w-full animate-fade-in">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">
+            Randevu Al
+          </h1>
+          <div className="text-sm text-gray-700">
+            {selectedServices.length > 0 && (
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-white/40">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M8 3v4M16 3v4M3 11h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                {totalDuration} dk • ₺{totalPrice.toFixed(0)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Hizmet Seçimi */}
@@ -191,22 +248,24 @@ export default function BookAppointmentPage() {
             <button
               type="button"
               onClick={addService}
-              className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-semibold hover:bg-blue-200 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold shadow hover:shadow-lg active:scale-95 transition"
             >
-              + Hizmet Ekle
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Hizmet Ekle
             </button>
           </div>
 
           {selectedServices.map((selection, index) => (
-            <div key={index} className="p-4 border border-gray-200 rounded-xl bg-gray-50">
+            <div key={index} className="p-4 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-gray-700">Hizmet {index + 1}</h3>
+                <h3 className="font-medium text-gray-800">Hizmet {index + 1}</h3>
                 <button
                   type="button"
                   onClick={() => removeService(index)}
-                  className="text-red-500 hover:text-red-700"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-white/40 text-rose-700 hover:bg-white/90 transition"
                 >
-                  ✕
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  Kaldır
                 </button>
               </div>
 
@@ -217,7 +276,7 @@ export default function BookAppointmentPage() {
                     value={selection.serviceId}
                     onChange={(e) => updateServiceSelection(index, e.target.value)}
                     required
-                    className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    className="border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition"
                   >
                     <option value="">Seçiniz</option>
                     {services?.map((s: any) => (
@@ -235,7 +294,7 @@ export default function BookAppointmentPage() {
                     onChange={(e) => updateEmployeeSelection(index, e.target.value)}
                     required
                     disabled={!selection.serviceId}
-                    className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-pink-400 transition disabled:bg-gray-100"
+                    className="border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition disabled:bg-gray-100"
                   >
                     <option value="">Seçiniz</option>
                     {selection.serviceId && getEmployeesForService(selection.serviceId).map((e: any) => (
@@ -246,8 +305,8 @@ export default function BookAppointmentPage() {
               </div>
 
               {selection.service && (
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-700">
+                <div className="mt-3 p-3 rounded-xl bg-white/60 backdrop-blur-md border border-white/40">
+                  <p className="text-sm text-gray-800">
                     <strong>{selection.service.name}</strong> • ₺{selection.service.price || 0} • {selection.service.duration_minutes || 0} dk
                     {selection.employee && ` • ${selection.employee.name}`}
                   </p>
@@ -268,36 +327,62 @@ export default function BookAppointmentPage() {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800">Tarih ve Saat</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex flex-col gap-1 text-gray-700 font-medium">
-                Tarih
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                  className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                />
-              </label>
-
-              {date && (
-                <label className="flex flex-col gap-1 text-gray-700 font-medium">
-                  Saat
-                  <select
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    required
-                    className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  >
-                    <option value="">Seçiniz</option>
-                    {availableTimes.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
+            {/* Tarih slotları (yatay kaydırmalı) */}
+            <div className="-mx-4 px-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {nextDays.map((d) => {
+                  const enabled = availableWeekdays.has(getDayOfWeek(d.dateStr));
+                  const selected = date === d.dateStr;
+                  return (
+                    <button
+                      key={d.dateStr}
+                      type="button"
+                      onClick={() => { if (enabled) { setDate(d.dateStr); setTime(''); } }}
+                      className={`shrink-0 px-3 py-2 rounded-xl text-sm transition border ${selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' : enabled ? 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
+                      aria-pressed={selected}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Saat slotları (chip grid) */}
+            {date && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Uygun Saatler</span>
+                  <button
+                    type="button"
+                    onClick={() => { if (availableTimes.length) setTime(availableTimes[0]); }}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    En Yakın Uygun Saat
+                  </button>
+                </div>
+                {availableTimes.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {availableTimes.map((t) => {
+                      const selected = time === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setTime(t)}
+                          className={`px-3 py-2 rounded-lg text-sm transition border ${selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' : 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80'}`}
+                          aria-pressed={selected}
+                        >
+                          {t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-500">Seçilen gün için uygun saat yok.</span>
+                )}
+              </div>
+            )}
 
             {availableTimes.length === 0 && date && (
               <span className="text-xs text-gray-500">Seçilen gün için uygun saat yok.</span>
@@ -307,15 +392,50 @@ export default function BookAppointmentPage() {
 
         {/* Özet */}
         {selectedServices.length > 0 && (
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-pink-50 rounded-xl border border-blue-200">
-            <h3 className="font-semibold text-gray-800 mb-2">Randevu Özeti</h3>
-            <div className="space-y-2 text-sm">
-              <p><strong>Toplam Hizmet:</strong> {selectedServices.length}</p>
-              <p><strong>Toplam Süre:</strong> {totalDuration} dakika</p>
-              <p><strong>Toplam Fiyat:</strong> ₺{totalPrice.toFixed(2)}</p>
-              {date && time && (
-                <p><strong>Tarih:</strong> {new Date(`${date}T${time}`).toLocaleString('tr-TR')}</p>
-              )}
+          <div className="p-4 md:p-5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 shadow">
+            <div className="flex items-start justify-between gap-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-white/40 text-gray-900">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M8 3v4M16 3v4M3 11h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <span className="font-semibold">Randevu Özeti</span>
+              </div>
+              <div className="text-right">
+                <div className="text-[11px] uppercase tracking-wide text-gray-500">Toplam</div>
+                <div className="text-2xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">₺{totalPrice.toFixed(0)}</div>
+              </div>
+            </div>
+
+            {startDateTime && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="px-3 py-2 rounded-xl bg-white/70 border border-white/40 text-sm text-gray-900" suppressHydrationWarning>
+                  <div className="text-[11px] text-gray-600">Başlangıç</div>
+                  <div className="font-medium">{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(startDateTime)}</div>
+                </div>
+                <div className="px-3 py-2 rounded-xl bg-white/70 border border-white/40 text-sm text-gray-900" suppressHydrationWarning>
+                  <div className="text-[11px] text-gray-600">Tahmini Bitiş</div>
+                  <div className="font-medium">{typeof window==='undefined' ? '' : endDateTime?.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {selectedServices.map((s, i) => (
+                <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-white/40 text-xs text-gray-800">
+                  <span className="w-5 h-5 rounded-lg bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white grid place-items-center">{i+1}</span>
+                  <span className="truncate max-w-[10rem]">{s.service?.name || 'Hizmet'}</span>
+                  {s.employee?.name && <span className="text-gray-500">• {s.employee.name}</span>}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-3 flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-xs text-gray-800">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                {selectedServices.length} hizmet
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-xs text-gray-800">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                {totalDuration} dk
+              </span>
             </div>
           </div>
         )}
@@ -326,7 +446,7 @@ export default function BookAppointmentPage() {
         <button
           type="submit"
           disabled={selectedServices.length === 0}
-          className="w-full py-3 rounded-full bg-blue-600 text-white font-semibold text-lg shadow-lg hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
         >
           Randevu Al
         </button>

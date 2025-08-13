@@ -20,6 +20,7 @@ export default function BusinessServicesPage() {
 
   const [form, setForm] = useState({ id: '', name: '', description: '', duration_minutes: 30, price: 0 });
   const [editing, setEditing] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export default function BusinessServicesPage() {
     setEditing(true);
     setError('');
     setSuccess('');
+    setFormOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -78,50 +80,67 @@ export default function BusinessServicesPage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <button 
-          onClick={() => router.push('/dashboard/business')}
-          className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 text-gray-700 font-semibold"
-        >
-          <span>←</span>
-          <span>Geri Dön</span>
-        </button>
-        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent select-none">Hizmetler</h1>
-        <div className="w-24"></div> {/* Spacer for centering */}
-      </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-xl mb-8 animate-fade-in">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            Adı
-            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-          </label>
-          <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            Süre (dk)
-            <input type="number" min={1} value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))} required className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-          </label>
-          <label className="flex flex-col gap-1 text-gray-700 font-medium">
-            Fiyat (₺)
-            <input type="number" min={0} value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} required className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-pink-400 transition" />
-          </label>
-          <label className="flex flex-col gap-1 text-gray-700 font-medium md:col-span-2">
-            Açıklama
-            <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-          </label>
-        </div>
-        {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
-        {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
-        <div className="flex gap-2 mt-2">
-          <button type="submit" className="w-full py-3 rounded-full bg-blue-600 text-white font-semibold text-lg shadow-lg hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
-            {editing ? 'Güncelle' : 'Ekle'}
+    <main className="relative max-w-3xl mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <button 
+            onClick={() => router.push('/dashboard/business')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
+          >
+            <span className="text-base">←</span>
+            <span className="hidden sm:inline text-sm font-medium">Geri</span>
           </button>
-          {editing && (
-            <button type="button" className="w-full py-3 rounded-full bg-gray-200 text-gray-700 font-semibold text-lg shadow hover:bg-gray-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400" onClick={() => { setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}>
-              İptal
-            </button>
-          )}
         </div>
-      </form>
+      </div>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-lg font-semibold text-gray-900">Hizmetler</h1>
+        <button onClick={() => { setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setEditing(false); setError(''); setSuccess(''); setFormOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow hover:shadow-lg">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Yeni Hizmet
+        </button>
+      </div>
+
+      {/* Create/Edit Modal */}
+      {formOpen && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
+          <div className="relative mx-auto my-8 max-w-lg w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{editing ? 'Hizmeti Güncelle' : 'Yeni Hizmet Ekle'}</h2>
+            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setFormOpen(false);}} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1 text-gray-800 font-medium">
+                  Adı
+                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
+                </label>
+                <label className="flex flex-col gap-1 text-gray-800 font-medium">
+                  Süre (dk)
+                  <input type="number" min={1} value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
+                </label>
+                <label className="flex flex-col gap-1 text-gray-800 font-medium">
+                  Fiyat (₺)
+                  <input type="number" min={0} value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition" />
+                </label>
+                <label className="flex flex-col gap-1 text-gray-800 font-medium md:col-span-2">
+                  Açıklama
+                  <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
+                </label>
+              </div>
+              {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
+              {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
+              <div className="flex gap-2 mt-2">
+                <button type="submit" className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200">
+                  {editing ? 'Güncelle' : 'Ekle'}
+                </button>
+                <button type="button" className="w-full py-3 rounded-2xl bg-white/70 border border-white/40 text-gray-800 font-semibold text-base shadow hover:shadow-md transition-all duration-200 focus:outline-none" onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}>
+                  İptal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 animate-pulse">
           <span className="text-5xl mb-2">⏳</span>
@@ -130,14 +149,14 @@ export default function BusinessServicesPage() {
       )}
       <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {services?.map((s: any) => (
-          <li key={s.id} className="bg-white rounded-2xl shadow p-5 flex flex-col gap-2 border hover:shadow-xl transition-shadow animate-fade-in">
-            <span className="font-bold text-lg text-blue-700">{s.name}</span>
-            <span className="text-gray-500 text-sm">{s.description}</span>
-            <span className="text-gray-400 text-xs">Süre: {s.duration_minutes} dk</span>
-            <span className="text-pink-600 font-bold">₺{s.price}</span>
+          <li key={s.id} className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow p-5 flex flex-col gap-2 hover:shadow-lg transition animate-fade-in">
+            <span className="font-semibold text-base text-gray-900">{s.name}</span>
+            <span className="text-gray-600 text-sm">{s.description}</span>
+            <span className="text-gray-500 text-xs">Süre: {s.duration_minutes} dk</span>
+            <span className="text-rose-600 font-bold">₺{s.price}</span>
             <div className="flex gap-2 mt-2">
-              <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-semibold hover:bg-blue-200 transition" onClick={() => handleEdit(s)}>Düzenle</button>
-              <button className="px-4 py-2 bg-red-100 text-red-700 rounded-full font-semibold hover:bg-red-200 transition" onClick={() => handleDelete(s.id)}>Sil</button>
+              <button className="px-4 py-2 rounded-xl bg-white/70 border border-white/40 text-gray-900 font-medium hover:bg-white/90 transition" onClick={() => handleEdit(s)}>Düzenle</button>
+              <button className="px-4 py-2 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition" onClick={() => handleDelete(s.id)}>Sil</button>
             </div>
           </li>
         ))}
@@ -145,35 +164,18 @@ export default function BusinessServicesPage() {
       </ul>
       {/* Silme onay modalı */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full flex flex-col items-center gap-4">
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
+          <div className="relative mx-auto my-8 max-w-sm w-[90%] bg-white/70 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl p-6 flex flex-col items-center gap-4">
             <span className="text-3xl mb-2">⚠️</span>
             <span className="text-lg font-semibold text-gray-700 text-center">Bu hizmeti silmek istediğinize emin misiniz?</span>
             <div className="flex gap-4 mt-4">
-              <button className="px-6 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition" onClick={confirmDelete}>Evet, Sil</button>
-              <button className="px-6 py-2 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition" onClick={() => setDeleteId(null)}>Vazgeç</button>
+              <button className="px-6 py-2 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700 transition" onClick={confirmDelete}>Evet, Sil</button>
+              <button className="px-6 py-2 rounded-xl bg-white/70 border border-white/40 text-gray-800 font-semibold hover:bg-white transition" onClick={() => setDeleteId(null)}>Vazgeç</button>
             </div>
           </div>
         </div>
       )}
-      <style jsx global>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1) both;
-        }
-        @keyframes shake {
-          10%, 90% { transform: translateX(-2px); }
-          20%, 80% { transform: translateX(4px); }
-          30%, 50%, 70% { transform: translateX(-8px); }
-          40%, 60% { transform: translateX(8px); }
-        }
-        .animate-shake {
-          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-      `}</style>
     </main>
   );
 } 

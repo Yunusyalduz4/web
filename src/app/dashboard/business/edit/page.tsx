@@ -24,6 +24,7 @@ export default function BusinessEditPage() {
 
   const [images, setImages] = useState<Array<{ id: string; image_url: string; image_order: number }>>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateBusinessMutation = trpc.business.updateBusiness.useMutation();
@@ -60,11 +61,11 @@ export default function BusinessEditPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLocationChange = (location: { latitude: number; longitude: number; address: string }) => {
+  const handleLocationChange = (location: { lat: number; lng: number; address: string }) => {
     setFormData(prev => ({
       ...prev,
-      latitude: location.latitude,
-      longitude: location.longitude,
+      latitude: location.lat,
+      longitude: location.lng,
       address: location.address,
     }));
   };
@@ -87,19 +88,41 @@ export default function BusinessEditPage() {
     }
   };
 
-  const handleAddImage = async () => {
-    if (!business || !newImageUrl.trim()) return;
+  // File upload -> base64 -> upload API -> directly add to business images
 
+  const handleFileSelect = async (file: File) => {
+    if (!file || !business) return;
+    setUploading(true);
     try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      });
+
+      const resp = await fetch('/api/upload_base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename: file.name }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Upload failed');
+      setNewImageUrl(json.url);
+
+      const absoluteUrl = typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url;
+
+      // Directly add uploaded image to business gallery
       await addBusinessImageMutation.mutateAsync({
         businessId: business.id,
-        imageUrl: newImageUrl,
+        imageUrl: absoluteUrl,
         imageOrder: images.length,
       });
-      setNewImageUrl('');
       getBusinessImagesQuery.refetch();
-    } catch (error) {
-      alert('Resim eklenirken bir hata oluştu.');
+    } catch (e: any) {
+      alert(e.message || 'Dosya yüklenemedi');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -120,21 +143,55 @@ export default function BusinessEditPage() {
   const handleReorderImages = async (imageId: string, newOrder: number) => {
     if (!business) return;
 
+    // Local reorder then persist all to keep indexes consistent
+    const current = [...images].sort((a, b) => a.image_order - b.image_order);
+    const fromIndex = current.findIndex((img) => img.id === imageId);
+    if (fromIndex === -1) return;
+    const toIndex = Math.max(0, Math.min(newOrder, current.length - 1));
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+
+    // Reindex locally
+    const reindexed = current.map((img, idx) => ({ ...img, image_order: idx }));
+    setImages(reindexed);
+
     try {
-      await updateBusinessImageMutation.mutateAsync({
-        id: imageId,
-        businessId: business.id,
-        imageOrder: newOrder,
-      });
+      for (const img of reindexed) {
+        await updateBusinessImageMutation.mutateAsync({
+          id: img.id,
+          businessId: business.id,
+          imageOrder: img.image_order,
+        });
+      }
       getBusinessImagesQuery.refetch();
     } catch (error) {
       alert('Resim sırası güncellenirken bir hata oluştu.');
     }
   };
 
+  const moveImageUp = (index: number) => {
+    const img = images.find((i) => i.image_order === index);
+    if (img) handleReorderImages(img.id, index - 1);
+  };
+
+  const moveImageDown = (index: number) => {
+    const img = images.find((i) => i.image_order === index);
+    if (img) handleReorderImages(img.id, index + 1);
+  };
+
+  const moveImageFirst = (index: number) => {
+    const img = images.find((i) => i.image_order === index);
+    if (img) handleReorderImages(img.id, 0);
+  };
+
+  const moveImageLast = (index: number) => {
+    const img = images.find((i) => i.image_order === index);
+    if (img) handleReorderImages(img.id, images.length - 1);
+  };
+
   if (isLoading) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
         <span className="text-5xl mb-2">⏳</span>
         <span className="text-lg text-gray-400">İşletme bilgileri yükleniyor...</span>
       </main>
@@ -143,7 +200,7 @@ export default function BusinessEditPage() {
 
   if (!business) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
         <span className="text-5xl mb-2">🏢</span>
         <span className="text-lg text-gray-500">İşletme bulunamadı.</span>
       </main>
@@ -151,199 +208,116 @@ export default function BusinessEditPage() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto p-4 min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50">
-      <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-            İşletme Düzenle
-          </h1>
-          <button
-            onClick={() => router.push('/dashboard/business')}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            ← Geri
+    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
+        <div className="flex items-center justify-between">
+          <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs shadow-sm">
+            <span>←</span>
+            <span className="hidden sm:inline">Geri</span>
           </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Temel Bilgiler */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                İşletme Adı *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="İşletme adını girin"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Telefon
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Telefon numarası"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                E-posta
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="E-posta adresi"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Adres *
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="İşletme adresi"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Açıklama
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="İşletme hakkında açıklama"
-            />
-          </div>
-
-          {/* Konum Seçici */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Konum
-            </label>
-            <LocationPicker
-              onLocationSelect={handleLocationChange}
-              defaultLocation={formData.latitude && formData.longitude ? { lat: formData.latitude, lng: formData.longitude } : undefined}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-600 transition-all disabled:opacity-50"
-          >
-            {isSubmitting ? 'Güncelleniyor...' : 'İşletme Bilgilerini Güncelle'}
-          </button>
-        </form>
       </div>
 
-      {/* Slider Resimleri */}
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Slider Resimleri</h2>
-        
-        {/* Yeni Resim Ekleme */}
-        <div className="flex gap-4 mb-6">
-          <input
-            type="url"
-            value={newImageUrl}
-            onChange={(e) => setNewImageUrl(e.target.value)}
-            placeholder="Resim URL'si girin"
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-          <button
-            onClick={handleAddImage}
-            disabled={!newImageUrl.trim()}
-            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
-          >
-            Ekle
-          </button>
-        </div>
+      {/* Minimal Form */}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <details open className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
+          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Temel Bilgiler</summary>
+          <div className="mt-3 grid grid-cols-1 gap-3">
+            <input name="name" value={formData.name} onChange={handleInputChange} required placeholder="İşletme adı" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+            <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Açıklama (opsiyonel)" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+          </div>
+        </details>
 
-        {/* Mevcut Resimler */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {images.map((image, index) => (
-            <div key={image.id} className="relative group">
-              <img
-                src={image.image_url}
-                alt={`Slider resim ${index + 1}`}
-                className="w-full h-48 object-cover rounded-lg"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              {/* Fallback for failed images */}
-              <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center hidden">
-                <div className="text-center text-gray-500">
-                  <div className="text-2xl mb-1">🖼️</div>
-                  <div className="text-xs">Resim Yüklenemedi</div>
-                </div>
+        <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
+          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">İletişim</summary>
+          <div className="mt-3 grid grid-cols-1 gap-3">
+            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Telefon" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="E-posta" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+            <input name="address" value={formData.address} onChange={handleInputChange} required placeholder="Adres" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+          </div>
+        </details>
+
+        <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
+          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Konum</summary>
+          <div className="mt-3">
+            <LocationPicker onLocationSelect={handleLocationChange} defaultLocation={formData.latitude && formData.longitude ? { lat: formData.latitude, lng: formData.longitude } : undefined} />
+          </div>
+        </details>
+
+        <button type="submit" disabled={isSubmitting} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-60 disabled:hover:scale-100">
+          {isSubmitting ? 'Güncelleniyor...' : 'Kaydet'}
+        </button>
+      </form>
+
+      {/* Images */}
+      <details className="mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
+        <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Görseller</summary>
+        <div className="mt-3 space-y-3">
+          <div
+            className="relative rounded-2xl border border-white/50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/70 backdrop-blur-md p-3 flex items-center justify-between shadow-sm"
+            onDragOver={(e) => { e.preventDefault(); }}
+            onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center shadow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </div>
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                  <button
-                    onClick={() => handleReorderImages(image.id, Math.max(0, index - 1))}
-                    disabled={index === 0}
-                    className="p-2 bg-white rounded-full hover:bg-gray-100 disabled:opacity-50"
-                    title="Yukarı taşı"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => handleReorderImages(image.id, index + 1)}
-                    disabled={index === images.length - 1}
-                    className="p-2 bg-white rounded-full hover:bg-gray-100 disabled:opacity-50"
-                    title="Aşağı taşı"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    onClick={() => handleDeleteImage(image.id)}
-                    className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                    title="Sil"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-              <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                {index + 1}
+              <div className="text-[13px] text-gray-900">
+                <div className="font-semibold">Görsel ekle</div>
+                <div className="text-[11px] text-gray-700">Sürükle-bırak yap veya butona tıkla</div>
               </div>
             </div>
-          ))}
-        </div>
-
-        {images.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            Henüz slider resmi eklenmemiş. Yukarıdaki formu kullanarak resim ekleyebilirsiniz.
+            <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 cursor-pointer">
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} />
+              {uploading ? (
+                <>
+                  <span className="inline-block w-3.5 h-3.5 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                  <span>Yükleniyor</span>
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  <span>Resim Yükle</span>
+                </>
+              )}
+            </label>
           </div>
-        )}
-      </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {images
+              .slice()
+              .sort((a, b) => a.image_order - b.image_order)
+              .map((image, index, arr) => (
+                <div key={image.id} className="relative group">
+                  <img src={image.image_url} alt={`Resim ${index + 1}`} className="w-full h-24 object-cover rounded-md border border-white/50" />
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-white/90 border border-white/60 text-[10px] font-semibold text-gray-900 shadow">{index + 1} / {arr.length}</div>
+                  <div className="absolute top-1 right-1 flex gap-1 opacity-100 group-hover:opacity-100">
+                    <button onClick={() => moveImageFirst(index)} disabled={index === 0} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Başa al">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 4v16M10 8l-4 4 4 4M14 8l-4 4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button onClick={() => moveImageUp(index)} disabled={index === 0} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Yukarı">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8l-5 5h10l-5-5z" fill="currentColor"/></svg>
+                    </button>
+                    <button onClick={() => moveImageDown(index)} disabled={index === arr.length - 1} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Aşağı">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 16l5-5H7l5 5z" fill="currentColor"/></svg>
+                    </button>
+                    <button onClick={() => moveImageLast(index)} disabled={index === arr.length - 1} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Sona al">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 4v16M10 8l4 4-4 4M6 8l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button onClick={() => handleDeleteImage(image.id)} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-rose-600 text-white shadow hover:bg-rose-700 transition" title="Sil">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+          {images.length === 0 && (
+            <div className="text-xs text-gray-500">Henüz görsel yok.</div>
+          )}
+        </div>
+      </details>
     </main>
   );
 } 
