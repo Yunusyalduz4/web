@@ -25,71 +25,63 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-pink-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6 animate-fade-in"
-        aria-label="Giriş Formu"
-      >
-        <h2 className="text-3xl font-extrabold text-center bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent mb-2 select-none">
-          Giriş Yap
-        </h2>
-        <label className="flex flex-col gap-1 text-gray-700 font-medium">
-          E-posta
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            autoComplete="email"
-            aria-label="E-posta"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-gray-700 font-medium">
-          Şifre
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
-            autoComplete="current-password"
-            aria-label="Şifre"
-          />
-        </label>
-        {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
-        <button
-          type="submit"
-          className="w-full py-3 rounded-full bg-blue-600 text-white font-semibold text-lg shadow-lg hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-3">
+      <div className="w-full max-w-md">
+        <div className="mb-3 text-center text-sm font-bold text-gray-800 select-none">kuado</div>
+        <form
+          onSubmit={handleSubmit}
+          className="w-full bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-3 flex flex-col gap-3 animate-fade-in"
+          aria-label="Giriş Formu"
         >
-          Giriş Yap
-        </button>
-        <button
-          type="button"
-          className="w-full py-3 rounded-full bg-pink-500 text-white font-semibold text-lg shadow-lg hover:bg-pink-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-300"
-          onClick={() => router.push('/register')}
-        >
-          Kayıt Ol
-        </button>
-      </form>
+          <h2 className="text-lg font-semibold text-center text-gray-900">Giriş Yap</h2>
+          <label className="flex flex-col">
+            <span className="text-[11px] text-gray-600 mb-1">E-posta</span>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              autoComplete="email"
+              placeholder="ornek@mail.com"
+              aria-label="E-posta"
+            />
+          </label>
+          <label className="flex flex-col">
+            <span className="text-[11px] text-gray-600 mb-1">Şifre</span>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              autoComplete="current-password"
+              placeholder="••••••"
+              aria-label="Şifre"
+            />
+          </label>
+          {error && <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">{error}</div>}
+          <button
+            type="submit"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition"
+          >
+            Giriş Yap
+          </button>
+          <button
+            type="button"
+            className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm"
+            onClick={() => router.push('/register')}
+          >
+            Kayıt Ol
+          </button>
+        </form>
+      </div>
       <style jsx global>{`
         @keyframes fade-in {
-          from { opacity: 0; transform: translateY(40px); }
+          from { opacity: 0; transform: translateY(24px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-          animation: fade-in 1s cubic-bezier(0.4,0,0.2,1) both;
-        }
-        @keyframes shake {
-          10%, 90% { transform: translateX(-2px); }
-          20%, 80% { transform: translateX(4px); }
-          30%, 50%, 70% { transform: translateX(-8px); }
-          40%, 60% { transform: translateX(8px); }
-        }
-        .animate-shake {
-          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
+        .animate-fade-in { animation: fade-in .5s cubic-bezier(0.4,0,0.2,1) both; }
       `}</style>
     </main>
   );

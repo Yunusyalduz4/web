@@ -1,7 +1,15 @@
 {
   "version": 2,
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "DATABASE_URL": "postgresql://neondb_owner:npg_7izeVGXpU6ES@ep-purple-bread-a2lhuyxh-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+    "NEXTAUTH_URL": "https://your-app.vercel.app",
+    "NEXTAUTH_SECRET": "Z2qVHeqZoE4+eove5oCOG1rlYerYcvCTKWP0yzoRqws=",
+    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDCnMRoUVB1yIVIrk9iubGDzI0cMVAaQ58",
+    "VERCEL_URL": "https://your-app.vercel.app",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BDh_x27extbz8msB6VH1UVAG81KvgSCehZAMv4Su5FCoT3K2usPiA-7p7fcmWargeCeWWvZHQBSqgiMn5YRvvLw",
+    "VAPID_PRIVATE_KEY": "4KCGcrapFuV-dzfwNIGyVh6hWkiO6WVtauL4nfoJPhA",
+    "VAPID_EMAIL": "yalduzbey@gmail.com"
   },
   "headers": [
     {

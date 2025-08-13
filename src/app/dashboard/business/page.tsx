@@ -2,6 +2,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../utils/trpcClient';
+import { usePushNotifications } from '../../../hooks/usePushNotifications';
 
 export default function BusinessDashboard() {
   const { data: session } = useSession();
@@ -10,6 +11,13 @@ export default function BusinessDashboard() {
   const { data: businesses, isLoading } = trpc.business.getBusinesses.useQuery();
   const business = businesses?.find((b: any) => b.owner_user_id === userId);
   const businessId = business?.id;
+  const {
+    isSupported,
+    isSubscribed,
+    isLoading: pushLoading,
+    error: pushError,
+    subscribe
+  } = usePushNotifications(businessId || undefined);
 
   // Gerçek verileri çek
   const { data: services } = trpc.business.getServices.useQuery(businessId ? { businessId } : undefined, { enabled: !!businessId });
@@ -89,6 +97,19 @@ export default function BusinessDashboard() {
         <MiniStat label="Hizmet" value={services?.length || 0} color="from-indigo-500 to-indigo-600" />
         <MiniStat label="Çalışan" value={employees?.length || 0} color="from-emerald-500 to-emerald-600" />
       </div>
+
+      {/* Push CTA */}
+      {isSupported && !isSubscribed && (
+        <div className="mb-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 shadow">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[12px] text-gray-800">Yeni randevu taleplerinde anında bildirim almak için açın.</div>
+            <button onClick={subscribe} disabled={pushLoading} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[11px] font-semibold shadow hover:shadow-md disabled:opacity-60">
+              {pushLoading ? 'Açılıyor…' : 'Bildirimleri Aç'}
+            </button>
+          </div>
+          {pushError && <div className="mt-1 text-[11px] text-rose-600">{pushError}</div>}
+        </div>
+      )}
 
       {/* Actions Grid */}
       <div className="grid grid-cols-3 gap-2">

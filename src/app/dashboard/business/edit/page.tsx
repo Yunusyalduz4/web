@@ -20,6 +20,7 @@ export default function BusinessEditPage() {
     email: '',
     latitude: 0,
     longitude: 0,
+    profileImageUrl: null as string | null,
   });
 
   const [images, setImages] = useState<Array<{ id: string; image_url: string; image_order: number }>>([]);
@@ -46,6 +47,7 @@ export default function BusinessEditPage() {
         email: business.email || '',
         latitude: business.latitude || 0,
         longitude: business.longitude || 0,
+        profileImageUrl: business.profile_image_url || null,
       });
     }
   }, [business]);
@@ -79,6 +81,7 @@ export default function BusinessEditPage() {
       await updateBusinessMutation.mutateAsync({
         id: business.id,
         ...formData,
+        profileImageUrl: formData.profileImageUrl ?? null,
       });
       alert('İşletme bilgileri başarıyla güncellendi!');
     } catch (error) {
@@ -121,6 +124,34 @@ export default function BusinessEditPage() {
       getBusinessImagesQuery.refetch();
     } catch (e: any) {
       alert(e.message || 'Dosya yüklenemedi');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Profile image upload via file picker
+  const handleProfileFileSelect = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      });
+
+      const resp = await fetch('/api/upload_base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename: file.name }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Upload failed');
+      const absoluteUrl = typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url;
+      setFormData(prev => ({ ...prev, profileImageUrl: absoluteUrl }));
+    } catch (e: any) {
+      alert(e.message || 'Profil fotoğrafı yüklenemedi');
     } finally {
       setUploading(false);
     }
@@ -225,6 +256,25 @@ export default function BusinessEditPage() {
         <details open className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
           <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Temel Bilgiler</summary>
           <div className="mt-3 grid grid-cols-1 gap-3">
+            {/* Profile Image */}
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/50 bg-white/70 flex items-center justify-center">
+                {formData.profileImageUrl ? (
+                  <img src={formData.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs text-gray-500">Profil</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
+                  {uploading ? 'Yükleniyor…' : 'Profil Fotoğrafı Yükle'}
+                </label>
+                {formData.profileImageUrl && (
+                  <button type="button" className="px-3 py-2 rounded-lg bg-white/80 border border-white/50 text-gray-900 text-xs" onClick={() => setFormData(prev => ({ ...prev, profileImageUrl: null }))}>Kaldır</button>
+                )}
+              </div>
+            </div>
             <input name="name" value={formData.name} onChange={handleInputChange} required placeholder="İşletme adı" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
             <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Açıklama (opsiyonel)" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
           </div>

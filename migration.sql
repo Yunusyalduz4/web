@@ -22,3 +22,7 @@ COMMENT ON COLUMN users.phone IS 'User phone number (for customers)';
 COMMENT ON COLUMN users.address IS 'User address (for customers)';
 COMMENT ON COLUMN users.latitude IS 'User location latitude (for customers)';
 COMMENT ON COLUMN users.longitude IS 'User location longitude (for customers)'; 
+
+-- Add profile image column to businesses
+ALTER TABLE businesses 
+ADD COLUMN IF NOT EXISTS profile_image_url TEXT;

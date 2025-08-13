@@ -114,117 +114,54 @@ export default function BusinessAppointmentsPage() {
         {activeAppointments.map((a: any) => (
           <div
             key={a.id}
-            className="group relative bg-white/60 backdrop-blur-md rounded-xl shadow hover:shadow-lg transition overflow-hidden border border-white/40 animate-fade-in"
+            className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3"
           >
-            {/* Status Badge */}
-            <div className="absolute top-2 right-2 z-10">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-sm ${
-                a.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                a.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-200' :
-                a.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
-                'bg-blue-100 text-blue-800 border border-blue-200'
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
+                <div className="text-[12px] text-gray-600 flex items-center gap-1" suppressHydrationWarning>
+                  <span>📅</span>
+                  <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}</span>
+                  <span className="mx-1 text-gray-400">•</span>
+                  <span>🕐</span>
+                  <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</span>
+                </div>
+              </div>
+              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] border ${
+                a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-200' :
+                a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                'bg-blue-50 text-blue-800 border-blue-200'
               }`}>
-                {a.status === 'pending' && '⏳ Bekliyor'}
-                {a.status === 'confirmed' && '✅ Onaylandı'}
-                {a.status === 'cancelled' && '❌ İptal'}
-                {a.status === 'completed' && '🎉 Tamamlandı'}
+                {a.status === 'pending' && 'Bekliyor'}
+                {a.status === 'confirmed' && 'Onaylandı'}
+                {a.status === 'cancelled' && 'İptal'}
+                {a.status === 'completed' && 'Tamamlandı'}
               </span>
             </div>
 
-            {/* Main Content */}
-            <div className="p-4">
-              {/* Date & Time */}
-              <div className="mb-2">
-                <div className="flex items-center gap-2 text-gray-600 mb-1">
-                  <span className="text-base">📅</span>
-                  <span className="font-semibold text-gray-800 text-sm" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(a.appointment_datetime))}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="text-base">🕐</span>
-                  <span className="font-semibold text-gray-800 text-sm" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</span>
-                </div>
-              </div>
-
-              {/* Customer, Service & Employee Info */}
-              <div className="grid grid-cols-1 gap-2 mb-3">
-                <div className="flex items-center gap-2 p-2 bg-white/60 backdrop-blur-md rounded-lg border border-white/40">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                    👤
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-blue-600 font-medium">Müşteri</p>
-                    <p className="font-semibold text-gray-800 text-sm">{a.user_name || 'Bilinmiyor'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-2 bg-white/60 backdrop-blur-md rounded-lg border border-white/40">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                    💇‍♂️
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-purple-600 font-medium">Hizmet</p>
-                    <p className="font-semibold text-gray-800 text-sm">
-                      {a.service_names && a.service_names.length > 0 
-                        ? a.service_names.join(', ') 
-                        : 'Bilinmiyor'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-2 bg-white/60 backdrop-blur-md rounded-lg border border-white/40">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                    ✂️
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-green-600 font-medium">Çalışan</p>
-                    <p className="font-semibold text-gray-800 text-sm">
-                      {a.employee_names && a.employee_names.length > 0 
-                        ? a.employee_names.join(', ') 
-                        : 'Bilinmiyor'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                {a.status === 'pending' && (
-                  <>
-                    <button
-                      className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-2.5 px-3 rounded-lg text-sm font-semibold hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow hover:shadow-md flex items-center justify-center gap-2"
-                      onClick={() => handleStatus(a.id, 'confirmed')}
-                    >
-                      <span>✅</span>
-                      Onayla
-                    </button>
-                    <button
-                      className="flex-1 bg-gradient-to-r from-rose-500 to-rose-600 text-white py-2.5 px-3 rounded-lg text-sm font-semibold hover:from-rose-600 hover:to-rose-700 transition-all duration-200 shadow hover:shadow-md flex items-center justify-center gap-2"
-                      onClick={() => handleStatus(a.id, 'cancelled')}
-                    >
-                      <span>❌</span>
-                      İptal Et
-                    </button>
-                  </>
-                )}
-                {a.status === 'confirmed' && (
-                  <button
-                    className="flex-1 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-2.5 px-3 rounded-lg text-sm font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow hover:shadow-md flex items-center justify-center gap-2"
-                    onClick={() => handleStatus(a.id, 'completed')}
-                  >
-                    <span>🎉</span>
-                    Tamamlandı
-                  </button>
-                )}
-                {(a.status === 'completed' || a.status === 'cancelled') && (
-                  <div className="flex-1 text-center py-2.5 px-3 rounded-lg bg-white/60 backdrop-blur-md border border-white/40 text-gray-700 text-sm font-medium">
-                    {a.status === 'completed' ? '✅ Randevu tamamlandı' : '❌ Randevu iptal edildi'}
-                  </div>
-                )}
-              </div>
+            <div className="space-y-1.5 mb-2">
+              <div className="text-[13px] text-gray-800 truncate">Hizmet: {a.service_names && a.service_names.length > 0 ? a.service_names.join(', ') : '—'}</div>
+              <div className="text-[13px] text-gray-800 truncate">Çalışan: {a.employee_names && a.employee_names.length > 0 ? a.employee_names.join(', ') : '—'}</div>
             </div>
 
-            {/* Decorative Elements */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500"></div>
+            <div className="flex gap-6">
+              {a.status === 'pending' && (
+                <>
+                  <button className="text-[13px] font-medium text-emerald-700" onClick={() => handleStatus(a.id, 'confirmed')}>Onayla</button>
+                  <button className="text-[13px] font-medium text-rose-700" onClick={() => handleStatus(a.id, 'cancelled')}>İptal Et</button>
+                </>
+              )}
+              {a.status === 'confirmed' && (
+                <button className="text-[13px] font-medium text-indigo-700" onClick={() => handleStatus(a.id, 'completed')}>Tamamlandı</button>
+              )}
+              {a.status === 'completed' && (
+                <div className="text-[13px] text-gray-700">Tamamlandı</div>
+              )}
+              {a.status === 'cancelled' && (
+                <div className="text-[13px] text-gray-600">İptal edildi</div>
+              )}
+            </div>
           </div>
         ))}
         {(!appointments || appointments.length === 0) && !isLoading && (

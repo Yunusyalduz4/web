@@ -30,24 +30,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    // Ensure table exists (dev safety)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        business_id UUID NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS push_subscriptions_business_endpoint_idx 
+      ON push_subscriptions (business_id, endpoint);
+    `);
+
     // Save or update push subscription
-    await pool.query(
-      `INSERT INTO push_subscriptions 
-       (business_id, endpoint, p256dh, auth, created_at) 
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (business_id, endpoint) 
-       DO UPDATE SET 
-         p256dh = EXCLUDED.p256dh,
-         auth = EXCLUDED.auth,
-         updated_at = NOW()`,
-      [
-        businessId,
-        subscription.endpoint,
-        subscription.keys.p256dh,
-        subscription.keys.auth,
-        new Date().toISOString()
-      ]
+    // Note: Avoid ON CONFLICT to not depend on a unique index existing in all envs.
+    // Try UPDATE first; if no row affected, INSERT.
+    const updateResult = await pool.query(
+      `UPDATE push_subscriptions 
+       SET p256dh = $3, auth = $4 
+       WHERE business_id = $1 AND endpoint = $2`,
+      [businessId, subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth]
     );
+
+    if (updateResult.rowCount === 0) {
+      await pool.query(
+        `INSERT INTO push_subscriptions (business_id, endpoint, p256dh, auth) VALUES ($1, $2, $3, $4)`,
+        [businessId, subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth]
+      );
+    }
 
     res.status(200).json({ success: true });
   } catch (error) {
