@@ -369,4 +369,215 @@ export const appointmentRouter = t.router({
       }
       return busy;
     }),
+
+  // Yeni: 7 günlük slot görünümü için endpoint
+  getWeeklySlots: t.procedure.use(isBusiness)
+    .input(z.object({
+      businessId: z.string().uuid(),
+      startDate: z.string(), // YYYY-MM-DD (Türkiye saati olarak kabul edilecek)
+    }))
+    .query(async ({ input }) => {
+      // 7 günlük tarih aralığını hesapla
+      const startDate = new Date(input.startDate + 'T00:00:00');
+      const endDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000); // +6 gün
+      
+      // UTC'ye çevir
+      const utcStartDate = new Date(startDate.getTime() - (3 * 60 * 60 * 1000));
+      const utcEndDate = new Date(endDate.getTime() - (3 * 60 * 60 * 1000));
+      
+      // İşletmenin çalışanlarını al
+      const employeesRes = await pool.query(
+        `SELECT id, name FROM employees WHERE business_id = $1`,
+        [input.businessId]
+      );
+      const employeeIds = employeesRes.rows.map(e => e.id);
+      
+      if (employeeIds.length === 0) {
+        return [];
+      }
+      
+      // 7 günlük slot verilerini hesapla
+      const weeklyData = [];
+      
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+        const dateStr = currentDate.toISOString().split('T')[0];
+        
+        // UTC'ye çevir
+        const utcCurrentDate = new Date(currentDate.getTime() - (3 * 60 * 60 * 1000));
+        const utcNextDate = new Date(utcCurrentDate.getTime() + 24 * 60 * 60 * 1000);
+        
+        // O gün için randevuları al
+        const appointmentsRes = await pool.query(
+          `SELECT 
+            a.appointment_datetime,
+            a.status,
+            SUM(aps.duration_minutes) AS total_duration
+           FROM appointments a
+           JOIN appointment_services aps ON a.id = aps.appointment_id
+           WHERE a.business_id = $1 
+             AND a.status IN ('pending', 'confirmed')
+             AND aps.employee_id = ANY($2::uuid[])
+             AND a.appointment_datetime >= $3 
+             AND a.appointment_datetime < $4
+           GROUP BY a.id, a.appointment_datetime, a.status`,
+          [input.businessId, employeeIds, utcCurrentDate.toISOString(), utcNextDate.toISOString()]
+        );
+        
+        // 15dk'lık slot'ları oluştur (08:00-20:00 arası)
+        const slots = {};
+        const busySlots = {};
+        
+        // Meşgul slot'ları hesapla
+        for (const apt of appointmentsRes.rows) {
+          const aptStart = new Date(apt.appointment_datetime);
+          const aptEnd = new Date(aptStart.getTime() + Number(apt.total_duration) * 60000);
+          
+          // Her 15dk'lık slot için kontrol et
+          for (let time = new Date(aptStart); time < aptEnd; time = new Date(time.getTime() + 15 * 60000)) {
+            const turkeyTime = new Date(time.getTime() + (3 * 60 * 60 * 1000));
+            const hh = String(turkeyTime.getHours()).padStart(2, '0');
+            const mm = String(turkeyTime.getMinutes()).padStart(2, '0');
+            const slotKey = `${hh}:${mm}`;
+            
+            // Sadece 08:00-20:00 arası slot'ları kaydet
+            if (turkeyTime.getHours() >= 8 && turkeyTime.getHours() < 20) {
+              busySlots[slotKey] = true;
+            }
+          }
+        }
+        
+        // Tüm slot'ları oluştur (08:00-20:00)
+        for (let h = 8; h < 20; h++) {
+          for (let m = 0; m < 60; m += 15) {
+            const slotKey = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            slots[slotKey] = {
+              time: slotKey,
+              isBusy: !!busySlots[slotKey],
+              status: busySlots[slotKey] ? 'busy' : 'available'
+            };
+          }
+        }
+        
+        // Günlük özet hesapla
+        const totalSlots = Object.keys(slots).length;
+        const busySlotsCount = Object.values(slots).filter(slot => slot.isBusy).length;
+        const availableSlotsCount = totalSlots - busySlotsCount;
+        
+        weeklyData.push({
+          date: dateStr,
+          dayName: currentDate.toLocaleDateString('tr-TR', { weekday: 'long' }),
+          dayShort: currentDate.toLocaleDateString('tr-TR', { weekday: 'short' }),
+          totalSlots,
+          busySlots: busySlotsCount,
+          availableSlots: availableSlotsCount,
+          slots: Object.values(slots),
+          isToday: dateStr === new Date().toISOString().split('T')[0]
+        });
+      }
+      
+      return weeklyData;
+    }),
+
+  // Yeni: Manuel randevu oluşturma endpoint'i
+  createManualAppointment: t.procedure.use(isBusiness)
+    .input(z.object({
+      businessId: z.string().uuid(),
+      customerName: z.string().min(2),
+      customerPhone: z.string().optional(),
+      serviceId: z.string().uuid(),
+      employeeId: z.string().uuid(),
+      appointmentDatetime: z.string(), // YYYY-MM-DDTHH:mm:ss formatında
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      // UTC'ye çevir (Türkiye saati -3 saat)
+      const turkeyDateTime = new Date(input.appointmentDatetime);
+      const utcDateTime = new Date(turkeyDateTime.getTime() - (3 * 60 * 60 * 1000));
+      
+      // Geçmiş zamana randevu alınamaz
+      const nowTurkey = new Date(Date.now() + (3 * 60 * 60 * 1000));
+      if (turkeyDateTime.getTime() <= nowTurkey.getTime()) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
+      }
+
+      // Hizmet bilgilerini al
+      const serviceRes = await pool.query(
+        `SELECT duration_minutes, price FROM services WHERE id = $1 AND business_id = $2`,
+        [input.serviceId, input.businessId]
+      );
+      if (serviceRes.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Hizmet bulunamadı' });
+      }
+      const service = serviceRes.rows[0];
+
+      // Çalışan bilgilerini al
+      const employeeRes = await pool.query(
+        `SELECT id, name FROM employees WHERE id = $1 AND business_id = $2`,
+        [input.employeeId, input.businessId]
+      );
+      if (employeeRes.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bulunamadı' });
+      }
+
+      // Çakışma kontrolü
+      const start = utcDateTime;
+      const end = new Date(start.getTime() + service.duration_minutes * 60000);
+      const conflictRes = await pool.query(
+        `SELECT a.id
+         FROM appointments a
+         JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE a.status IN ('pending','confirmed') AND aps.employee_id = $1
+         GROUP BY a.id, a.appointment_datetime
+         HAVING a.appointment_datetime < $3 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $2`,
+        [input.employeeId, start.toISOString(), end.toISOString()]
+      );
+      if (conflictRes.rows.length > 0) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Bu saat dolu, lütfen başka bir saat seçin.' });
+      }
+
+      // Manuel randevu oluştur
+      const appointmentResult = await pool.query(
+        `INSERT INTO appointments (business_id, appointment_datetime, status, customer_name, customer_phone, notes, is_manual) 
+         VALUES ($1, $2, 'confirmed', $3, $4, $5, true) RETURNING *`,
+        [input.businessId, utcDateTime.toISOString(), input.customerName, input.customerPhone || null, input.notes || null]
+      );
+      const appointmentId = appointmentResult.rows[0].id;
+
+      // Appointment services kaydı oluştur
+      await pool.query(
+        `INSERT INTO appointment_services (appointment_id, service_id, employee_id, price, duration_minutes) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [appointmentId, input.serviceId, input.employeeId, service.price, service.duration_minutes]
+      );
+
+      return appointmentResult.rows[0];
+    }),
+
+  // Yeni: Randevu durumunu güncelleme endpoint'i
+  updateStatus: t.procedure.use(isBusiness)
+    .input(z.object({
+      appointmentId: z.string().uuid(),
+      businessId: z.string().uuid(),
+      status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+    }))
+    .mutation(async ({ input }) => {
+      // Randevunun bu işletmeye ait olduğunu kontrol et
+      const appointmentCheck = await pool.query(
+        `SELECT id FROM appointments WHERE id = $1 AND business_id = $2`,
+        [input.appointmentId, input.businessId]
+      );
+      
+      if (appointmentCheck.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
+      }
+
+      // Durumu güncelle
+      const result = await pool.query(
+        `UPDATE appointments SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+        [input.status, input.appointmentId]
+      );
+
+      return result.rows[0];
+    }),
 }); 

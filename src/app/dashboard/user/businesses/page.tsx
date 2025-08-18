@@ -7,7 +7,6 @@ import Map from '../../../../components/Map';
 import Hero from '../../../../components/ui/Hero';
 
 export default function UserBusinessesPage() {
-  const { data: businesses, isLoading } = trpc.business.getBusinesses.useQuery();
   const [view, setView] = useState<'list' | 'map'>('list');
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -18,6 +17,7 @@ export default function UserBusinessesPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [hasPhone, setHasPhone] = useState(false);
   const [hasEmail, setHasEmail] = useState(false);
+  const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
 
   // Kullanıcı konumunu al
   useEffect(() => {
@@ -29,6 +29,14 @@ export default function UserBusinessesPage() {
       );
     }
   }, []);
+
+  // Cinsiyet filtresi ile işletmeleri çek
+  const { data: businesses, isLoading } = trpc.user.getBusinessesWithGenderFilter.useQuery({
+    genderFilter: genderFilter === 'all' ? undefined : genderFilter,
+    latitude: userLocation?.lat,
+    longitude: userLocation?.lng,
+    radius: maxDistanceKm || undefined
+  });
 
   // Haversine ile km hesapla
   function distanceKm(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
@@ -214,6 +222,18 @@ export default function UserBusinessesPage() {
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/60 border border-white/40">
                       🗳️ {b.total_reviews || 0}
                     </span>
+                    {/* Cinsiyet bilgisi */}
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-medium ${
+                      b.gender_service === 'male' 
+                        ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                        : b.gender_service === 'female'
+                        ? 'bg-pink-50 text-pink-700 border-pink-200'
+                        : 'bg-purple-50 text-purple-700 border-purple-200'
+                    }`}>
+                      {b.gender_service === 'male' && '👨 Erkek'}
+                      {b.gender_service === 'female' && '👩 Kadın'}
+                      {b.gender_service === 'unisex' && '👥 Unisex'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -296,6 +316,72 @@ export default function UserBusinessesPage() {
             <div className="flex items-center gap-3">
               <label className="inline-flex items-center gap-2 text-sm text-gray-900"><input type="checkbox" checked={hasPhone} onChange={(e) => setHasPhone(e.target.checked)} /> Telefonu olanlar</label>
               <label className="inline-flex items-center gap-2 text-sm text-gray-900"><input type="checkbox" checked={hasEmail} onChange={(e) => setHasEmail(e.target.checked)} /> E-postası olanlar</label>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Cinsiyet Filtresi</label>
+              <div className="grid grid-cols-3 gap-2 mt-1">
+                <label className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                  genderFilter === 'all' 
+                    ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                    : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+                }`}>
+                  <input
+                    type="radio"
+                    name="genderFilter"
+                    value="all"
+                    checked={genderFilter === 'all'}
+                    onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <div className="text-sm mb-1">👥</div>
+                    <div className="text-xs font-medium">Tümü</div>
+                  </div>
+                </label>
+                
+                <label className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                  genderFilter === 'male' 
+                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                    : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+                }`}>
+                  <input
+                    type="radio"
+                    name="genderFilter"
+                    value="male"
+                    checked={genderFilter === 'male'}
+                    onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <div className="text-sm mb-1">👨</div>
+                    <div className="text-xs font-medium">Erkek</div>
+                  </div>
+                </label>
+                
+                <label className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                  genderFilter === 'female' 
+                    ? 'border-pink-500 bg-pink-50 text-pink-700' 
+                    : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+                }`}>
+                  <input
+                    type="radio"
+                    name="genderFilter"
+                    value="female"
+                    checked={genderFilter === 'female'}
+                    onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <div className="text-sm mb-1">👩</div>
+                    <div className="text-xs font-medium">Kadın</div>
+                  </div>
+                </label>
+              </div>
+              <div className="text-[11px] text-gray-500 mt-1 text-center">
+                {genderFilter === 'male' && 'Sadece erkek ve unisex işletmeler gösterilecek'}
+                {genderFilter === 'female' && 'Sadece kadın ve unisex işletmeler gösterilecek'}
+                {genderFilter === 'all' && 'Tüm işletmeler gösterilecek'}
+              </div>
             </div>
             <div className="pt-2">
               <button

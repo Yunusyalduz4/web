@@ -13,6 +13,63 @@ export const userRouter = t.router({
       );
       return result.rows[0];
     }),
+
+  // Yeni: Cinsiyet filtresi ile işletme listeleme
+  getBusinessesWithGenderFilter: t.procedure
+    .input(z.object({ 
+      genderFilter: z.enum(['male', 'female', 'all']).optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+      radius: z.number().optional() // km cinsinden
+    }))
+    .query(async ({ input }) => {
+      let whereClause = '';
+      const values: any[] = [];
+      let param = 1;
+
+      // Cinsiyet filtresi
+      if (input.genderFilter && input.genderFilter !== 'all') {
+        if (input.genderFilter === 'male') {
+          whereClause += ` AND (b.gender_service = 'male' OR b.gender_service = 'unisex')`;
+        } else if (input.genderFilter === 'female') {
+          whereClause += ` AND (b.gender_service = 'female' OR b.gender_service = 'unisex')`;
+        }
+      }
+
+      // Konum filtresi (opsiyonel)
+      if (input.latitude && input.longitude && input.radius) {
+        // Haversine formülü ile mesafe hesaplama
+        whereClause += ` AND (
+          6371 * acos(
+            cos(radians($${param++})) * 
+            cos(radians(b.latitude)) * 
+            cos(radians(b.longitude) - radians($${param++})) + 
+            sin(radians($${param++})) * 
+            sin(radians(b.latitude))
+          )
+        ) <= $${param++}`;
+        values.push(input.latitude, input.longitude, input.latitude, input.radius);
+      }
+
+      const result = await pool.query(`
+        SELECT 
+          b.*,
+          COALESCE(br.overall_rating, 0) AS overall_rating,
+          COALESCE(br.total_reviews, 0) AS total_reviews,
+          (
+            SELECT COUNT(*)::int 
+            FROM favorites f 
+            WHERE f.business_id = b.id
+          ) AS favorites_count
+        FROM businesses b
+        LEFT JOIN business_ratings br ON br.business_id = b.id
+        WHERE 1=1 ${whereClause}
+        ORDER BY b.name ASC
+      `, values);
+
+      return result.rows;
+    }),
+
   appointmentHistory: t.procedure.use(isUser)
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {

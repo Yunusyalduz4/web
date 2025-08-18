@@ -37,7 +37,7 @@ export default function BusinessAppointmentsPage() {
     setError('');
     setSuccess('');
     try {
-      await updateStatus.mutateAsync({ id, status });
+      await updateStatus.mutateAsync({ appointmentId: id, businessId: businessId || '', status });
       setSuccess('Randevu güncellendi!');
       appointmentsQuery.refetch();
       setTimeout(() => setSuccess(''), 1200);
@@ -64,7 +64,7 @@ export default function BusinessAppointmentsPage() {
       // Employees by names
       if (employeeFilters.length > 0) {
         const names: string[] = Array.isArray(a.employee_names) ? a.employee_names : [];
-        if (!employeeFilters.some((e) => names.includes(e))) return false;
+        if (!serviceFilters.some((e) => names.includes(e))) return false;
       }
       // Date range
       if (dateFrom) {
