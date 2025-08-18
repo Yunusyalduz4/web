@@ -39,6 +39,12 @@ export const isBusiness = t.middleware(async ({ ctx, next }) => {
   if (!ctx.session?.user || ctx.session.user.role !== 'business') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece işletme sahipleri erişebilir' });
   }
+  
+  // businessId kontrolü ekle
+  if (!ctx.session.user.businessId) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme ID bulunamadı' });
+  }
+  
   return next({ ctx: { user: ctx.session.user } });
 });
 

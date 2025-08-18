@@ -295,6 +295,21 @@ export default function UserDashboard() {
                    <div className="text-xs text-gray-600 mb-1" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(a.appointment_datetime))}</div>
                   <div className="text-xs text-gray-800 truncate">Hizmet: {a.service_names?.length ? a.service_names.join(', ') : '—'}</div>
                   <div className="text-xs text-gray-800 truncate">Çalışan: {a.employee_names?.length ? a.employee_names.join(', ') : '—'}</div>
+                  
+                  {/* Tamamlanan randevular için değerlendirme butonu */}
+                  {a.status === 'completed' && (
+                    <div className="mt-3 pt-3 border-t border-white/40">
+                      <button
+                        onClick={() => {
+                          handleReviewClick(a);
+                          setHistoryOpen(false);
+                        }}
+                        className="w-full px-3 py-2 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white text-xs font-medium rounded-lg hover:from-rose-700 hover:to-fuchsia-700 transition shadow-sm"
+                      >
+                        ⭐ Değerlendir
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               {filteredHistory.length === 0 && (

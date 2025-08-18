@@ -35,6 +35,7 @@ const businessUpdateSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   profileImageUrl: z.string().url().nullable().optional(),
+  genderService: z.enum(['male', 'female', 'unisex']).optional(),
 });
 
 const businessProfileUpdateSchema = z.object({
@@ -78,8 +79,8 @@ export const businessRouter = t.router({
     .input(businessUpdateSchema)
     .mutation(async ({ input }) => {
       const result = await pool.query(
-        `UPDATE businesses SET name = $1, description = $2, address = $3, phone = $4, email = $5, latitude = $6, longitude = $7, profile_image_url = $8, updated_at = NOW() WHERE id = $9 RETURNING *`,
-        [input.name, input.description || '', input.address, input.phone || '', input.email || '', input.latitude, input.longitude, input.profileImageUrl ?? null, input.id]
+        `UPDATE businesses SET name = $1, description = $2, address = $3, phone = $4, email = $5, latitude = $6, longitude = $7, profile_image_url = $8, gender_service = $9, updated_at = NOW() WHERE id = $10 RETURNING *`,
+        [input.name, input.description || '', input.address, input.phone || '', input.email || '', input.latitude, input.longitude, input.profileImageUrl ?? null, input.genderService || 'unisex', input.id]
       );
       return result.rows[0];
     }),

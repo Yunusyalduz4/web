@@ -1,6 +1,7 @@
-import { t, isUser } from '../trpc/trpc';
+import { t, isUser, isBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
+import { TRPCError } from '@trpc/server';
 
 // Review creation schema
 const createReviewSchema = z.object({
@@ -58,13 +59,13 @@ export const reviewRouter = t.router({
         throw new Error('Bu randevu için zaten yorum yapılmış');
       }
 
-      // Check if appointment is within 24 hours
+      // Check if appointment is within 30 days (daha uzun süre)
       const appointmentTime = new Date(appointment.appointment_datetime);
       const now = new Date();
-      const hoursDiff = (now.getTime() - appointmentTime.getTime()) / (1000 * 60 * 60);
+      const daysDiff = (now.getTime() - appointmentTime.getTime()) / (1000 * 60 * 60 * 24);
 
-      if (hoursDiff > 24) {
-        throw new Error('Randevudan 24 saat geçtikten sonra yorum yapılamaz');
+      if (daysDiff > 30) {
+        throw new Error('Randevudan 30 gün geçtikten sonra yorum yapılamaz');
       }
 
       // Simple spam filter
@@ -93,14 +94,118 @@ export const reviewRouter = t.router({
       return result.rows[0];
     }),
 
-  // Get reviews by business with pagination
-  getByBusiness: t.procedure
+  // Yeni: Tamamlanan randevular için yorum yapılmamış olanları getir
+  getCompletedAppointmentsForReview: t.procedure
+    .use(isUser)
     .input(z.object({
-      businessId: z.string().uuid(),
+      userId: z.string().uuid(),
+      businessId: z.string().uuid().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { userId, businessId } = input;
+      
+      let query = `
+        SELECT 
+          a.id as appointment_id,
+          a.appointment_datetime,
+          a.status,
+          a.customer_name,
+          b.id as business_id,
+          b.name as business_name,
+          COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
+          COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
+          COALESCE(array_agg(DISTINCT e.id) FILTER (WHERE e.id IS NOT NULL), ARRAY[]::uuid[]) as employee_ids,
+          r.id as review_id
+        FROM appointments a
+        JOIN businesses b ON a.business_id = b.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN services s ON aps.service_id = s.id
+        LEFT JOIN employees e ON aps.employee_id = e.id
+        LEFT JOIN reviews r ON a.id = r.appointment_id
+        WHERE a.user_id = $1 AND a.status = 'completed'
+      `;
+      
+      const params = [userId];
+      let paramIndex = 1;
+      
+      if (businessId) {
+        query += ` AND b.id = $${++paramIndex}`;
+        params.push(businessId);
+      }
+      
+      query += `
+        GROUP BY a.id, b.id, r.id
+        HAVING r.id IS NULL
+        ORDER BY a.appointment_datetime DESC
+      `;
+      
+      const result = await pool.query(query, params);
+      
+      return result.rows.map(row => ({
+        ...row,
+        appointment_datetime: new Date(row.appointment_datetime).toISOString(),
+        turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+      }));
+    }),
+
+  // Yeni: Kullanıcının yorumlarını getir
+  getByUser: t.procedure
+    .use(isUser)
+    .input(z.object({
+      userId: z.string().uuid(),
       ...paginationSchema.shape,
     }))
     .query(async ({ input }) => {
-      const { businessId, page, limit } = input;
+      const { userId, page, limit } = input;
+      const offset = (page - 1) * limit;
+
+      const result = await pool.query(
+        `SELECT r.*, b.name as business_name, a.appointment_datetime,
+                COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
+                COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names
+         FROM reviews r
+         JOIN businesses b ON r.business_id = b.id
+         JOIN appointments a ON r.appointment_id = a.id
+         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+         LEFT JOIN services s ON aps.service_id = s.id
+         LEFT JOIN employees e ON aps.employee_id = e.id
+         WHERE r.user_id = $1
+         GROUP BY r.id, b.name, a.appointment_datetime
+         ORDER BY r.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [userId, limit, offset]
+      );
+
+      const totalResult = await pool.query(
+        'SELECT COUNT(*) as total FROM reviews WHERE user_id = $1',
+        [userId]
+      );
+
+      return {
+        reviews: result.rows.map(row => ({
+          ...row,
+          appointment_datetime: new Date(row.appointment_datetime).toISOString(),
+          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+        })),
+        pagination: {
+          page,
+          limit,
+          total: parseInt(totalResult.rows[0].total),
+          totalPages: Math.ceil(parseInt(totalResult.rows[0].total) / limit),
+        },
+      };
+    }),
+
+  // Get reviews by business with pagination
+  getByBusiness: t.procedure
+    .use(isBusiness)
+    .input(z.object({
+      page: z.number().min(1).default(1),
+      limit: z.number().min(1).max(50).default(10),
+    }))
+    .query(async ({ input, ctx }) => {
+      const { page, limit } = input;
+      const businessId = ctx.user.businessId;
       const offset = (page - 1) * limit;
 
       const result = await pool.query(
@@ -187,11 +292,13 @@ export const reviewRouter = t.router({
 
   // Get business rating summary
   getBusinessRating: t.procedure
-    .input(z.object({ businessId: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .use(isBusiness)
+    .query(async ({ ctx }) => {
+      const businessId = ctx.user.businessId;
+      
       const result = await pool.query(
         'SELECT * FROM business_ratings WHERE business_id = $1',
-        [input.businessId]
+        [businessId]
       );
 
       return result.rows[0] || {

@@ -21,6 +21,7 @@ export default function BusinessEditPage() {
     latitude: 0,
     longitude: 0,
     profileImageUrl: null as string | null,
+    genderService: 'unisex' as 'male' | 'female' | 'unisex',
   });
 
   const [images, setImages] = useState<Array<{ id: string; image_url: string; image_order: number }>>([]);
@@ -48,6 +49,7 @@ export default function BusinessEditPage() {
         latitude: business.latitude || 0,
         longitude: business.longitude || 0,
         profileImageUrl: business.profile_image_url || null,
+        genderService: business.gender_service || 'unisex',
       });
     }
   }, [business]);
@@ -82,6 +84,7 @@ export default function BusinessEditPage() {
         id: business.id,
         ...formData,
         profileImageUrl: formData.profileImageUrl ?? null,
+        genderService: formData.genderService,
       });
       alert('İşletme bilgileri başarıyla güncellendi!');
     } catch (error) {
@@ -340,6 +343,76 @@ export default function BusinessEditPage() {
             <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Telefon" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
             <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="E-posta" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
             <input name="address" value={formData.address} onChange={handleInputChange} required placeholder="Adres" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+          </div>
+        </details>
+
+        <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
+          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Hizmet Cinsiyeti</summary>
+          <div className="mt-3">
+            <div className="text-xs text-gray-600 mb-2">Hangi cinsiyete hizmet veriyorsunuz?</div>
+            <div className="grid grid-cols-3 gap-2">
+              <label className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                formData.genderService === 'male' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90'
+              }`}>
+                <input
+                  type="radio"
+                  name="genderService"
+                  value="male"
+                  checked={formData.genderService === 'male'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, genderService: e.target.value as 'male' | 'female' | 'unisex' }))}
+                  className="hidden"
+                />
+                <div className="text-center">
+                  <div className="text-lg mb-1">👨</div>
+                  <div className="text-xs font-medium">Erkek</div>
+                </div>
+              </label>
+              
+              <label className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                formData.genderService === 'female' 
+                  ? 'border-pink-500 bg-pink-50 text-pink-700' 
+                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90'
+              }`}>
+                <input
+                  type="radio"
+                  name="genderService"
+                  value="female"
+                  checked={formData.genderService === 'female'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, genderService: e.target.value as 'male' | 'female' | 'unisex' }))}
+                  className="hidden"
+                />
+                <div className="text-center">
+                  <div className="text-lg mb-1">👩</div>
+                  <div className="text-xs font-medium">Kadın</div>
+                </div>
+              </label>
+              
+              <label className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                formData.genderService === 'unisex' 
+                  ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90'
+              }`}>
+                <input
+                  type="radio"
+                  name="genderService"
+                  value="unisex"
+                  checked={formData.genderService === 'unisex'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, genderService: e.target.value as 'male' | 'female' | 'unisex' }))}
+                  className="hidden"
+                />
+                <div className="text-center">
+                  <div className="text-lg mb-1">👥</div>
+                  <div className="text-xs font-medium">Unisex</div>
+                </div>
+              </label>
+            </div>
+            <div className="text-[11px] text-gray-500 mt-2 text-center">
+              {formData.genderService === 'male' && 'Sadece erkek müşterilere hizmet veriyorsunuz'}
+              {formData.genderService === 'female' && 'Sadece kadın müşterilere hizmet veriyorsunuz'}
+              {formData.genderService === 'unisex' && 'Tüm müşterilere hizmet veriyorsunuz'}
+            </div>
           </div>
         </details>
 

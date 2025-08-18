@@ -1,7 +1,7 @@
 "use client";
 import { trpc } from '../../../../../../utils/trpcClient';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { skipToken } from '@tanstack/react-query';
 
@@ -33,6 +33,19 @@ export default function BookAppointmentPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Tek çalışan varsa otomatik seçim yap
+  useEffect(() => {
+    if (employees && employees.length === 1 && selectedServices.length > 0) {
+      const singleEmployee = employees[0];
+      const newSelections = selectedServices.map(selection => ({
+        ...selection,
+        employeeId: singleEmployee.id,
+        employee: singleEmployee
+      }));
+      setSelectedServices(newSelections);
+    }
+  }, [employees, selectedServices.length]);
+
   // Seçili hizmetlerin toplam süresini hesapla
   const totalDuration = useMemo(() => {
     return selectedServices.reduce((total, selection) => {
@@ -57,12 +70,21 @@ export default function BookAppointmentPage() {
       setError('En fazla 5 hizmet seçebilirsiniz.');
       return;
     }
-    setSelectedServices([...selectedServices, {
+    
+    const newService = {
       serviceId: '',
       employeeId: '',
       service: null,
       employee: null
-    }]);
+    };
+
+    // Eğer tek çalışan varsa, yeni hizmet için de otomatik seç
+    if (employees && employees.length === 1) {
+      newService.employeeId = employees[0].id;
+      newService.employee = employees[0];
+    }
+
+    setSelectedServices([...selectedServices, newService]);
     setError('');
   };
 
@@ -78,10 +100,15 @@ export default function BookAppointmentPage() {
     newSelections[index] = {
       ...newSelections[index],
       serviceId,
-      service,
-      employeeId: '', // Hizmet değişince çalışanı sıfırla
-      employee: null
+      service
     };
+
+    // Eğer tek çalışan varsa, hizmet seçildiğinde çalışanı da otomatik seç
+    if (employees && employees.length === 1) {
+      newSelections[index].employeeId = employees[0].id;
+      newSelections[index].employee = employees[0];
+    }
+
     setSelectedServices(newSelections);
   };
 
@@ -99,25 +126,35 @@ export default function BookAppointmentPage() {
 
   // Seçili çalışanların uygunluk saatlerini al
   const allEmployeeIds = selectedServices.map(s => s.employeeId).filter(Boolean);
+  
+  // Tek çalışan varsa, o çalışanın müsaitlik durumunu al
+  const singleEmployeeId = employees && employees.length === 1 ? employees[0].id : null;
   const { data: allAvailability } = trpc.business.getEmployeeAvailability.useQuery(
-    { employeeId: allEmployeeIds[0] || '' },
-    { enabled: !!allEmployeeIds[0] }
+    { employeeId: singleEmployeeId || allEmployeeIds[0] || '' },
+    { enabled: !!(singleEmployeeId || allEmployeeIds[0]) }
   );
 
   // Meşgul slotları backend'den al (birden fazla çalışan seçimine göre)
   const { data: busySlots } = trpc.appointment.getBusySlotsForEmployees.useQuery(
     {
-      employeeIds: allEmployeeIds.length ? allEmployeeIds : ([] as string[]),
+      employeeIds: singleEmployeeId ? [singleEmployeeId] : (allEmployeeIds.length ? allEmployeeIds : []),
       date: date || new Date().toISOString().split('T')[0], // Türkiye saati olarak gönder
       durationMinutes: totalDuration || 15,
     },
-    { enabled: !!date && allEmployeeIds.length > 0 }
+    { enabled: !!date && !!(singleEmployeeId || allEmployeeIds.length > 0) }
   );
 
   const availableTimes = useMemo(() => {
-    if (!allAvailability || !date || allEmployeeIds.length === 0) return [];
+    if (!allAvailability || !date || (!singleEmployeeId && allEmployeeIds.length === 0)) return [];
+    
     const dayOfWeek = getDayOfWeek(date);
     const daySlots = allAvailability.filter((a: any) => a.day_of_week === dayOfWeek);
+    
+    // Eğer o gün için müsaitlik yoksa, boş array döndür
+    if (daySlots.length === 0) {
+      return [];
+    }
+    
     const slots: string[] = [];
     daySlots.forEach((slot: any) => {
       let [h, m] = slot.start_time.split(":").map(Number);
@@ -135,7 +172,7 @@ export default function BookAppointmentPage() {
       }
     });
     return slots;
-  }, [allAvailability, date, allEmployeeIds]);
+  }, [allAvailability, date, singleEmployeeId, allEmployeeIds]);
 
   // Meşgul slot'ları kontrol etmek için yardımcı fonksiyon
   const isSlotBusy = (timeSlot: string) => {
@@ -187,6 +224,12 @@ export default function BookAppointmentPage() {
     // Seçilen saat meşgul mu kontrol et
     if (isSlotBusy(time)) {
       setError('Seçilen saat dolu. Lütfen başka bir saat seçiniz.');
+      return;
+    }
+
+    // Çalışan müsaitlik kontrolü
+    if (availableTimes.length === 0) {
+      setError('Seçilen günde çalışan müsait değil. Lütfen başka bir gün seçiniz.');
       return;
     }
 
@@ -253,6 +296,21 @@ export default function BookAppointmentPage() {
           </div>
         </div>
 
+        {/* Tek Çalışan Bilgisi */}
+        {employees && employees.length === 1 && (
+          <div className="p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-600">⚡</span>
+              <span className="text-sm font-medium text-blue-800">
+                Bu işletmenin tek çalışanı var: <strong>{employees[0].name}</strong>
+              </span>
+            </div>
+            <p className="text-xs text-blue-600 mt-1">
+              Çalışan seçimi otomatik olarak yapıldı, değiştiremezsiniz.
+            </p>
+          </div>
+        )}
+
         {/* Hizmet Seçimi */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -305,7 +363,7 @@ export default function BookAppointmentPage() {
                     value={selection.employeeId}
                     onChange={(e) => updateEmployeeSelection(index, e.target.value)}
                     required
-                    disabled={!selection.serviceId}
+                    disabled={!selection.serviceId || (employees && employees.length === 1)}
                     className="border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition disabled:bg-gray-100"
                   >
                     <option value="">Seçiniz</option>
@@ -313,6 +371,11 @@ export default function BookAppointmentPage() {
                       <option key={e.id} value={e.id}>{e.name}</option>
                     ))}
                   </select>
+                  {employees && employees.length === 1 && (
+                    <span className="text-xs text-blue-600 mt-1">
+                      ⚡ Tek çalışan olduğu için otomatik seçildi
+                    </span>
+                  )}
                 </label>
               </div>
 
@@ -339,24 +402,79 @@ export default function BookAppointmentPage() {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800">Tarih ve Saat</h2>
             
+            {/* Tek çalışan müsaitlik bilgisi */}
+            {employees && employees.length === 1 && (
+              <div className="p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-600">📅</span>
+                  <span className="text-sm font-medium text-blue-800">
+                    Çalışan: <strong>{employees[0].name}</strong>
+                  </span>
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  {availableTimes.length > 0 ? (
+                    <>
+                      Bu çalışan <strong>{date ? new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'seçilen günde'}</strong> müsait.
+                      <span className="ml-1">
+                        ({availableTimes.filter(t => !isSlotBusy(t)).length} müsait saat)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Bu çalışan <strong>{date ? new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'seçilen günde'}</strong> müsait değil.
+                      <span className="ml-1 text-orange-600">
+                        Lütfen başka bir gün seçin.
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {/* Tarih slotları (yatay kaydırmalı) */}
             <div className="-mx-4 px-4">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {nextDays.map((d) => {
                   const enabled = availableWeekdays.has(getDayOfWeek(d.dateStr));
                   const selected = date === d.dateStr;
+                  const isToday = d.dateStr === new Date().toISOString().split('T')[0];
+                  
                   return (
                     <button
                       key={d.dateStr}
                       type="button"
                       onClick={() => { if (enabled) { setDate(d.dateStr); setTime(''); } }}
-                      className={`shrink-0 px-3 py-2 rounded-xl text-sm transition border ${selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' : enabled ? 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
+                      className={`shrink-0 px-3 py-2 rounded-xl text-sm transition border relative ${
+                        selected 
+                          ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' 
+                          : enabled 
+                            ? 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80' 
+                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      }`}
                       aria-pressed={selected}
+                      title={enabled ? `${d.dateStr} - Müsait` : `${d.dateStr} - Müsait değil`}
                     >
                       {d.label}
+                      {isToday && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-rose-500 to-fuchsia-600 rounded-full border-2 border-white"></div>
+                      )}
+                      {!enabled && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-400 rounded-full border-2 border-white"></div>
+                      )}
                     </button>
                   );
                 })}
+              </div>
+              <div className="text-xs text-gray-500 mt-2 text-center">
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+                  Müsait değil
+                </span>
+                <span className="mx-2">•</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-3 h-3 bg-gradient-to-r from-rose-500 to-fuchsia-600 rounded-full"></span>
+                  Bugün
+                </span>
               </div>
             </div>
 
