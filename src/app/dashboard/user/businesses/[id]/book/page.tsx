@@ -108,7 +108,7 @@ export default function BookAppointmentPage() {
   const { data: busySlots } = trpc.appointment.getBusySlotsForEmployees.useQuery(
     {
       employeeIds: allEmployeeIds.length ? allEmployeeIds : ([] as string[]),
-      date: date || new Date().toISOString().split('T')[0],
+      date: date || new Date().toISOString().split('T')[0], // Türkiye saati olarak gönder
       durationMinutes: totalDuration || 15,
     },
     { enabled: !!date && allEmployeeIds.length > 0 }
@@ -124,11 +124,10 @@ export default function BookAppointmentPage() {
       const [eh, em] = slot.end_time.split(":").map(Number);
       while (h < eh || (h === eh && m < em)) {
         const token = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-        // Geçmiş saatleri ve meşgul slotları atla
+        // Geçmiş saatleri atla, meşgul slotları da dahil et
         const slotDate = new Date(`${date}T${token}:00`);
         const isPast = slotDate.getTime() <= Date.now();
-        const isBusy = busySlots?.[token];
-        if (!isPast && !isBusy) {
+        if (!isPast) {
           slots.push(token);
         }
         m += 15;
@@ -136,7 +135,12 @@ export default function BookAppointmentPage() {
       }
     });
     return slots;
-  }, [allAvailability, date, allEmployeeIds, busySlots]);
+  }, [allAvailability, date, allEmployeeIds]);
+
+  // Meşgul slot'ları kontrol etmek için yardımcı fonksiyon
+  const isSlotBusy = (timeSlot: string) => {
+    return busySlots?.[timeSlot] || false;
+  };
 
   // Takvim: önümüzdeki 14 gün için slot butonları
   const nextDays = useMemo(() => {
@@ -180,6 +184,12 @@ export default function BookAppointmentPage() {
       return;
     }
 
+    // Seçilen saat meşgul mu kontrol et
+    if (isSlotBusy(time)) {
+      setError('Seçilen saat dolu. Lütfen başka bir saat seçiniz.');
+      return;
+    }
+
     // Tüm hizmetler için çalışan seçilmiş mi kontrol et
     const incompleteSelections = selectedServices.some(s => !s.serviceId || !s.employeeId);
     if (incompleteSelections) {
@@ -187,7 +197,9 @@ export default function BookAppointmentPage() {
       return;
     }
 
-    const appointmentDatetime = new Date(`${date}T${time}:00`).toISOString();
+    // Türkiye saatini açıkça belirt (UTC+3)
+    const turkeyDateTime = new Date(`${date}T${time}:00+03:00`);
+    const appointmentDatetime = turkeyDateTime.toISOString();
     
     try {
       await bookMutation.mutateAsync({
@@ -206,7 +218,7 @@ export default function BookAppointmentPage() {
     }
   };
 
-  const startDateTime = date && time ? new Date(`${date}T${time}:00`) : null;
+  const startDateTime = date && time ? new Date(`${date}T${time}:00`) : null; // Türkiye saati olarak göster
   const endDateTime = startDateTime ? new Date(startDateTime.getTime() + totalDuration * 60000) : null;
 
   return (
@@ -352,10 +364,28 @@ export default function BookAppointmentPage() {
             {date && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Uygun Saatler</span>
+                  <span className="text-sm text-gray-600">
+                    Uygun Saatler 
+                    {availableTimes.length > 0 && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        ({availableTimes.filter(t => !isSlotBusy(t)).length}/{availableTimes.length} müsait)
+                      </span>
+                    )}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => { if (availableTimes.length) setTime(availableTimes[0]); }}
+                    onClick={() => { 
+                      if (availableTimes.length) {
+                        // Meşgul olmayan ilk uygun saati bul
+                        const firstAvailable = availableTimes.find(t => !isSlotBusy(t));
+                        if (firstAvailable) {
+                          setTime(firstAvailable);
+                          setError(''); // Hata mesajını temizle
+                        } else {
+                          setError('Bu gün için uygun saat bulunamadı.');
+                        }
+                      }
+                    }}
                     className="text-sm text-blue-600 hover:underline"
                   >
                     En Yakın Uygun Saat
@@ -365,15 +395,37 @@ export default function BookAppointmentPage() {
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                     {availableTimes.map((t) => {
                       const selected = time === t;
+                      const isBusy = isSlotBusy(t);
                       return (
                         <button
                           key={t}
                           type="button"
-                          onClick={() => setTime(t)}
-                          className={`px-3 py-2 rounded-lg text-sm transition border ${selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' : 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80'}`}
+                          onClick={() => {
+                            if (isSlotBusy(t)) {
+                              setError('Bu saat dolu. Lütfen başka bir saat seçiniz.');
+                              return;
+                            }
+                            setTime(t);
+                            setError(''); // Hata mesajını temizle
+                          }}
+                          className={`px-3 py-2 rounded-lg text-sm transition border ${
+                            selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' 
+                            : isBusy ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60' 
+                            : 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80'
+                          }`}
                           aria-pressed={selected}
+                          disabled={isBusy}
+                          title={isBusy ? 'Bu saat dolu' : 'Bu saati seç'}
                         >
                           {t}
+                          {isBusy && (
+                            <div className="flex items-center justify-center mt-1">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-red-500">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                          )}
                         </button>
                       );
                     })}

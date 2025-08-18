@@ -17,6 +17,10 @@ export const appointmentRouter = t.router({
     }))
     .mutation(async ({ input }) => {
       const BUFFER_MINUTES = 10; // Randevular arasında tampon süre
+      
+      // Frontend'den gelen appointmentDatetime zaten UTC formatında
+      const utcDateTime = new Date(input.appointmentDatetime); // UTC olarak kullan
+      
       // 1. Tüm hizmetlerin süresini al ve toplam süreyi hesapla
       let totalDuration = 0;
       for (const serviceItem of input.services) {
@@ -30,14 +34,17 @@ export const appointmentRouter = t.router({
         totalDuration += serviceRes.rows[0].duration_minutes;
       }
 
-      const start = new Date(input.appointmentDatetime);
+      const start = utcDateTime; // UTC olarak kullan
       const end = new Date(start.getTime() + totalDuration * 60000);
       const startBuffered = new Date(start.getTime() - BUFFER_MINUTES * 60000);
       const endBuffered = new Date(end.getTime() + BUFFER_MINUTES * 60000);
 
       // Geçmiş zamana randevu alınamaz
-      const now = new Date();
-      if (start.getTime() <= now.getTime()) {
+      // Türkiye saati ile kontrol et (UTC +3 saat)
+      const nowTurkey = new Date(Date.now() + (3 * 60 * 60 * 1000)); // UTC'yi Türkiye saatine çevir
+      const startTurkey = new Date(start.getTime() + (3 * 60 * 60 * 1000)); // UTC'yi Türkiye saatine çevir
+      
+      if (startTurkey.getTime() <= nowTurkey.getTime()) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
       }
 
@@ -89,7 +96,7 @@ export const appointmentRouter = t.router({
       // 3. Ana randevuyu oluştur
       const appointmentResult = await pool.query(
         `INSERT INTO appointments (user_id, business_id, appointment_datetime, status) VALUES ($1, $2, $3, 'pending') RETURNING *`,
-        [input.userId, input.businessId, input.appointmentDatetime]
+        [input.userId, input.businessId, utcDateTime.toISOString()] // UTC olarak kaydet
       );
       const appointmentId = appointmentResult.rows[0].id;
 
@@ -119,7 +126,7 @@ export const appointmentRouter = t.router({
         );
         const serviceNames = servicesRes.rows.map(r => r.name).join(', ');
         
-        const appointmentDate = new Date(input.appointmentDatetime);
+        const appointmentDate = new Date(appointmentResult.rows[0].appointment_datetime.getTime() + (3 * 60 * 60 * 1000)); // UTC'yi Türkiye saatine çevir
         const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
           day: '2-digit',
           month: '2-digit',
@@ -166,7 +173,15 @@ export const appointmentRouter = t.router({
         ORDER BY a.appointment_datetime DESC`,
         [input.userId]
       );
-      return result.rows;
+      
+      // UTC'den Türkiye saatine çevir
+      const rows = result.rows.map(row => ({
+        ...row,
+        appointment_datetime: new Date(row.appointment_datetime).toISOString(),
+        turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+      }));
+      
+      return rows;
     }),
   getByBusiness: t.procedure.use(isBusiness)
     .input(z.object({ businessId: z.string().uuid() }))
@@ -189,7 +204,15 @@ export const appointmentRouter = t.router({
         ORDER BY a.appointment_datetime DESC`,
         [input.businessId]
       );
-      return result.rows;
+      
+      // UTC'den Türkiye saatine çevir
+      const rows = result.rows.map(row => ({
+        ...row,
+        appointment_datetime: new Date(row.appointment_datetime).toISOString(),
+        turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+      }));
+      
+      return rows;
     }),
   updateStatus: t.procedure.use(isBusiness)
     .input(z.object({ id: z.string().uuid(), status: z.enum(['pending','confirmed','cancelled','completed']) }))
@@ -198,17 +221,32 @@ export const appointmentRouter = t.router({
         `UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *`,
         [input.status, input.id]
       );
+      
+      // UTC'den Türkiye saatine çevir
+      if (result.rows[0]) {
+        const row = result.rows[0];
+        return {
+          ...row,
+          appointment_datetime: new Date(row.appointment_datetime).toISOString(),
+          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+        };
+      }
+      
       return result.rows[0];
     }),
   checkEmployeeConflict: t.procedure.use(isUser)
     .input(z.object({
       employeeId: z.string().uuid(),
-      appointmentDatetime: z.string(),
+      appointmentDatetime: z.string(), // Türkiye saati olarak geliyor
       durationMinutes: z.number(),
     }))
     .query(async ({ input }) => {
+      // Frontend'den gelen appointmentDatetime'i Türkiye saati olarak kabul et ve UTC'ye çevir
+      const turkeyDateTime = new Date(input.appointmentDatetime);
+      const utcDateTime = new Date(turkeyDateTime.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
+      
       // Çakışan randevu var mı?
-      const start = new Date(input.appointmentDatetime);
+      const start = utcDateTime;
       const end = new Date(start.getTime() + input.durationMinutes * 60000);
       const result = await pool.query(
         `SELECT * FROM appointments WHERE employee_id = $1 AND status IN ('pending','confirmed')
@@ -225,21 +263,34 @@ export const appointmentRouter = t.router({
         `UPDATE appointments SET status = 'cancelled' WHERE id = $1 AND user_id = $2 RETURNING *`,
         [input.id, input.userId]
       );
+      
+      // UTC'den Türkiye saatine çevir
+      if (result.rows[0]) {
+        const row = result.rows[0];
+        return {
+          ...row,
+          appointment_datetime: new Date(row.appointment_datetime).toISOString(),
+          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+        };
+      }
+      
       return result.rows[0];
     }),
   getEmployeeConflicts: t.procedure.use(isUser)
     .input(z.object({
       employeeId: z.string().uuid(),
-      date: z.string(), // YYYY-MM-DD
+      date: z.string(), // YYYY-MM-DD (Türkiye saati olarak kabul edilecek)
       durationMinutes: z.number(),
     }))
     .query(async ({ input }) => {
-      // O gün için tüm randevuları çek
-      const startOfDay = new Date(input.date + 'T00:00:00');
-      const endOfDay = new Date(input.date + 'T23:59:59');
+      // Gelen tarihi Türkiye saati olarak kabul et ve UTC'ye çevir
+      const turkeyDate = new Date(input.date + 'T00:00:00');
+      const utcStartOfDay = new Date(turkeyDate.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
+      const utcEndOfDay = new Date(turkeyDate.getTime() + (21 * 60 * 60 * 1000) - 1000); // 23:59:59 UTC'ye çevir
+      
       const result = await pool.query(
         `SELECT appointment_datetime, service_id FROM appointments WHERE employee_id = $1 AND status IN ('pending','confirmed') AND appointment_datetime >= $2 AND appointment_datetime <= $3`,
-        [input.employeeId, startOfDay.toISOString(), endOfDay.toISOString()]
+        [input.employeeId, utcStartOfDay.toISOString(), utcEndOfDay.toISOString()]
       );
       // Her randevunun başlangıç ve bitişini hesapla
       const busySlots: Array<{ start: Date; end: Date }> = [];
@@ -251,15 +302,17 @@ export const appointmentRouter = t.router({
         const end = new Date(start.getTime() + dur * 60000);
         busySlots.push({ start, end });
       }
-      // 00:00-23:59 arası 15dk slotları üret
+      // 00:00-23:59 arası 15dk slotları üret (Türkiye saati olarak)
       const slots: Record<string, boolean> = {};
       for (let h = 0; h < 24; h++) {
         for (let m = 0; m < 60; m += 30) {
           const slot = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-          const slotStart = new Date(input.date + 'T' + slot + ':00');
-          const slotEnd = new Date(slotStart.getTime() + input.durationMinutes * 60000);
+          // Türkiye saati olarak slot oluştur
+          const turkeySlotStart = new Date(input.date + 'T' + slot + ':00');
+          const utcSlotStart = new Date(turkeySlotStart.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
+          const utcSlotEnd = new Date(utcSlotStart.getTime() + input.durationMinutes * 60000);
           // Çakışan randevu var mı? - Slot'un başlangıcından itibaren hizmet süresi kadar süre doldurulur
-          const conflict = busySlots.some(b => slotStart < b.end && slotEnd > b.start);
+          const conflict = busySlots.some(b => utcSlotStart < b.end && utcSlotEnd > b.start);
           slots[slot] = conflict;
         }
       }
@@ -270,12 +323,15 @@ export const appointmentRouter = t.router({
   getBusySlotsForEmployees: t.procedure.use(isUser)
     .input(z.object({
       employeeIds: z.array(z.string().uuid()).min(1),
-      date: z.string(), // YYYY-MM-DD
+      date: z.string(), // YYYY-MM-DD (Türkiye saati olarak kabul edilecek)
       durationMinutes: z.number().min(1),
     }))
     .query(async ({ input }) => {
-      const startOfDay = new Date(input.date + 'T00:00:00');
-      const endOfDay = new Date(input.date + 'T23:59:59');
+      // Gelen tarihi Türkiye saati olarak kabul et ve UTC'ye çevir
+      const turkeyDate = new Date(input.date + 'T00:00:00');
+      const utcStartOfDay = new Date(turkeyDate.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
+      const utcEndOfDay = new Date(turkeyDate.getTime() + (21 * 60 * 60 * 1000) - 1000); // 23:59:59 UTC'ye çevir
+      
       const res = await pool.query(
         `SELECT a.id, a.appointment_datetime, SUM(aps.duration_minutes) AS total_duration
          FROM appointments a
@@ -284,17 +340,31 @@ export const appointmentRouter = t.router({
            AND aps.employee_id = ANY($1::uuid[])
            AND a.appointment_datetime >= $2 AND a.appointment_datetime <= $3
          GROUP BY a.id, a.appointment_datetime`,
-        [input.employeeIds, startOfDay.toISOString(), endOfDay.toISOString()]
+        [input.employeeIds, utcStartOfDay.toISOString(), utcEndOfDay.toISOString()]
       );
+      
       const busy: Record<string, boolean> = {};
       for (const row of res.rows) {
-        const s = new Date(row.appointment_datetime);
+        const utcStart = new Date(row.appointment_datetime);
         const dur = Number(row.total_duration) || input.durationMinutes;
-        const e = new Date(s.getTime() + dur * 60000);
-        for (let t = new Date(s); t < e; t = new Date(t.getTime() + 15 * 60000)) {
-          const hh = String(t.getHours()).padStart(2, '0');
-          const mm = String(t.getMinutes()).padStart(2, '0');
-          busy[`${hh}:${mm}`] = true;
+        const utcEnd = new Date(utcStart.getTime() + dur * 60000);
+        
+        // UTC slot'ları Türkiye saatine çevir ve 15dk'lık slot'lara böl
+        // DÜZELTME: Slot başlangıç kontrolü - "Bu slot'tan başlayarak randevu alınabilir mi?"
+        for (let t = new Date(utcStart); t < utcEnd; t = new Date(t.getTime() + 15 * 60000)) {
+          // UTC'yi Türkiye saatine çevir (+3 saat)
+          const turkeyTime = new Date(t.getTime() + (3 * 60 * 60 * 1000));
+          const hh = String(turkeyTime.getHours()).padStart(2, '0');
+          const mm = String(turkeyTime.getMinutes()).padStart(2, '0');
+          
+          // Slot başlangıç kontrolü: Bu slot'tan başlayarak randevu alınabilir mi?
+          // Eğer slot, mevcut randevunun bitiş zamanından sonra başlıyorsa müsait
+          const slotStartTime = new Date(t.getTime());
+          const isSlotAvailable = slotStartTime >= utcEnd;
+          
+          if (!isSlotAvailable) {
+            busy[`${hh}:${mm}`] = true;
+          }
         }
       }
       return busy;
