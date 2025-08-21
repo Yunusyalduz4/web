@@ -52,7 +52,7 @@ export default function BusinessDashboard() {
 
   if (!businessId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-fuchsia-50 to-indigo-50 p-4">
+      <div className="p-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center py-8 text-gray-500">
             <span className="text-2xl mb-2 block">🔒</span>
@@ -69,7 +69,7 @@ export default function BusinessDashboard() {
   // Loading state
   if (!business) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-fuchsia-50 to-indigo-50 p-4">
+      <div className="p-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center py-8 text-gray-500">
             <span className="text-2xl mb-2 block">⏳</span>
@@ -81,7 +81,7 @@ export default function BusinessDashboard() {
   }
 
   return (
-    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 pb-24">
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
         <div className="flex items-center justify-between">
@@ -721,27 +721,6 @@ function WeeklySlotView({
               className="text-xs text-gray-500 hover:text-gray-700"
             >
               ✕
-            </button>
-          </div>
-
-          {/* Manuel Randevu Ekleme Butonu */}
-          <div className="mb-3">
-            <button
-              onClick={() => {
-                setShowManualAppointment(true);
-                setSelectedSlot('');
-                setManualAppointmentData({
-                  customerName: '',
-                  customerPhone: '',
-                  serviceId: '',
-                  employeeId: employees && employees.length === 1 ? employees[0].id : '',
-                  notes: ''
-                });
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-medium shadow hover:shadow-lg transition-all"
-            >
-              <span>➕</span>
-              Manuel Randevu Ekle
             </button>
           </div>
 

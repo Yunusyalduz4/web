@@ -538,8 +538,8 @@ export const appointmentRouter = t.router({
 
       // Manuel randevu oluştur
       const appointmentResult = await pool.query(
-        `INSERT INTO appointments (business_id, appointment_datetime, status, customer_name, customer_phone, notes, is_manual) 
-         VALUES ($1, $2, 'confirmed', $3, $4, $5, true) RETURNING *`,
+        `INSERT INTO appointments (user_id, business_id, appointment_datetime, status, customer_name, customer_phone, notes, is_manual) 
+         VALUES (NULL, $1, $2, 'confirmed', $3, $4, $5, true) RETURNING *`,
         [input.businessId, utcDateTime.toISOString(), input.customerName, input.customerPhone || null, input.notes || null]
       );
       const appointmentId = appointmentResult.rows[0].id;

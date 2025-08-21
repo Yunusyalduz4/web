@@ -96,6 +96,8 @@ export default function BusinessDetailPage() {
   const { data: reviewsData } = trpc.review.getByBusiness.useQuery({ businessId, page: 1, limit: 5 }, { enabled: !!businessId });
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [reviewsPage, setReviewsPage] = useState(1);
+  const [minRating, setMinRating] = useState(0);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
   const { data: fullReviews, isLoading: fullReviewsLoading } = trpc.review.getByBusiness.useQuery(
     { businessId, page: reviewsPage, limit: 10 },
     { enabled: !!businessId && reviewsOpen }
@@ -112,6 +114,42 @@ export default function BusinessDetailPage() {
     if (nums.length === 0) return null;
     return Math.min(...nums);
   }, [services]);
+
+  // Filtrelenmiş ve sıralanmış yorumlar
+  const filteredAndSortedReviews = useMemo(() => {
+    if (!reviewsData?.reviews) return [];
+    
+    let filtered = reviewsData.reviews;
+    
+    // Puan filtresi
+    if (minRating > 0) {
+      filtered = filtered.filter((review: any) => {
+        const avgRating = ((review.service_rating || 0) + (review.employee_rating || 0)) / 2;
+        return avgRating >= minRating;
+      });
+    }
+    
+    // Sıralama
+    filtered.sort((a: any, b: any) => {
+      const aRating = ((a.service_rating || 0) + (a.employee_rating || 0)) / 2;
+      const bRating = ((b.service_rating || 0) + (b.employee_rating || 0)) / 2;
+      
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'highest':
+          return bRating - aRating;
+        case 'lowest':
+          return aRating - bRating;
+        default:
+          return 0;
+      }
+    });
+    
+    return filtered;
+  }, [reviewsData?.reviews, minRating, sortBy]);
 
   if (isLoading) {
     return (
@@ -376,42 +414,133 @@ export default function BusinessDetailPage() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Müşteri Değerlendirmeleri</h2>
         </div>
-        {reviewsData?.reviews && reviewsData.reviews.length > 0 ? (
-          <div className="overflow-hidden rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
-            <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-4 py-3 text-[11px] uppercase tracking-wide text-gray-600 border-b border-white/40">
-              <span>Kullanıcı</span>
-              <span>Tarih</span>
-              <span>Puan</span>
-            </div>
-            <div>
-              {reviewsData.reviews.slice(0, 5).map((review: any) => (
-                <div key={review.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-4 py-3 border-t border-white/30 hover:bg-white/70 transition">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 text-white grid place-items-center text-sm shrink-0">
+
+        {/* Filtreleme Seçenekleri */}
+        <div className="mb-4 flex flex-wrap gap-3">
+          {/* Puan Filtresi */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Min Puan:</span>
+            <select 
+              value={minRating}
+              className="px-3 py-2 border border-white/40 rounded-lg bg-white/60 text-sm"
+              onChange={(e) => setMinRating(Number(e.target.value))}
+            >
+              <option value={0}>Tümü</option>
+              <option value={3}>3+</option>
+              <option value={4}>4+</option>
+              <option value={4.5}>4.5+</option>
+            </select>
+          </div>
+
+          {/* Tarih Filtresi */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Sıralama:</span>
+            <select 
+              value={sortBy}
+              className="px-3 py-2 border border-white/40 rounded-lg bg-white/60 text-sm"
+              onChange={(e) => setSortBy(e.target.value as any)}
+            >
+              <option value="newest">En Yeni</option>
+              <option value="oldest">En Eski</option>
+              <option value="highest">En Yüksek Puan</option>
+              <option value="lowest">En Düşük Puan</option>
+            </select>
+          </div>
+        </div>
+        
+
+        
+        {filteredAndSortedReviews.length > 0 ? (
+          <div className="space-y-4">
+            {filteredAndSortedReviews.slice(0, 5).map((review: any) => (
+              <div key={review.id} className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-6 shadow hover:shadow-lg transition-all">
+                {/* Kullanıcı Bilgisi ve Genel Puan */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 text-white grid place-items-center text-lg font-semibold">
                       {(review.user_name?.charAt(0).toUpperCase() || 'M')}
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-gray-900 truncate">{review.user_name || 'Anonim'}</div>
-                      {review.comment && <div className="text-xs text-gray-600 truncate">“{review.comment}”</div>}
+                    <div>
+                      <div className="font-semibold text-gray-900">{review.user_name || 'Anonim'}</div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(review.created_at).toLocaleDateString('tr-TR', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-800">
-                    {new Date(review.created_at).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="text-yellow-500">★</span>
-                      {(((review.service_rating || 0) + (review.employee_rating || 0)) / 2).toFixed(1)} / 5
-                    </span>
+                  
+                  {/* Genel Puan */}
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {(((review.service_rating || 0) + (review.employee_rating || 0)) / 2).toFixed(1)}
+                    </div>
+                    <div className="text-sm text-gray-500">/ 5</div>
                   </div>
                 </div>
-              ))}
-            </div>
-            {reviewsData.pagination && reviewsData.pagination.total > 5 && (
-              <div className="px-4 py-3 border-t border-white/40 text-center">
+
+                {/* Detaylı Rating'ler */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="text-sm text-blue-600 font-medium mb-1">Hizmet Kalitesi</div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex text-yellow-400">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span key={star} className={star <= review.service_rating ? 'text-yellow-400' : 'text-gray-300'}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold text-blue-800">{review.service_rating}/5</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <div className="text-sm text-green-600 font-medium mb-1">Çalışan Performansı</div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex text-yellow-400">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span key={star} className={star <= review.employee_rating ? 'text-yellow-400' : 'text-gray-300'}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold text-green-800">{review.employee_rating}/5</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Yorum Metni */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="text-sm text-gray-700 leading-relaxed">"{review.comment}"</div>
+                </div>
+
+                {/* İşletme Yanıtı */}
+                {review.business_reply && (
+                  <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-400">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white grid place-items-center text-xs">🏢</div>
+                        <span className="text-sm font-medium text-blue-800">İşletme Yanıtı</span>
+                      </div>
+                      <span className="text-xs text-blue-600">
+                        {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
+                      </span>
+                    </div>
+                    <div className="text-sm text-blue-700 leading-relaxed">{review.business_reply}</div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Tüm Yorumları Gör Butonu */}
+            {reviewsData?.pagination && reviewsData.pagination.total > 5 && (
+              <div className="text-center">
                 <button
                   onClick={() => { setReviewsOpen(true); setReviewsPage(1); }}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-semibold shadow hover:shadow-md"
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold shadow hover:shadow-lg transition-all hover:scale-105"
                 >
                   Tüm Değerlendirmeleri Gör ({reviewsData.pagination.total})
                 </button>
@@ -419,7 +548,14 @@ export default function BusinessDetailPage() {
             )}
           </div>
         ) : (
-          <div className="px-4 py-10 text-center text-gray-500">Bu işletme için henüz değerlendirme yapılmamış.</div>
+          <div className="px-4 py-10 text-center text-gray-500">
+            <div className="text-4xl mb-3">💬</div>
+            <div className="text-lg font-medium text-gray-600 mb-2">Henüz Yorum Yok</div>
+            <div className="text-sm text-gray-500 max-w-md mx-auto">
+              Bu işletme için henüz müşteri değerlendirmesi yapılmamış. 
+              İlk yorumu siz yapabilirsiniz!
+            </div>
+          </div>
         )}
       </div>
       )}
@@ -458,16 +594,50 @@ export default function BusinessDetailPage() {
             {fullReviews?.reviews?.map((review: any) => (
               <div key={review.id} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="font-semibold text-gray-900">{review.user_name || 'Anonim'}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 text-white grid place-items-center text-sm font-semibold">
+                      {(review.user_name?.charAt(0).toUpperCase() || 'M')}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{review.user_name || 'Anonim'}</div>
                       <div className="text-xs text-gray-500" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR').format(new Date(review.created_at))}</div>
+                    </div>
                   </div>
-                  <div className="text-right text-xs text-gray-700">
-                    <div>Hizmet: {review.service_rating}/5</div>
-                    <div>Çalışan: {review.employee_rating}/5</div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-yellow-600">
+                      {(((review.service_rating || 0) + (review.employee_rating || 0)) / 2).toFixed(1)}
+                    </div>
+                    <div className="text-xs text-gray-500">/ 5</div>
                   </div>
                 </div>
-                <div className="text-sm text-gray-800">"{review.comment}"</div>
+
+                {/* Detaylı Rating'ler */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="bg-blue-50 rounded-lg p-2">
+                    <div className="text-xs text-blue-600 font-medium">Hizmet: {review.service_rating}/5</div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-2">
+                    <div className="text-xs text-green-600 font-medium">Çalışan: {review.employee_rating}/5</div>
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-800 mb-3">"{review.comment}"</div>
+
+                {/* İşletme Yanıtı */}
+                {review.business_reply && (
+                  <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-400">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-600 text-white grid place-items-center text-xs">🏢</div>
+                        <span className="text-xs font-medium text-blue-800">İşletme Yanıtı</span>
+                      </div>
+                      <span className="text-xs text-blue-600">
+                        {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
+                      </span>
+                    </div>
+                    <div className="text-xs text-blue-700 leading-relaxed">{review.business_reply}</div>
+                  </div>
+                )}
               </div>
             ))}
             {fullReviews && fullReviews.reviews?.length === 0 && (
