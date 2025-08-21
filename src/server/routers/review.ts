@@ -11,6 +11,12 @@ const createReviewSchema = z.object({
   comment: z.string().min(20, 'Yorum en az 20 karakter olmalıdır'),
 });
 
+// Review reply schema
+const createReplySchema = z.object({
+  reviewId: z.string().uuid(),
+  reply: z.string().min(10, 'Yanıt en az 10 karakter olmalıdır'),
+});
+
 // Pagination schema
 const paginationSchema = z.object({
   page: z.number().min(1).default(1),
@@ -198,21 +204,22 @@ export const reviewRouter = t.router({
 
   // Get reviews by business with pagination
   getByBusiness: t.procedure
-    .use(isBusiness)
     .input(z.object({
+      businessId: z.string().uuid(),
       page: z.number().min(1).default(1),
       limit: z.number().min(1).max(50).default(10),
     }))
-    .query(async ({ input, ctx }) => {
-      const { page, limit } = input;
-      const businessId = ctx.user.businessId;
+    .query(async ({ input }) => {
+      const { businessId, page, limit } = input;
       const offset = (page - 1) * limit;
 
       const result = await pool.query(
-        `SELECT r.*, u.name as user_name, a.appointment_datetime
+        `SELECT r.*, u.name as user_name, a.appointment_datetime,
+                b.name as business_name, r.business_reply, r.business_reply_at
          FROM reviews r
          JOIN users u ON r.user_id = u.id
          JOIN appointments a ON r.appointment_id = a.id
+         JOIN businesses b ON r.business_id = b.id
          WHERE r.business_id = $1
          ORDER BY r.created_at DESC
          LIMIT $2 OFFSET $3`,
@@ -292,9 +299,9 @@ export const reviewRouter = t.router({
 
   // Get business rating summary
   getBusinessRating: t.procedure
-    .use(isBusiness)
-    .query(async ({ ctx }) => {
-      const businessId = ctx.user.businessId;
+    .input(z.object({ businessId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const { businessId } = input;
       
       const result = await pool.query(
         'SELECT * FROM business_ratings WHERE business_id = $1',
@@ -323,6 +330,90 @@ export const reviewRouter = t.router({
         average_rating: 0,
         total_reviews: 0,
       };
+    }),
+
+  // İşletme yanıtı ekle
+  addBusinessReply: t.procedure
+    .use(isBusiness)
+    .input(createReplySchema)
+    .mutation(async ({ input, ctx }) => {
+      const { reviewId, reply } = input;
+      const businessId = ctx.user.businessId;
+
+      // Yorumun bu işletmeye ait olduğunu kontrol et
+      const reviewCheck = await pool.query(
+        'SELECT id FROM reviews WHERE id = $1 AND business_id = $2',
+        [reviewId, businessId]
+      );
+
+      if (reviewCheck.rows.length === 0) {
+        throw new Error('Yorum bulunamadı veya bu işletmeye ait değil');
+      }
+
+      // Yanıt ekle
+      const result = await pool.query(
+        `UPDATE reviews SET business_reply = $1, business_reply_at = NOW() WHERE id = $2 RETURNING *`,
+        [reply, reviewId]
+      );
+
+      return result.rows[0];
+    }),
+
+  // Yanıtı güncelle
+  updateBusinessReply: t.procedure
+    .use(isBusiness)
+    .input(z.object({
+      reviewId: z.string().uuid(),
+      reply: z.string().min(10, 'Yanıt en az 10 karakter olmalıdır'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { reviewId, reply } = input;
+      const businessId = ctx.user.businessId;
+
+      // Yorumun bu işletmeye ait olduğunu kontrol et
+      const reviewCheck = await pool.query(
+        'SELECT id FROM reviews WHERE id = $1 AND business_id = $2',
+        [reviewId, businessId]
+      );
+
+      if (reviewCheck.rows.length === 0) {
+        throw new Error('Yorum bulunamadı veya bu işletmeye ait değil');
+      }
+
+      // Yanıtı güncelle
+      const result = await pool.query(
+        `UPDATE reviews SET business_reply = $1, business_reply_at = NOW() WHERE id = $2 RETURNING *`,
+        [reply, reviewId]
+      );
+
+      return result.rows[0];
+    }),
+
+  // Yanıtı sil
+  deleteBusinessReply: t.procedure
+    .use(isBusiness)
+    .input(z.object({ reviewId: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      const { reviewId } = input;
+      const businessId = ctx.user.businessId;
+
+      // Yorumun bu işletmeye ait olduğunu kontrol et
+      const reviewCheck = await pool.query(
+        'SELECT id FROM reviews WHERE id = $1 AND business_id = $2',
+        [reviewId, businessId]
+      );
+
+      if (reviewCheck.rows.length === 0) {
+        throw new Error('Yorum bulunamadı veya bu işletmeye ait değil');
+      }
+
+      // Yanıtı sil
+      const result = await pool.query(
+        `UPDATE reviews SET business_reply = NULL, business_reply_at = NULL WHERE id = $1 RETURNING *`,
+        [reviewId]
+      );
+
+      return result.rows[0];
     }),
 });
 
