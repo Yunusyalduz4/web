@@ -36,6 +36,7 @@ export const appointmentRouter = t.router({
 
       const start = utcDateTime; // UTC olarak kullan
       const end = new Date(start.getTime() + totalDuration * 60000);
+      // Buffer sadece çakışma kontrolü için kullanılacak, slot hesaplaması için değil
       const startBuffered = new Date(start.getTime() - BUFFER_MINUTES * 60000);
       const endBuffered = new Date(end.getTime() + BUFFER_MINUTES * 60000);
 
@@ -48,7 +49,7 @@ export const appointmentRouter = t.router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
       }
 
-      // 2. Tüm çalışanlar için çakışma kontrolü
+      // 2. Tüm çalışanlar için çakışma kontrolü (sadece gerçek randevu süreleri, buffer yok)
       for (const serviceItem of input.services) {
         const conflictRes = await pool.query(
           `SELECT a.id
@@ -57,14 +58,14 @@ export const appointmentRouter = t.router({
            WHERE a.status IN ('pending','confirmed') AND aps.employee_id = $1
            GROUP BY a.id, a.appointment_datetime
            HAVING a.appointment_datetime < $3 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $2`,
-          [serviceItem.employeeId, startBuffered.toISOString(), endBuffered.toISOString()]
+          [serviceItem.employeeId, start.toISOString(), end.toISOString()]
         );
         if (conflictRes.rows.length > 0) {
           throw new TRPCError({ code: 'CONFLICT', message: 'Bu saat dolu, lütfen başka bir saat seçin.' });
         }
       }
 
-      // Kullanıcının aynı anda başka randevusu olmasın
+      // Kullanıcının aynı anda başka randevusu olmasın (sadece gerçek randevu süreleri, buffer yok)
       const userOverlap = await pool.query(
         `SELECT a.id
          FROM appointments a
@@ -72,7 +73,7 @@ export const appointmentRouter = t.router({
          WHERE a.user_id = $1 AND a.status IN ('pending','confirmed')
          GROUP BY a.id, a.appointment_datetime
          HAVING a.appointment_datetime < $3 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $2`,
-        [input.userId, startBuffered.toISOString(), endBuffered.toISOString()]
+        [input.userId, start.toISOString(), end.toISOString()]
       );
       if (userOverlap.rows.length > 0) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Bu saat için mevcut bir randevunuz var' });
@@ -214,26 +215,7 @@ export const appointmentRouter = t.router({
       
       return rows;
     }),
-  updateStatus: t.procedure.use(isBusiness)
-    .input(z.object({ id: z.string().uuid(), status: z.enum(['pending','confirmed','cancelled','completed']) }))
-    .mutation(async ({ input }) => {
-      const result = await pool.query(
-        `UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *`,
-        [input.status, input.id]
-      );
-      
-      // UTC'den Türkiye saatine çevir
-      if (result.rows[0]) {
-        const row = result.rows[0];
-        return {
-          ...row,
-          appointment_datetime: new Date(row.appointment_datetime).toISOString(),
-          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
-        };
-      }
-      
-      return result.rows[0];
-    }),
+
   checkEmployeeConflict: t.procedure.use(isUser)
     .input(z.object({
       employeeId: z.string().uuid(),
@@ -350,21 +332,16 @@ export const appointmentRouter = t.router({
         const utcEnd = new Date(utcStart.getTime() + dur * 60000);
         
         // UTC slot'ları Türkiye saatine çevir ve 15dk'lık slot'lara böl
-        // DÜZELTME: Slot başlangıç kontrolü - "Bu slot'tan başlayarak randevu alınabilir mi?"
+        // Sadece gerçek randevu süresi içindeki slot'ları meşgul olarak işaretle
         for (let t = new Date(utcStart); t < utcEnd; t = new Date(t.getTime() + 15 * 60000)) {
           // UTC'yi Türkiye saatine çevir (+3 saat)
           const turkeyTime = new Date(t.getTime() + (3 * 60 * 60 * 1000));
           const hh = String(turkeyTime.getHours()).padStart(2, '0');
           const mm = String(turkeyTime.getMinutes()).padStart(2, '0');
+          const slotKey = `${hh}:${mm}`;
           
-          // Slot başlangıç kontrolü: Bu slot'tan başlayarak randevu alınabilir mi?
-          // Eğer slot, mevcut randevunun bitiş zamanından sonra başlıyorsa müsait
-          const slotStartTime = new Date(t.getTime());
-          const isSlotAvailable = slotStartTime >= utcEnd;
-          
-          if (!isSlotAvailable) {
-            busy[`${hh}:${mm}`] = true;
-          }
+          // Slot meşgul olarak işaretle (çünkü bu slot mevcut randevunun süresi içinde)
+          busy[slotKey] = true;
         }
       }
       return busy;
@@ -425,8 +402,8 @@ export const appointmentRouter = t.router({
         );
         
         // 15dk'lık slot'ları oluştur (08:00-20:00 arası)
-        const slots = {};
-        const busySlots = {};
+        const slots: Record<string, { time: string; isBusy: boolean; status: string }> = {};
+        const busySlots: Record<string, boolean> = {};
         
         // Meşgul slot'ları hesapla
         for (const apt of appointmentsRes.rows) {
