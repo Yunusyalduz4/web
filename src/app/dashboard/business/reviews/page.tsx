@@ -240,7 +240,19 @@ export default function BusinessReviewsPage() {
                     <div className="flex-1 min-w-0">
                       {/* Kullanıcı Bilgisi ve Tarih */}
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                        <h4 className="font-semibold text-gray-900 text-lg">{review.user_name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-900 text-lg">{review.user_name}</h4>
+                          {/* Onay Durumu Badge */}
+                          {review.is_approved ? (
+                            <span className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-xs font-semibold">
+                              ✅ Onaylı
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-xs font-semibold">
+                              ⏳ Onay Bekliyor
+                            </span>
+                          )}
+                        </div>
                         <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                           {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
                             day: 'numeric',
@@ -274,6 +286,16 @@ export default function BusinessReviewsPage() {
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-semibold text-blue-800">🏢 İşletme Yanıtı</span>
+                              {/* Yanıt Onay Durumu Badge */}
+                              {review.business_reply_approved ? (
+                                <span className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-xs font-semibold">
+                                  ✅ Onaylı
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-xs font-semibold">
+                                  ⏳ Onay Bekliyor
+                                </span>
+                              )}
                             </div>
                             <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
                               {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}

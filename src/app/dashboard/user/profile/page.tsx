@@ -247,9 +247,21 @@ export default function UserProfilePage() {
                         })}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs">
-                      <span className="text-yellow-500">⭐</span>
-                      <span className="font-medium">{((review.service_rating + review.employee_rating) / 2).toFixed(1)}</span>
+                    <div className="flex items-center gap-2">
+                      {/* Onay Durumu Badge */}
+                      {review.is_approved ? (
+                        <div className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-[10px] font-semibold">
+                          ✅ Onaylı
+                        </div>
+                      ) : (
+                        <div className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-[10px] font-semibold">
+                          ⏳ Onay Bekliyor
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="text-yellow-500">⭐</span>
+                        <span className="font-medium">{((review.service_rating + review.employee_rating) / 2).toFixed(1)}</span>
+                      </div>
                     </div>
                   </div>
                   
