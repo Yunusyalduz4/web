@@ -1,8 +1,9 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '../../utils/trpcClient';
 import LocationPicker from '../../components/LocationPicker';
+import { useUserCredentials } from '../../hooks/useLocalStorage';
 
 
 interface LocationData {
@@ -36,8 +37,76 @@ export default function RegisterPage() {
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
   const registerMutation = trpc.auth.register.useMutation();
+  const { saveCredentials } = useUserCredentials();
+
+  // Mevcut konumu alma fonksiyonu
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation desteklenmiyor');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        try {
+          // Reverse geocoding ile adres al
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          );
+          const data = await response.json();
+          
+          if (data.results && data.results[0]) {
+            const address = data.results[0].formatted_address;
+            const location = { latitude: lat, longitude: lng, address };
+            updateFormData('customerLocation', location);
+            setSuccess('Konum başarıyla alındı!');
+            setTimeout(() => setSuccess(''), 3000);
+          } else {
+            setError('Adres alınamadı');
+          }
+        } catch (err) {
+          setError('Konum alınamadı. Lütfen tekrar deneyin.');
+        }
+      },
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setError('Konum izni reddedildi. Lütfen tarayıcı ayarlarından konum iznini verin.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setError('Konum bilgisi alınamadı. Lütfen tekrar deneyin.');
+            break;
+          case error.TIMEOUT:
+            setError('Konum alma zaman aşımına uğradı. Lütfen tekrar deneyin.');
+            break;
+          default:
+            setError('Konum alınamadı. Lütfen tekrar deneyin.');
+        }
+      }
+    );
+  };
+
+  // Sayfa yüklendiğinde kayıtlı bilgileri yükle
+  useEffect(() => {
+    const savedCredentials = localStorage.getItem('userCredentials');
+    if (savedCredentials) {
+      try {
+        const parsed = JSON.parse(savedCredentials);
+        if (parsed.email && parsed.rememberMe) {
+          setFormData(prev => ({ ...prev, email: parsed.email }));
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.error('Error parsing saved credentials:', error);
+      }
+    }
+  }, []);
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -67,9 +136,17 @@ export default function RegisterPage() {
         setError('Lütfen işletme adı ve telefon numarasını doldurun');
         return false;
       }
+      if (!formData.businessLocation) {
+        setError('Lütfen işletme konumunu seçin. Haritadan konum seçin.');
+        return false;
+      }
     } else {
       if (!formData.customerPhone) {
         setError('Lütfen telefon numaranızı girin');
+        return false;
+      }
+      if (!formData.customerLocation) {
+        setError('Lütfen mevcut konumunuzu alın. "📍 Mevcut Konumu Al" butonuna tıklayın.');
         return false;
       }
     }
@@ -125,6 +202,12 @@ export default function RegisterPage() {
 
       console.log('Sending registration data:', registerData);
       await registerMutation.mutateAsync(registerData);
+      
+      // Kayıt başarılıysa ve "Beni Hatırla" seçiliyse bilgileri kaydet
+      if (rememberMe) {
+        saveCredentials(formData.email, formData.password, true);
+      }
+      
       setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: any) {
@@ -201,6 +284,17 @@ export default function RegisterPage() {
           <option value="user">Müşteri</option>
           <option value="business">İşletme</option>
         </select>
+      </label>
+
+      {/* Beni Hatırla checkbox'ı */}
+      <label className="flex items-center gap-3 text-gray-700 font-medium">
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={e => setRememberMe(e.target.checked)}
+          className="w-5 h-5 text-blue-600 bg-white border border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
+        />
+        <span>Giriş bilgilerimi hatırla</span>
       </label>
     </div>
   );
@@ -383,10 +477,40 @@ export default function RegisterPage() {
                     </label>
                     <div>
                       <span className="block text-[11px] text-gray-600 mb-1">İşletme Konumu</span>
-                      <LocationPicker
-                        onLocationSelect={(location) => updateFormData('businessLocation', { latitude: location.lat, longitude: location.lng, address: location.address })}
-                        defaultLocation={formData.businessLocation ? { lat: formData.businessLocation.latitude, lng: formData.businessLocation.longitude, address: formData.businessLocation.address } : undefined}
-                      />
+                      <div className="flex flex-col gap-2">
+                        {formData.businessLocation ? (
+                          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-emerald-800 text-sm">
+                              <span>🏢</span>
+                              <span className="font-medium">Konum seçildi</span>
+                            </div>
+                            <div className="text-xs text-emerald-600 mt-1">
+                              {formData.businessLocation.address}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateFormData('businessLocation', null)}
+                              className="mt-2 text-xs text-emerald-700 hover:text-emerald-900 underline"
+                            >
+                              Konumu değiştir
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-orange-800 text-sm mb-2">
+                              <span>🏢</span>
+                              <span className="font-medium">Konum Gerekli</span>
+                            </div>
+                            <div className="text-xs text-orange-600 mb-3">
+                              Lütfen haritadan işletme konumunuzu seçin. Müşteriler size kolayca ulaşabilsin.
+                            </div>
+                          </div>
+                        )}
+                        <LocationPicker
+                          onLocationSelect={(location) => updateFormData('businessLocation', { latitude: location.lat, longitude: location.lng, address: location.address })}
+                          defaultLocation={formData.businessLocation ? { lat: formData.businessLocation.latitude, lng: formData.businessLocation.longitude, address: formData.businessLocation.address } : undefined}
+                        />
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -401,16 +525,62 @@ export default function RegisterPage() {
                     </label>
                     <div>
                       <span className="block text-[11px] text-gray-600 mb-1">Konum (Opsiyonel)</span>
-                      <LocationPicker
-                        onLocationSelect={(location) => updateFormData('customerLocation', { latitude: location.lat, longitude: location.lng, address: location.address })}
-                        defaultLocation={formData.customerLocation ? { lat: formData.customerLocation.latitude, lng: formData.customerLocation.longitude, address: formData.customerLocation.address } : undefined}
-                      />
+                      <div className="flex flex-col gap-2">
+                        {formData.customerLocation ? (
+                          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-emerald-800 text-sm">
+                              <span>📍</span>
+                              <span className="font-medium">Konum alındı</span>
+                            </div>
+                            <div className="text-xs text-emerald-600 mt-1">
+                              {formData.customerLocation.address}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateFormData('customerLocation', null)}
+                              className="mt-2 text-xs text-emerald-700 hover:text-emerald-900 underline"
+                            >
+                              Konumu kaldır
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-blue-800 text-sm mb-2">
+                              <span>📍</span>
+                              <span className="font-medium">Konum Gerekli</span>
+                            </div>
+                            <div className="text-xs text-blue-600 mb-3">
+                              Lütfen mevcut konumunuzu alın. Bu bilgi size yakın işletmeleri bulmak için kullanılacak.
+                            </div>
+                            <button
+                              type="button"
+                              onClick={getCurrentLocation}
+                              className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md"
+                            >
+                              📍 Mevcut Konumu Al
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
               </>
             )}
           </div>
+
+          {/* Beni Hatırla checkbox'ı - Step 2'de de göster */}
+          {step === 2 && (
+            <label className="flex items-center gap-2 text-gray-700 text-sm">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-white border border-gray-300 rounded focus:ring-blue-400 focus:ring-2"
+              />
+              <span>Giriş bilgilerimi hatırla</span>
+            </label>
+          )}
 
           {/* Messages */}
           {error && <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">{error}</div>}

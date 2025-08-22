@@ -1,27 +1,51 @@
 "use client";
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUserCredentials } from '../../hooks/useLocalStorage';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  
+  const { credentials, saveCredentials, clearCredentials } = useUserCredentials();
+
+  // Sayfa yüklendiğinde kayıtlı bilgileri yükle
+  useEffect(() => {
+    if (credentials.rememberMe && credentials.email && credentials.password) {
+      setEmail(credentials.email);
+      setPassword(credentials.password);
+      setRememberMe(true);
+    }
+  }, [credentials]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
     const res = await signIn('credentials', {
       email,
       password,
       redirect: false,
     });
+    
     if (res?.error) {
       setError('E-posta veya şifre hatalı');
     } else {
+      // Giriş başarılıysa bilgileri kaydet
+      saveCredentials(email, password, rememberMe);
       router.push('/dashboard');
     }
+  };
+
+  const handleClearCredentials = () => {
+    clearCredentials();
+    setEmail('');
+    setPassword('');
+    setRememberMe(false);
   };
 
   return (
@@ -60,6 +84,29 @@ export default function LoginPage() {
               aria-label="Şifre"
             />
           </label>
+          
+          {/* Beni Hatırla ve Bilgileri Temizle */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-rose-600 bg-white/80 border border-white/50 rounded focus:ring-rose-200 focus:ring-2"
+              />
+              <span className="text-[11px] text-gray-700">Beni Hatırla</span>
+            </label>
+            {credentials.rememberMe && credentials.email && (
+              <button
+                type="button"
+                onClick={handleClearCredentials}
+                className="text-[10px] text-rose-600 hover:text-rose-700 underline"
+              >
+                Bilgileri Temizle
+              </button>
+            )}
+          </div>
+          
           {error && <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">{error}</div>}
           <button
             type="submit"

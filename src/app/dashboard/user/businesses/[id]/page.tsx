@@ -269,58 +269,101 @@ export default function BusinessDetailPage() {
             </p>
           )}
           
-          {/* Business Rating */}
+          {/* Business Rating - Tıklanabilir */}
           {businessRating && businessRating.total_reviews > 0 && (
-            <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-2xl border border-yellow-100/50">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center text-white text-lg font-bold">
+            <button 
+              onClick={() => setActiveTab('reviews')}
+              className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-2xl border border-yellow-100/50 hover:from-yellow-100/80 hover:to-orange-100/60 hover:border-yellow-200/70 transition-all duration-200 cursor-pointer group mx-auto"
+            >
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform">
                 ⭐
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <StarRating rating={parseFloat(businessRating.overall_rating || 0)} readonly size="md" showValue />
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors">
                   {businessRating.total_reviews} değerlendirme • Son 6 ay: {parseFloat(businessRating.last_6_months_rating || 0).toFixed(1)}/5
                 </p>
+                <p className="text-[10px] text-yellow-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Tüm yorumları görmek için tıklayın →
+                </p>
               </div>
-            </div>
+            </button>
           )}
         </div>
 
         {/* Contact Info Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl md:rounded-2xl border border-blue-100/30">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg">
+          {/* Adres Kartı - Tıklanabilir */}
+          <button 
+            onClick={() => {
+              if (business.address) {
+                const encodedAddress = encodeURIComponent(business.address);
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+              }
+            }}
+            className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl md:rounded-2xl border border-blue-100/30 hover:from-blue-100/60 hover:to-blue-200/40 hover:border-blue-200/50 transition-all duration-200 cursor-pointer group"
+            disabled={!business.address}
+          >
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg group-hover:scale-110 transition-transform">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-xs text-blue-600 font-medium">Adres</p>
-              <p className="text-xs md:text-sm font-semibold text-gray-800 truncate">{business.address}</p>
+              <p className="text-xs md:text-sm font-semibold text-gray-800 truncate group-hover:text-blue-700 transition-colors">
+                {business.address || 'Adres bilgisi yok'}
+              </p>
+              <p className="text-[10px] text-blue-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                Yol tarifi için tıklayın →
+              </p>
             </div>
-          </div>
+          </button>
 
+          {/* Telefon Kartı - Tıklanabilir */}
           {business.phone && (
-            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl md:rounded-2xl border border-green-100/30">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg">
+            <button 
+              onClick={() => {
+                if (business.phone) {
+                  window.open(`tel:${business.phone}`, '_self');
+                }
+              }}
+              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl md:rounded-2xl border border-green-100/30 hover:from-green-100/60 hover:to-green-200/40 hover:border-green-200/50 transition-all duration-200 cursor-pointer group"
+            >
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg group-hover:scale-110 transition-transform">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.46 15.46 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.49a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z"/></svg>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs text-green-600 font-medium">Telefon</p>
-                <p className="text-xs md:text-sm font-semibold text-gray-800">{business.phone}</p>
+                <p className="text-xs md:text-sm font-semibold text-gray-800 group-hover:text-green-700 transition-colors">{business.phone}</p>
+                <p className="text-[10px] text-green-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Arama yapmak için tıklayın →
+                </p>
               </div>
-            </div>
+            </button>
           )}
 
+          {/* E-posta Kartı - Tıklanabilir */}
           {business.email && (
-            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl md:rounded-2xl border border-purple-100/30">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg">
+            <button 
+              onClick={() => {
+                if (business.email) {
+                  window.open(`mailto:${business.email}`, '_self');
+                }
+              }}
+              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl md:rounded-2xl border border-purple-100/30 hover:from-purple-100/60 hover:to-purple-200/40 hover:border-purple-200/50 transition-all duration-200 cursor-pointer group"
+            >
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg group-hover:scale-110 transition-transform">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2l8 5 8-5"/></svg>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs text-purple-600 font-medium">E-posta</p>
-                <p className="text-xs md:text-sm font-semibold text-gray-800 truncate">{business.email}</p>
+                <p className="text-xs md:text-sm font-semibold text-gray-800 truncate group-hover:text-purple-700 transition-colors">{business.email}</p>
+                <p className="text-[10px] text-purple-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  E-posta göndermek için tıklayın →
+                </p>
               </div>
-            </div>
+            </button>
           )}
         </div>
       </div>
