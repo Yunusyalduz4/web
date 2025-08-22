@@ -1,4 +1,4 @@
-import { t, isBusiness } from '../trpc/trpc';
+import { t, isBusiness, isApprovedBusiness } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { pool } from '../db';
@@ -66,13 +66,17 @@ export const businessRouter = t.router({
           ) AS favorites_count
         FROM businesses b
         LEFT JOIN business_ratings br ON br.business_id = b.id
+        WHERE b.is_approved = true  -- ✅ Sadece onaylı işletmeler
       `);
       return result.rows;
     }),
   getBusinessById: t.procedure
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
-      const result = await pool.query(`SELECT * FROM businesses WHERE id = $1`, [input.businessId]);
+      const result = await pool.query(
+        `SELECT * FROM businesses WHERE id = $1 AND is_approved = true`, 
+        [input.businessId]
+      );
       return result.rows[0];
     }),
   updateBusiness: t.procedure.use(isBusiness)
@@ -182,7 +186,7 @@ export const businessRouter = t.router({
       const result = await pool.query(`SELECT * FROM services WHERE business_id = $1`, [input.businessId]);
       return result.rows;
     }),
-  createService: t.procedure.use(isBusiness)
+  createService: t.procedure.use(isApprovedBusiness)
     .input(serviceSchema)
     .mutation(async ({ input }) => {
       const result = await pool.query(
@@ -212,7 +216,7 @@ export const businessRouter = t.router({
       const result = await pool.query(`SELECT * FROM employees WHERE business_id = $1`, [input.businessId]);
       return result.rows;
     }),
-  createEmployee: t.procedure.use(isBusiness)
+  createEmployee: t.procedure.use(isApprovedBusiness)
     .input(employeeSchema)
     .mutation(async ({ input }) => {
       const result = await pool.query(

@@ -220,7 +220,7 @@ export const reviewRouter = t.router({
          JOIN users u ON r.user_id = u.id
          JOIN appointments a ON r.appointment_id = a.id
          JOIN businesses b ON r.business_id = b.id
-         WHERE r.business_id = $1
+         WHERE r.business_id = $1 AND b.is_approved = true
          ORDER BY r.created_at DESC
          LIMIT $2 OFFSET $3`,
         [businessId, limit, offset]

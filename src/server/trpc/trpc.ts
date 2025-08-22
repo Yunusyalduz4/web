@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../pages/api/auth/[...nextauth]';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { pool } from '../db';
 
 export const createContext = async (opts?: { req: NextApiRequest, res: NextApiResponse }) => {
   let session = null;
@@ -43,6 +44,33 @@ export const isBusiness = t.middleware(async ({ ctx, next }) => {
   // businessId kontrolü ekle
   if (!ctx.session.user.businessId) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme ID bulunamadı' });
+  }
+  
+  return next({ ctx: { user: ctx.session.user } });
+});
+
+export const isApprovedBusiness = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.user || ctx.session.user.role !== 'business') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece işletme sahipleri erişebilir' });
+  }
+  
+  // businessId kontrolü ekle
+  if (!ctx.session.user.businessId) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme ID bulunamadı' });
+  }
+
+  // İşletme onay durumunu kontrol et
+  const businessResult = await pool.query(
+    'SELECT is_approved FROM businesses WHERE id = $1',
+    [ctx.session.user.businessId]
+  );
+  
+  if (businessResult.rows.length === 0) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme bulunamadı' });
+  }
+
+  if (!businessResult.rows[0].is_approved) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme hesabınız henüz admin onayından geçmemiş. Lütfen onay bekleyin.' });
   }
   
   return next({ ctx: { user: ctx.session.user } });

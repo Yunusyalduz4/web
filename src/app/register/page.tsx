@@ -208,8 +208,13 @@ export default function RegisterPage() {
         saveCredentials(formData.email, formData.password, true);
       }
       
-      setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
-      setTimeout(() => router.push('/login'), 1500);
+      if (formData.role === 'business') {
+        setSuccess('İşletme kaydınız başarıyla alındı! 🎉 Admin onayından sonra hesabınız aktif olacak. Onay durumunu e-posta ile bilgilendireceğiz.');
+        setTimeout(() => router.push('/login'), 5000);
+      } else {
+        setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
+        setTimeout(() => router.push('/login'), 1500);
+      }
     } catch (err: any) {
       console.error('Registration error:', err);
       if (err.message?.includes('pattern')) {
