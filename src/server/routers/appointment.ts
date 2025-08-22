@@ -362,15 +362,39 @@ export const appointmentRouter = t.router({
       const utcStartDate = new Date(startDate.getTime() - (3 * 60 * 60 * 1000));
       const utcEndDate = new Date(endDate.getTime() - (3 * 60 * 60 * 1000));
       
-      // İşletmenin çalışanlarını al
+      // İşletmenin çalışanlarını ve müsaitlik bilgilerini al
       const employeesRes = await pool.query(
-        `SELECT id, name FROM employees WHERE business_id = $1`,
+        `SELECT e.id, e.name, ea.day_of_week, ea.start_time, ea.end_time
+         FROM employees e
+         LEFT JOIN employee_availability ea ON e.id = ea.employee_id
+         WHERE e.business_id = $1
+         ORDER BY e.id, ea.day_of_week`,
         [input.businessId]
       );
-      const employeeIds = employeesRes.rows.map(e => e.id);
       
-      if (employeeIds.length === 0) {
+      if (employeesRes.rows.length === 0) {
         return [];
+      }
+      
+      // Çalışan müsaitlik verilerini grupla
+      const employeeAvailability: Record<string, Array<{day_of_week: number, start_time: string, end_time: string}>> = {};
+      const employeeIds: string[] = [];
+      
+      for (const row of employeesRes.rows) {
+        if (!employeeIds.includes(row.id)) {
+          employeeIds.push(row.id);
+        }
+        
+        if (row.day_of_week !== null) {
+          if (!employeeAvailability[row.id]) {
+            employeeAvailability[row.id] = [];
+          }
+          employeeAvailability[row.id].push({
+            day_of_week: row.day_of_week,
+            start_time: row.start_time,
+            end_time: row.end_time
+          });
+        }
       }
       
       // 7 günlük slot verilerini hesapla
@@ -424,14 +448,78 @@ export const appointmentRouter = t.router({
           }
         }
         
-        // Tüm slot'ları oluştur (08:00-20:00)
-        for (let h = 8; h < 20; h++) {
-          for (let m = 0; m < 60; m += 15) {
+        // O gün için çalışan müsaitlik bilgilerini al
+        const dayOfWeek = currentDate.getDay();
+        const availableSlots: Array<{start: number, end: number}> = [];
+        
+        // Tüm çalışanların o gün müsaitlik saatlerini topla
+        for (const employeeId of employeeIds) {
+          const empAvailability = employeeAvailability[employeeId] || [];
+          const dayAvailability = empAvailability.filter(a => a.day_of_week === dayOfWeek);
+          
+          for (const avail of dayAvailability) {
+            const [startHour, startMin] = avail.start_time.split(':').map(Number);
+            const [endHour, endMin] = avail.end_time.split(':').map(Number);
+            
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            
+            availableSlots.push({ start: startMinutes, end: endMinutes });
+          }
+        }
+        
+        // Eğer hiç müsaitlik bilgisi yoksa boş döndür
+        if (availableSlots.length === 0) {
+          weeklyData.push({
+            date: dateStr,
+            dayName: currentDate.toLocaleDateString('tr-TR', { weekday: 'long' }),
+            dayShort: currentDate.toLocaleDateString('tr-TR', { weekday: 'short' }),
+            totalSlots: 0,
+            busySlots: 0,
+            availableSlots: 0,
+            slots: []
+          });
+          continue;
+        }
+        
+        // Müsaitlik saatlerine göre slot'ları oluştur
+        for (const timeSlot of availableSlots) {
+          const startHour = Math.floor(timeSlot.start / 60);
+          const startMinute = timeSlot.start % 60;
+          const endHour = Math.floor(timeSlot.end / 60);
+          const endMinute = timeSlot.end % 60;
+          
+          // 15dk'lık slot'ları oluştur
+          for (let totalMinutes = timeSlot.start; totalMinutes < timeSlot.end; totalMinutes += 15) {
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
             const slotKey = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            
+            // Eğer slot zaten eklenmiş ise tekrar ekleme (çakışma durumu)
+            if (slots[slotKey]) continue;
+            
+            // Geçmiş saat kontrolü (bugün için)
+            let isPastTime = false;
+            if (dateStr === new Date().toISOString().split('T')[0]) {
+              const now = new Date();
+              const currentHour = now.getHours();
+              const currentMinute = now.getMinutes();
+              
+              // 15 dakika buffer ekle
+              const bufferTime = new Date(now.getTime() + 15 * 60000);
+              const bufferHour = bufferTime.getHours();
+              const bufferMinute = bufferTime.getMinutes();
+              
+              // Slot saati geçmiş zamandaysa meşgul yap
+              if (h < bufferHour || (h === bufferHour && m < bufferMinute)) {
+                isPastTime = true;
+              }
+            }
+            
             slots[slotKey] = {
               time: slotKey,
-              isBusy: !!busySlots[slotKey],
-              status: busySlots[slotKey] ? 'busy' : 'available'
+              isBusy: !!busySlots[slotKey] || isPastTime,
+              status: (!!busySlots[slotKey] || isPastTime) ? 'busy' : 'available'
             };
           }
         }

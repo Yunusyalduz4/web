@@ -290,7 +290,12 @@ export default function UserDashboard() {
                       a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       a.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                       a.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-700'
-                    }`}>{a.status}</span>
+                    }`}>
+                      {a.status === 'pending' ? 'Bekliyor' : 
+                       a.status === 'confirmed' ? 'Onaylandı' : 
+                       a.status === 'completed' ? 'Tamamlandı' : 
+                       a.status === 'cancelled' ? 'İptal Edildi' : a.status}
+                    </span>
                   </div>
                    <div className="text-xs text-gray-600 mb-1" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(a.appointment_datetime))}</div>
                   <div className="text-xs text-gray-800 truncate">Hizmet: {a.service_names?.length ? a.service_names.join(', ') : '—'}</div>

@@ -176,6 +176,22 @@ export default function BookAppointmentPage() {
 
   // Meşgul slot'ları kontrol etmek için yardımcı fonksiyon
   const isSlotBusy = (timeSlot: string) => {
+    // Eğer seçili tarih bugünse, geçmiş saatleri meşgul yap
+    if (date === new Date().toISOString().split('T')[0]) {
+      const now = new Date();
+      const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      
+      // Geçmiş saatler için 15 dakikalık buffer ekle
+      const bufferTime = new Date(now.getTime() + 15 * 60000);
+      const bufferTimeStr = bufferTime.getHours().toString().padStart(2, '0') + ':' + bufferTime.getMinutes().toString().padStart(2, '0');
+      
+      // Eğer slot geçmiş zamandaysa meşgul yap
+      if (timeSlot < bufferTimeStr) {
+        return true;
+      }
+    }
+    
+    // Mevcut meşgul slot kontrolü
     return busySlots?.[timeSlot] || false;
   };
 
@@ -494,7 +510,7 @@ export default function BookAppointmentPage() {
                     type="button"
                     onClick={() => { 
                       if (availableTimes.length) {
-                        // Meşgul olmayan ilk uygun saati bul
+                        // Meşgul olmayan ve geçmiş olmayan ilk uygun saati bul
                         const firstAvailable = availableTimes.find(t => !isSlotBusy(t));
                         if (firstAvailable) {
                           setTime(firstAvailable);
@@ -514,13 +530,30 @@ export default function BookAppointmentPage() {
                     {availableTimes.map((t) => {
                       const selected = time === t;
                       const isBusy = isSlotBusy(t);
+                      
+                      // Geçmiş saat kontrolü
+                      const isPastTime = date === new Date().toISOString().split('T')[0] && 
+                        (() => {
+                          const now = new Date();
+                          const bufferTime = new Date(now.getTime() + 15 * 60000);
+                          const bufferTimeStr = bufferTime.getHours().toString().padStart(2, '0') + ':' + bufferTime.getMinutes().toString().padStart(2, '0');
+                          return t < bufferTimeStr;
+                        })();
+                      
+                      const isDisabled = isBusy || isPastTime;
+                      const isPastSlot = isPastTime && !isBusy; // Sadece geçmiş saat (meşgul değil)
+                      
                       return (
                         <button
                           key={t}
                           type="button"
                           onClick={() => {
-                            if (isSlotBusy(t)) {
-                              setError('Bu saat dolu. Lütfen başka bir saat seçiniz.');
+                            if (isDisabled) {
+                              if (isPastSlot) {
+                                setError('Bu saat geçmiş zamanda. Lütfen gelecek bir saat seçiniz.');
+                              } else {
+                                setError('Bu saat dolu. Lütfen başka bir saat seçiniz.');
+                              }
                               return;
                             }
                             setTime(t);
@@ -528,15 +561,27 @@ export default function BookAppointmentPage() {
                           }}
                           className={`px-3 py-2 rounded-lg text-sm transition border ${
                             selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' 
+                            : isPastSlot ? 'bg-orange-100 text-orange-600 border-orange-200 cursor-not-allowed opacity-70' 
                             : isBusy ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60' 
                             : 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80'
                           }`}
                           aria-pressed={selected}
-                          disabled={isBusy}
-                          title={isBusy ? 'Bu saat dolu' : 'Bu saati seç'}
+                          disabled={isDisabled}
+                          title={
+                            isPastSlot ? 'Bu saat geçmiş zamanda' : 
+                            isBusy ? 'Bu saat dolu' : 
+                            'Bu saati seç'
+                          }
                         >
                           {t}
-                          {isBusy && (
+                          {isPastSlot && (
+                            <div className="flex items-center justify-center mt-1">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-orange-500">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                          )}
+                          {isBusy && !isPastSlot && (
                             <div className="flex items-center justify-center mt-1">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-red-500">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>

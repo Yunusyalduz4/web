@@ -81,6 +81,7 @@ export default function BusinessDashboard() {
   }
 
   return (
+    <>
     <main className="relative max-w-md mx-auto p-3 pb-24">
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
@@ -160,6 +161,7 @@ export default function BusinessDashboard() {
         businessId={businessId}
       />
     </main>
+    </>
   );
 }
 
@@ -386,6 +388,10 @@ function WeeklySlotView({
     employeeId: '',
     notes: ''
   });
+  
+  // Dolu slot tıklama için state'ler
+  const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<string | null>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // Manuel tarih için slot verilerini çek
   const { data: customDateData, refetch: refetchCustomDate } = trpc.appointment.getWeeklySlots.useQuery(
@@ -451,6 +457,48 @@ function WeeklySlotView({
       notes: ''
     });
     setShowManualAppointment(true);
+  };
+  
+  // Dolu slot'a tıklama - Randevu kartını vurgula ve scroll et
+  const handleBusySlotClick = (slotTime: string, date: string) => {
+    // O saatteki randevuyu bul
+    const appointmentDate = selectedDate || customDate;
+    const appointments = appointmentDate === selectedDate ? selectedDayAppointments : customDateAppointments;
+    
+    const targetAppointment = appointments?.find((apt: any) => {
+      const aptTime = new Date(apt.appointment_datetime).toLocaleTimeString('tr-TR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      return aptTime === slotTime;
+    });
+    
+    if (targetAppointment) {
+      // Randevu kartını vurgula
+      setHighlightedAppointmentId(targetAppointment.id);
+      
+      // 5 saniye sonra vurgulamayı kaldır
+      setTimeout(() => {
+        setHighlightedAppointmentId(null);
+      }, 5000);
+      
+      // Scroll işlemi
+      setIsScrolling(true);
+      const appointmentElement = document.getElementById(`appointment-${targetAppointment.id}`);
+      
+      if (appointmentElement) {
+        appointmentElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+        
+        // Scroll tamamlandıktan sonra state'i güncelle
+        setTimeout(() => {
+          setIsScrolling(false);
+        }, 1000);
+      }
+    }
   };
 
   // Manuel randevu oluşturma
@@ -595,6 +643,7 @@ function WeeklySlotView({
   }
 
   return (
+    <>
     <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-4 shadow">
       {/* Başlık ve Manuel Tarih Seçimi */}
       <div className="flex items-center justify-between mb-4">
@@ -726,23 +775,51 @@ function WeeklySlotView({
 
           {/* Slot Detayları - Boş slot'lara tıklanabilir */}
           <div className="grid grid-cols-4 gap-1 mb-3">
-            {selectedDaySlots.map((slot: any, index: number) => (
-              <button
-                key={index}
-                onClick={() => !slot.isBusy && handleEmptySlotClick(slot.time, selectedDate)}
-                disabled={slot.isBusy}
-                className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
-                  slot.isBusy
-                    ? 'bg-rose-100 text-rose-800 border border-rose-200 cursor-not-allowed opacity-60'
-                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200 cursor-pointer hover:scale-105'
-                }`}
-              >
-                <div className="font-bold">{slot.time}</div>
-                <div className="text-[10px]">
-                  {slot.isBusy ? 'Dolu' : 'Boş'}
-                </div>
-              </button>
-            ))}
+            {selectedDaySlots.map((slot: any, index: number) => {
+              // Geçmiş saat kontrolü
+              const isPastTime = selectedDate === new Date().toISOString().split('T')[0] && 
+                (() => {
+                  const now = new Date();
+                  const bufferTime = new Date(now.getTime() + 15 * 60000);
+                  const bufferTimeStr = bufferTime.getHours().toString().padStart(2, '0') + ':' + bufferTime.getMinutes().toString().padStart(2, '0');
+                  return slot.time < bufferTimeStr;
+                })();
+              
+              const isPastSlot = isPastTime && !slot.isBusy; // Sadece geçmiş saat (meşgul değil)
+              const isDisabled = slot.isBusy || isPastTime;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (isPastSlot) return; // Geçmiş saatler tıklanamaz
+                    if (slot.isBusy) {
+                      handleBusySlotClick(slot.time, selectedDate);
+                    } else {
+                      handleEmptySlotClick(slot.time, selectedDate);
+                    }
+                  }}
+                  disabled={isPastSlot}
+                  className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
+                    isPastSlot
+                      ? 'bg-orange-100 text-orange-600 border border-orange-200 cursor-not-allowed opacity-70'
+                      : slot.isBusy
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 cursor-pointer hover:scale-105'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200 cursor-pointer hover:scale-105'
+                  }`}
+                  title={
+                    isPastSlot ? 'Bu saat geçmiş zamanda' : 
+                    slot.isBusy ? 'Bu saat dolu - Tıklayarak randevu detayını gör' : 
+                    'Bu saati seç'
+                  }
+                >
+                  <div className="font-bold">{slot.time}</div>
+                  <div className="text-[10px]">
+                    {isPastSlot ? 'Geçmiş' : slot.isBusy ? 'Dolu' : 'Boş'}
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {/* O Günkü Randevular */}
@@ -751,7 +828,15 @@ function WeeklySlotView({
               <div className="text-xs font-bold text-gray-700 mb-2">O Günkü Randevular:</div>
               <div className="space-y-2">
                 {selectedDayAppointments.map((apt: any) => (
-                  <div key={apt.id} className="bg-white/60 rounded-lg p-2 text-xs">
+                  <div 
+                    key={apt.id} 
+                    id={`appointment-${apt.id}`}
+                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-500 ${
+                      highlightedAppointmentId === apt.id 
+                        ? 'ring-4 ring-yellow-400 ring-opacity-80 shadow-2xl scale-105 bg-yellow-50' 
+                        : ''
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-gray-900">
                         {new Date(apt.appointment_datetime).toLocaleTimeString('tr-TR', { 
@@ -830,23 +915,51 @@ function WeeklySlotView({
 
           {/* Slot Detayları - Boş slot'lara tıklanabilir */}
           <div className="grid grid-cols-4 gap-1 mb-3">
-            {customDateSlots.map((slot: any, index: number) => (
-              <button
-                key={index}
-                onClick={() => !slot.isBusy && handleEmptySlotClick(slot.time, customDate)}
-                disabled={slot.isBusy}
-                className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
-                  slot.isBusy
-                    ? 'bg-rose-100 text-rose-800 border border-rose-200 cursor-not-allowed opacity-60'
-                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200 cursor-pointer hover:scale-105'
-                }`}
-              >
-                <div className="font-bold">{slot.time}</div>
-                <div className="text-[10px]">
-                  {slot.isBusy ? 'Dolu' : 'Boş'}
-                </div>
-              </button>
-            ))}
+            {customDateSlots.map((slot: any, index: number) => {
+              // Geçmiş saat kontrolü
+              const isPastTime = customDate === new Date().toISOString().split('T')[0] && 
+                (() => {
+                  const now = new Date();
+                  const bufferTime = new Date(now.getTime() + 15 * 60000);
+                  const bufferTimeStr = bufferTime.getHours().toString().padStart(2, '0') + ':' + bufferTime.getMinutes().toString().padStart(2, '0');
+                  return slot.time < bufferTimeStr;
+                })();
+              
+              const isPastSlot = isPastTime && !slot.isBusy; // Sadece geçmiş saat (meşgul değil)
+              const isDisabled = slot.isBusy || isPastTime;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (isPastSlot) return; // Geçmiş saatler tıklanamaz
+                    if (slot.isBusy) {
+                      handleBusySlotClick(slot.time, customDate);
+                    } else {
+                      handleEmptySlotClick(slot.time, customDate);
+                    }
+                  }}
+                  disabled={isPastSlot}
+                  className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
+                    isPastSlot
+                      ? 'bg-orange-100 text-orange-600 border border-orange-200 cursor-not-allowed opacity-70'
+                      : slot.isBusy
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 cursor-pointer hover:scale-105'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200 cursor-pointer hover:scale-105'
+                  }`}
+                  title={
+                    isPastSlot ? 'Bu saat geçmiş zamanda' : 
+                    slot.isBusy ? 'Bu saat dolu - Tıklayarak randevu detayını gör' : 
+                    'Bu saati seç'
+                  }
+                >
+                  <div className="font-bold">{slot.time}</div>
+                  <div className="text-[10px]">
+                    {isPastSlot ? 'Geçmiş' : slot.isBusy ? 'Dolu' : 'Boş'}
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {/* O Günkü Randevular */}
@@ -855,7 +968,15 @@ function WeeklySlotView({
               <div className="text-xs font-bold text-gray-700 mb-2">O Günkü Randevular:</div>
               <div className="space-y-2">
                 {customDateAppointments.map((apt: any) => (
-                  <div key={apt.id} className="bg-white/60 rounded-lg p-2 text-xs">
+                  <div 
+                    key={apt.id} 
+                    id={`appointment-${apt.id}`}
+                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-500 ${
+                      highlightedAppointmentId === apt.id 
+                        ? 'ring-4 ring-yellow-400 ring-opacity-80 shadow-2xl scale-105 bg-yellow-50' 
+                        : ''
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-gray-900">
                         {new Date(apt.appointment_datetime).toLocaleTimeString('tr-TR', { 
@@ -1025,5 +1146,23 @@ function WeeklySlotView({
         </div>
       )}
     </div>
+    
+    <style jsx global>{`
+      @keyframes highlight-pulse {
+        0%, 100% { 
+          box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+          transform: scale(1);
+        }
+        50% { 
+          box-shadow: 0 0 0 20px rgba(251, 191, 36, 0);
+          transform: scale(1.05);
+        }
+      }
+      
+      .highlighted-appointment {
+        animation: highlight-pulse 2s ease-in-out infinite;
+      }
+    `}</style>
+    </>
   );
 }

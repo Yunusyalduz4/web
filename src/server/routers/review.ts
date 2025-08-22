@@ -415,6 +415,39 @@ export const reviewRouter = t.router({
 
       return result.rows[0];
     }),
+
+  // Kullanıcının kendi yorumunu silme
+  deleteUserReview: t.procedure
+    .use(isUser)
+    .input(z.object({ reviewId: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      const { reviewId } = input;
+      const userId = ctx.user.id;
+
+      // Yorumun bu kullanıcıya ait olduğunu kontrol et
+      const reviewCheck = await pool.query(
+        'SELECT id FROM reviews WHERE id = $1 AND user_id = $2',
+        [reviewId, userId]
+      );
+
+      if (reviewCheck.rows.length === 0) {
+        throw new Error('Yorum bulunamadı veya size ait değil');
+      }
+
+      // Yorumu sil
+      const result = await pool.query(
+        'DELETE FROM reviews WHERE id = $1 RETURNING *',
+        [reviewId]
+      );
+
+      // İşletme rating'lerini güncelle
+      if (result.rows.length > 0) {
+        const review = result.rows[0];
+        await updateBusinessRatings(review.business_id);
+      }
+
+      return result.rows[0];
+    }),
 });
 
 // Helper functions to update cached ratings

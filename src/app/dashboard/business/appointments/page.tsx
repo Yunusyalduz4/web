@@ -64,7 +64,7 @@ export default function BusinessAppointmentsPage() {
       // Employees by names
       if (employeeFilters.length > 0) {
         const names: string[] = Array.isArray(a.employee_names) ? a.employee_names : [];
-        if (!serviceFilters.some((e) => names.includes(e))) return false;
+        if (!employeeFilters.some((e) => names.includes(e))) return false;
       }
       // Date range
       if (dateFrom) {
@@ -159,7 +159,7 @@ export default function BusinessAppointmentsPage() {
                 <div className="text-[13px] text-gray-700">Tamamlandı</div>
               )}
               {a.status === 'cancelled' && (
-                <div className="text-[13px] text-gray-600">İptal edildi</div>
+                <div className="text-[13px] text-gray-600">İptal Edildi</div>
               )}
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function BusinessAppointmentsPage() {
         {(!appointments || appointments.length === 0) && !isLoading && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500 animate-fade-in">
             <span className="text-5xl mb-2">📭</span>
-            <span className="text-lg">Henüz randevu yok.</span>
+            <span className="text-lg">Henüz randevu yok</span>
           </div>
         )}
       </div>
@@ -205,13 +205,13 @@ export default function BusinessAppointmentsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               <select value={statusFilter} onChange={(e)=> setStatusFilter(e.target.value as any)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900">
                 <option value="all">Tümü</option>
-                <option value="pending">Bekleyen</option>
-                <option value="confirmed">Onaylı</option>
-                <option value="completed">Tamamlanan</option>
-                <option value="cancelled">İptal</option>
+                <option value="pending">Bekliyor</option>
+                <option value="confirmed">Onaylandı</option>
+                <option value="completed">Tamamlandı</option>
+                <option value="cancelled">İptal Edildi</option>
               </select>
-              <input type="date" value={dateFrom} onChange={(e)=> setDateFrom(e.target.value)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900" />
-              <input type="date" value={dateTo} onChange={(e)=> setDateTo(e.target.value)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900" />
+              <input type="date" value={dateFrom} onChange={(e)=> setDateFrom(e.target.value)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900" placeholder="Başlangıç" />
+              <input type="date" value={dateTo} onChange={(e)=> setDateTo(e.target.value)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900" placeholder="Bitiş" />
               <button onClick={() => { setServiceFilters([]); setEmployeeFilters([]); setStatusFilter('all'); setDateFrom(''); setDateTo(''); }} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900">Sıfırla</button>
             </div>
 
@@ -221,14 +221,19 @@ export default function BusinessAppointmentsPage() {
                 <div key={a.id} className="bg-white/60 backdrop-blur-md border border-white/40 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="text-sm font-semibold text-gray-900" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</div>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : a.status === 'confirmed' ? 'bg-green-100 text-green-800' : a.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>{a.status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : a.status === 'confirmed' ? 'bg-green-100 text-green-800' : a.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+                      {a.status === 'pending' ? 'Bekliyor' : 
+                       a.status === 'confirmed' ? 'Onaylandı' : 
+                       a.status === 'cancelled' ? 'İptal Edildi' : 
+                       a.status === 'completed' ? 'Tamamlandı' : a.status}
+                    </span>
                   </div>
-                  <div className="text-[12px] text-gray-700">{Array.isArray(a.service_names) ? a.service_names.join(', ') : ''}</div>
-                  <div className="text-[12px] text-gray-500">{Array.isArray(a.employee_names) ? a.employee_names.join(', ') : ''}</div>
+                  <div className="text-[12px] text-gray-700">Hizmet: {Array.isArray(a.service_names) ? a.service_names.join(', ') : '—'}</div>
+                  <div className="text-[12px] text-gray-500">Çalışan: {Array.isArray(a.service_names) ? a.employee_names.join(', ') : '—'}</div>
                 </div>
               ))}
               {filteredHistory.length === 0 && (
-                <div className="text-center text-sm text-gray-500 py-6">Filtrelere uygun randevu bulunamadı.</div>
+                <div className="text-center text-sm text-gray-500 py-6">Filtrelere uygun randevu bulunamadı</div>
               )}
             </div>
           </div>

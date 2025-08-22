@@ -1,11 +1,12 @@
 "use client";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../../utils/trpcClient';
 import { useState } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import React from 'react';
 import { usePushNotifications } from '../../../../hooks/usePushNotifications';
+import { handleLogout } from '../../../../utils/authUtils';
 
 export default function BusinessProfilePage() {
   const { data: session } = useSession();
@@ -57,12 +58,8 @@ export default function BusinessProfilePage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut({ callbackUrl: '/' });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleBusinessLogout = async () => {
+    await handleLogout();
   };
 
   // Show loading if business is still loading
@@ -128,7 +125,7 @@ export default function BusinessProfilePage() {
 
       {/* Logout */}
       <section className="mt-3">
-        <button onClick={handleLogout} className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm">Çıkış Yap</button>
+        <button onClick={handleBusinessLogout} className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm">Çıkış Yap</button>
       </section>
     </main>
   );
