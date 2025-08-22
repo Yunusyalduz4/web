@@ -19,6 +19,7 @@ export default function UserDashboard() {
   const userId = session?.user.id;
   const { data: profile } = trpc.user.getProfile.useQuery(userId ? { userId } : skipToken);
   const { data: appointments, isLoading } = trpc.user.appointmentHistory.useQuery(userId ? { userId } : skipToken);
+  const { data: userReviews } = trpc.review.getByUser.useQuery(userId ? { userId } : skipToken);
   const cancelMutation = trpc.appointment.cancelAppointment.useMutation();
   
   // Review modal state
@@ -93,6 +94,16 @@ export default function UserDashboard() {
   };
 
   const handleReviewSubmitted = () => {
+    // Review modal'ı kapat
+    setReviewModal({
+      isOpen: false,
+      appointmentId: '',
+      businessName: '',
+      serviceName: '',
+      employeeName: ''
+    });
+    
+    // Sayfayı yenile ve review verilerini güncelle
     router.refresh();
   };
 
@@ -301,8 +312,8 @@ export default function UserDashboard() {
                   <div className="text-xs text-gray-800 truncate">Hizmet: {a.service_names?.length ? a.service_names.join(', ') : '—'}</div>
                   <div className="text-xs text-gray-800 truncate">Çalışan: {a.employee_names?.length ? a.employee_names.join(', ') : '—'}</div>
                   
-                  {/* Tamamlanan randevular için değerlendirme butonu */}
-                  {a.status === 'completed' && (
+                  {/* Tamamlanan randevular için değerlendirme butonu - sadece değerlendirme yapılmamış olanlar için */}
+                  {a.status === 'completed' && !userReviews?.reviews?.some((review: any) => review.appointment_id === a.id) && (
                     <div className="mt-3 pt-3 border-t border-white/40">
                       <button
                         onClick={() => {
@@ -313,6 +324,15 @@ export default function UserDashboard() {
                       >
                         ⭐ Değerlendir
                       </button>
+                    </div>
+                  )}
+                  
+                  {/* Değerlendirme yapılmış tamamlanan randevular için bilgi */}
+                  {a.status === 'completed' && userReviews?.reviews?.some((review: any) => review.appointment_id === a.id) && (
+                    <div className="mt-3 pt-3 border-t border-white/40">
+                      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg">
+                        <span>✅ Değerlendirme yapıldı</span>
+                      </div>
                     </div>
                   )}
                 </div>

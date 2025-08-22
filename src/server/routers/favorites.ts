@@ -17,7 +17,7 @@ export const favoritesRouter = t.router({
          FROM favorites f
          JOIN businesses b ON b.id = f.business_id
          LEFT JOIN business_ratings br ON br.business_id = b.id
-         WHERE f.user_id = $1
+         WHERE f.user_id = $1 AND b.is_approved = true
          ORDER BY f.created_at DESC`,
         [userId]
       );

@@ -3,6 +3,27 @@ import { z } from 'zod';
 import { pool } from '../db';
 
 export const adminRouter = t.router({
+  // Overview Stats
+  getStats: t.procedure.use(isAdmin).query(async () => {
+    const [usersRes, businessesRes, appointmentsRes, reviewsRes, pendingBusinessesRes, pendingImagesRes] = await Promise.all([
+      pool.query('SELECT COUNT(*) as count FROM users'),
+      pool.query('SELECT COUNT(*) as count FROM businesses'),
+      pool.query('SELECT COUNT(*) as count FROM appointments'),
+      pool.query('SELECT COUNT(*) as count FROM reviews'),
+      pool.query('SELECT COUNT(*) as count FROM businesses WHERE is_approved = false'),
+      pool.query('SELECT COUNT(*) as count FROM businesses WHERE profile_image_url IS NOT NULL AND profile_image_approved = false')
+    ]);
+    
+    return {
+      totalUsers: parseInt(usersRes.rows[0].count),
+      totalBusinesses: parseInt(businessesRes.rows[0].count),
+      totalAppointments: parseInt(appointmentsRes.rows[0].count),
+      totalReviews: parseInt(reviewsRes.rows[0].count),
+      pendingBusinesses: parseInt(pendingBusinessesRes.rows[0].count),
+      pendingImages: parseInt(pendingImagesRes.rows[0].count)
+    };
+  }),
+
   // Users CRUD
   listUsers: t.procedure.use(isAdmin)
     .input(z.object({ q: z.string().optional() }).optional())
@@ -121,6 +142,267 @@ export const adminRouter = t.router({
       const res = await pool.query(`UPDATE appointments SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *`, [input.status, input.id]);
       return res.rows[0];
     }),
+
+  // Services CRUD
+  listServices: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT s.*, b.name as business_name, sc.name as category_name
+      FROM services s
+      LEFT JOIN businesses b ON s.business_id = b.id
+      LEFT JOIN service_categories sc ON s.category_id = sc.id
+      ORDER BY s.created_at DESC
+    `);
+    return res.rows;
+  }),
+
+  createService: t.procedure.use(isAdmin)
+    .input(z.object({
+      businessId: z.string().uuid(),
+      name: z.string().min(1),
+      description: z.string().optional(),
+      durationMinutes: z.number().min(1),
+      price: z.number().min(0),
+      categoryId: z.string().uuid().optional()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `INSERT INTO services (business_id, name, description, duration_minutes, price, category_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [input.businessId, input.name, input.description, input.durationMinutes, input.price, input.categoryId]
+      );
+      return res.rows[0];
+    }),
+
+  updateService: t.procedure.use(isAdmin)
+    .input(z.object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+      description: z.string().optional(),
+      durationMinutes: z.number().min(1),
+      price: z.number().min(0),
+      categoryId: z.string().uuid().optional()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `UPDATE services SET name=$1, description=$2, duration_minutes=$3, price=$4, category_id=$5, updated_at=NOW() 
+         WHERE id=$6 RETURNING *`,
+        [input.name, input.description, input.durationMinutes, input.price, input.categoryId, input.id]
+      );
+      return res.rows[0];
+    }),
+
+  deleteService: t.procedure.use(isAdmin)
+    .input(z.object({ serviceId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      await pool.query(`DELETE FROM services WHERE id = $1`, [input.serviceId]);
+      return { success: true };
+    }),
+
+  // Employees CRUD
+  listEmployees: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT e.*, b.name as business_name
+      FROM employees e
+      LEFT JOIN businesses b ON e.business_id = b.id
+      ORDER BY e.created_at DESC
+    `);
+    return res.rows;
+  }),
+
+  createEmployee: t.procedure.use(isAdmin)
+    .input(z.object({
+      businessId: z.string().uuid(),
+      name: z.string().min(1),
+      email: z.string().email().optional(),
+      phone: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `INSERT INTO employees (business_id, name, email, phone) VALUES ($1, $2, $3, $4) RETURNING *`,
+        [input.businessId, input.name, input.email, input.phone]
+      );
+      return res.rows[0];
+    }),
+
+  updateEmployee: t.procedure.use(isAdmin)
+    .input(z.object({
+      id: z.string().uuid(),
+      name: z.string().min(1),
+      email: z.string().email().optional(),
+      phone: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `UPDATE employees SET name=$1, email=$2, phone=$3, updated_at=NOW() WHERE id=$4 RETURNING *`,
+        [input.name, input.email, input.phone, input.id]
+      );
+      return res.rows[0];
+    }),
+
+  deleteEmployee: t.procedure.use(isAdmin)
+    .input(z.object({ employeeId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      await pool.query(`DELETE FROM employees WHERE id = $1`, [input.employeeId]);
+      return { success: true };
+    }),
+
+  // Reviews CRUD
+  listReviews: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT r.*, u.name as user_name, b.name as business_name, a.appointment_datetime
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
+      LEFT JOIN businesses b ON r.business_id = b.id
+      LEFT JOIN appointments a ON r.appointment_id = a.id
+      ORDER BY r.created_at DESC
+    `);
+    return res.rows;
+  }),
+
+  updateReview: t.procedure.use(isAdmin)
+    .input(z.object({
+      id: z.string().uuid(),
+      serviceRating: z.number().min(1).max(5),
+      employeeRating: z.number().min(1).max(5),
+      comment: z.string().min(20),
+      businessReply: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `UPDATE reviews SET service_rating=$1, employee_rating=$2, comment=$3, business_reply=$4, updated_at=NOW() 
+         WHERE id=$5 RETURNING *`,
+        [input.serviceRating, input.employeeRating, input.comment, input.businessReply, input.id]
+      );
+      return res.rows[0];
+    }),
+
+  deleteReview: t.procedure.use(isAdmin)
+    .input(z.object({ reviewId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      await pool.query(`DELETE FROM reviews WHERE id = $1`, [input.reviewId]);
+      return { success: true };
+    }),
+
+  // Employee Availability CRUD
+  listEmployeeAvailability: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT ea.*, e.name as employee_name, b.name as business_name
+      FROM employee_availability ea
+      LEFT JOIN employees e ON ea.employee_id = e.id
+      LEFT JOIN businesses b ON e.business_id = b.id
+      ORDER BY ea.day_of_week, ea.start_time
+    `);
+    return res.rows;
+  }),
+
+  createEmployeeAvailability: t.procedure.use(isAdmin)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      dayOfWeek: z.number().min(0).max(6),
+      startTime: z.string(),
+      endTime: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `INSERT INTO employee_availability (employee_id, day_of_week, start_time, end_time) 
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [input.employeeId, input.dayOfWeek, input.startTime, input.endTime]
+      );
+      return res.rows[0];
+    }),
+
+  updateEmployeeAvailability: t.procedure.use(isAdmin)
+    .input(z.object({
+      id: z.string().uuid(),
+      dayOfWeek: z.number().min(0).max(6),
+      startTime: z.string(),
+      endTime: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `UPDATE employee_availability SET day_of_week=$1, start_time=$2, end_time=$3, updated_at=NOW() 
+         WHERE id=$4 RETURNING *`,
+        [input.dayOfWeek, input.startTime, input.endTime, input.id]
+      );
+      return res.rows[0];
+    }),
+
+  deleteEmployeeAvailability: t.procedure.use(isAdmin)
+    .input(z.object({ availabilityId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      await pool.query(`DELETE FROM employee_availability WHERE id = $1`, [input.availabilityId]);
+      return { success: true };
+    }),
+
+  // Business Approval System
+  approveBusiness: t.procedure.use(isAdmin)
+    .input(z.object({ 
+      businessId: z.string().uuid(), 
+      approve: z.boolean(),
+      note: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { businessId, approve, note } = input;
+      const adminId = ctx.session?.user?.id;
+
+      if (approve) {
+        await pool.query(
+          `UPDATE businesses SET 
+           is_approved = true, 
+           approval_note = $1, 
+           approved_at = NOW(), 
+           approved_by = $2 
+           WHERE id = $3`,
+          [note || 'Onaylandı', adminId, businessId]
+        );
+      } else {
+        await pool.query(
+          `UPDATE businesses SET 
+           is_approved = false, 
+           approval_note = $1, 
+           approved_at = NOW(), 
+           approved_by = $2 
+           WHERE id = $3`,
+          [note || 'Reddedildi', adminId, businessId]
+        );
+      }
+
+      return { success: true };
+    }),
+
+  approveBusinessImage: t.procedure.use(isAdmin)
+    .input(z.object({ 
+      businessId: z.string().uuid(), 
+      approve: z.boolean(),
+      note: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { businessId, approve, note } = input;
+      const adminId = ctx.session?.user?.id;
+
+      await pool.query(
+        `UPDATE businesses SET 
+         profile_image_approved = $1, 
+         approval_note = $2, 
+         approved_at = NOW(), 
+         approved_by = $3 
+         WHERE id = $4`,
+        [approve, note || (approve ? 'Görsel onaylandı' : 'Görsel reddedildi'), adminId, businessId]
+      );
+
+      return { success: true };
+    }),
+
+  getPendingApprovals: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT b.*, u.name as owner_name, u.email as owner_email
+      FROM businesses b
+      LEFT JOIN users u ON b.owner_user_id = u.id
+      WHERE b.is_approved = false OR b.profile_image_approved = false
+      ORDER BY b.created_at DESC
+    `);
+    return res.rows;
+  }),
 });
 
 

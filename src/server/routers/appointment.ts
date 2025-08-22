@@ -1,4 +1,4 @@
-import { t, isUser, isBusiness } from '../trpc/trpc';
+import { t, isUser, isBusiness, isApprovedBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 import { TRPCError } from '@trpc/server';
@@ -21,6 +21,20 @@ export const appointmentRouter = t.router({
       // Frontend'den gelen appointmentDatetime zaten UTC formatında
       const utcDateTime = new Date(input.appointmentDatetime); // UTC olarak kullan
       
+      // 0. İşletme onay durumunu kontrol et
+      const businessCheck = await pool.query(
+        `SELECT is_approved FROM businesses WHERE id = $1`,
+        [input.businessId]
+      );
+      
+      if (businessCheck.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'İşletme bulunamadı' });
+      }
+      
+      if (!businessCheck.rows[0].is_approved) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu işletme henüz admin onayından geçmemiş. Randevu alamazsınız.' });
+      }
+
       // 1. Tüm hizmetlerin süresini al ve toplam süreyi hesapla
       let totalDuration = 0;
       for (const serviceItem of input.services) {
@@ -184,7 +198,7 @@ export const appointmentRouter = t.router({
       
       return rows;
     }),
-  getByBusiness: t.procedure.use(isBusiness)
+  getByBusiness: t.procedure.use(isApprovedBusiness)
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
@@ -348,7 +362,7 @@ export const appointmentRouter = t.router({
     }),
 
   // Yeni: 7 günlük slot görünümü için endpoint
-  getWeeklySlots: t.procedure.use(isBusiness)
+  getWeeklySlots: t.procedure.use(isApprovedBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       startDate: z.string(), // YYYY-MM-DD (Türkiye saati olarak kabul edilecek)
@@ -545,7 +559,7 @@ export const appointmentRouter = t.router({
     }),
 
   // Yeni: Manuel randevu oluşturma endpoint'i
-  createManualAppointment: t.procedure.use(isBusiness)
+  createManualAppointment: t.procedure.use(isApprovedBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       customerName: z.string().min(2),
@@ -620,7 +634,7 @@ export const appointmentRouter = t.router({
     }),
 
   // Yeni: Randevu durumunu güncelleme endpoint'i
-  updateStatus: t.procedure.use(isBusiness)
+  updateStatus: t.procedure.use(isApprovedBusiness)
     .input(z.object({
       appointmentId: z.string().uuid(),
       businessId: z.string().uuid(),

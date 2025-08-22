@@ -63,7 +63,7 @@ export const userRouter = t.router({
           ) AS favorites_count
         FROM businesses b
         LEFT JOIN business_ratings br ON br.business_id = b.id
-        WHERE 1=1 ${whereClause}
+        WHERE b.is_approved = true ${whereClause}
         ORDER BY b.name ASC
       `, values);
 
