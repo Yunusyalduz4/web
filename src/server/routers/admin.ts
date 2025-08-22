@@ -5,13 +5,16 @@ import { pool } from '../db';
 export const adminRouter = t.router({
   // Overview Stats
   getStats: t.procedure.use(isAdmin).query(async () => {
-    const [usersRes, businessesRes, appointmentsRes, reviewsRes, pendingBusinessesRes, pendingImagesRes] = await Promise.all([
+    const [usersRes, businessesRes, appointmentsRes, reviewsRes, pendingBusinessesRes, pendingImagesRes, pendingReviewsRes, pendingRepliesRes, pendingSliderImagesRes] = await Promise.all([
       pool.query('SELECT COUNT(*) as count FROM users'),
       pool.query('SELECT COUNT(*) as count FROM businesses'),
       pool.query('SELECT COUNT(*) as count FROM appointments'),
       pool.query('SELECT COUNT(*) as count FROM reviews'),
       pool.query('SELECT COUNT(*) as count FROM businesses WHERE is_approved = false'),
-      pool.query('SELECT COUNT(*) as count FROM businesses WHERE profile_image_url IS NOT NULL AND profile_image_approved = false')
+      pool.query('SELECT COUNT(*) as count FROM businesses WHERE profile_image_url IS NOT NULL AND profile_image_approved = false'),
+      pool.query('SELECT COUNT(*) as count FROM reviews WHERE is_approved = false'),
+      pool.query('SELECT COUNT(*) as count FROM reviews WHERE business_reply IS NOT NULL AND business_reply_approved = false'),
+      pool.query('SELECT COUNT(*) as count FROM business_images WHERE is_approved = false')
     ]);
     
     return {
@@ -20,7 +23,10 @@ export const adminRouter = t.router({
       totalAppointments: parseInt(appointmentsRes.rows[0].count),
       totalReviews: parseInt(reviewsRes.rows[0].count),
       pendingBusinesses: parseInt(pendingBusinessesRes.rows[0].count),
-      pendingImages: parseInt(pendingImagesRes.rows[0].count)
+      pendingImages: parseInt(pendingImagesRes.rows[0].count),
+      pendingReviews: parseInt(pendingReviewsRes.rows[0].count),
+      pendingReplies: parseInt(pendingRepliesRes.rows[0].count),
+      pendingSliderImages: parseInt(pendingSliderImagesRes.rows[0].count)
     };
   }),
 
@@ -370,7 +376,7 @@ export const adminRouter = t.router({
       return { success: true };
     }),
 
-  approveBusinessImage: t.procedure.use(isAdmin)
+  approveBusinessProfileImage: t.procedure.use(isAdmin)
     .input(z.object({ 
       businessId: z.string().uuid(), 
       approve: z.boolean(),
@@ -400,6 +406,144 @@ export const adminRouter = t.router({
       LEFT JOIN users u ON b.owner_user_id = u.id
       WHERE b.is_approved = false OR b.profile_image_approved = false
       ORDER BY b.created_at DESC
+    `);
+    return res.rows;
+  }),
+
+  // Review Approval System
+  approveReview: t.procedure.use(isAdmin)
+    .input(z.object({ 
+      reviewId: z.string().uuid(), 
+      approve: z.boolean(),
+      note: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { reviewId, approve, note } = input;
+      const adminId = ctx.session?.user?.id;
+
+      if (approve) {
+        await pool.query(
+          `UPDATE reviews SET 
+           is_approved = true, 
+           approval_note = $1, 
+           approved_at = NOW(), 
+           approved_by = $2 
+           WHERE id = $3`,
+          [note || 'Yorum onaylandı', adminId, reviewId]
+        );
+      } else {
+        // Reddedilen yorumu sil
+        await pool.query(`DELETE FROM reviews WHERE id = $1`, [reviewId]);
+      }
+
+      return { success: true };
+    }),
+
+  approveBusinessReply: t.procedure.use(isAdmin)
+    .input(z.object({ 
+      reviewId: z.string().uuid(), 
+      approve: z.boolean(),
+      note: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { reviewId, approve, note } = input;
+      const adminId = ctx.session?.user?.id;
+
+      if (approve) {
+        await pool.query(
+          `UPDATE reviews SET 
+           business_reply_approved = true, 
+           approval_note = $1, 
+           approved_at = NOW(), 
+           approved_by = $2 
+           WHERE id = $3`,
+          [note || 'İşletme yanıtı onaylandı', adminId, reviewId]
+        );
+      } else {
+        // Reddedilen yanıtı sil
+        await pool.query(
+          `UPDATE reviews SET 
+           business_reply = NULL, 
+           business_reply_at = NULL, 
+           business_reply_approved = false 
+           WHERE id = $1`,
+          [reviewId]
+        );
+      }
+
+      return { success: true };
+    }),
+
+  getPendingReviews: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT r.*, u.name as user_name, b.name as business_name, a.appointment_datetime
+      FROM reviews r
+      JOIN users u ON r.user_id = u.id
+      JOIN businesses b ON r.business_id = b.id
+      JOIN appointments a ON r.appointment_id = a.id
+      WHERE r.is_approved = false
+      ORDER BY r.created_at DESC
+    `);
+    return res.rows;
+  }),
+
+  getPendingReplies: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT r.*, u.name as user_name, b.name as business_name, a.appointment_datetime
+      FROM reviews r
+      JOIN users u ON r.user_id = u.id
+      JOIN businesses b ON r.business_id = b.id
+      JOIN appointments a ON r.appointment_id = a.id
+      WHERE r.business_reply IS NOT NULL AND r.business_reply_approved = false
+      ORDER BY r.business_reply_at DESC
+    `);
+    return res.rows;
+  }),
+
+  // Business Slider Images Approval System
+  approveBusinessSliderImage: t.procedure.use(isAdmin)
+    .input(z.object({ 
+      imageId: z.string().uuid(), 
+      approve: z.boolean(),
+      note: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { imageId, approve, note } = input;
+      const adminId = ctx.session?.user?.id;
+
+      if (approve) {
+        await pool.query(
+          `UPDATE business_images SET 
+           is_approved = true, 
+           is_active = true,
+           approval_note = $1, 
+           approved_at = NOW(), 
+           approved_by = $2 
+           WHERE id = $3`,
+          [note || 'Slider görseli onaylandı', adminId, imageId]
+        );
+      } else {
+        // Reddedilen görseli deaktif et
+        await pool.query(
+          `UPDATE business_images SET 
+           is_active = false, 
+           is_approved = false 
+           WHERE id = $1`,
+          [imageId]
+        );
+      }
+
+      return { success: true };
+    }),
+
+  getPendingBusinessImages: t.procedure.use(isAdmin).query(async () => {
+    const res = await pool.query(`
+      SELECT bi.*, b.name as business_name, u.name as owner_name, u.email as owner_email
+      FROM business_images bi
+      JOIN businesses b ON bi.business_id = b.id
+      LEFT JOIN users u ON b.owner_user_id = u.id
+      WHERE bi.is_approved = false
+      ORDER BY bi.created_at DESC
     `);
     return res.rows;
   }),

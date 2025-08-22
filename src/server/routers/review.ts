@@ -81,10 +81,10 @@ export const reviewRouter = t.router({
         throw new Error('Yorumunuz uygun değil');
       }
 
-      // Create review
+      // Create review (onay bekliyor)
       const result = await pool.query(
-        `INSERT INTO reviews (appointment_id, user_id, business_id, service_rating, employee_rating, comment) 
-         VALUES ($1, $2, $3, $4, $5, $6) 
+        `INSERT INTO reviews (appointment_id, user_id, business_id, service_rating, employee_rating, comment, is_approved) 
+         VALUES ($1, $2, $3, $4, $5, $6, false) 
          RETURNING *`,
         [appointmentId, userId, appointment.business_id, serviceRating, employeeRating, comment]
       );
@@ -220,7 +220,7 @@ export const reviewRouter = t.router({
          JOIN users u ON r.user_id = u.id
          JOIN appointments a ON r.appointment_id = a.id
          JOIN businesses b ON r.business_id = b.id
-         WHERE r.business_id = $1 AND b.is_approved = true
+         WHERE r.business_id = $1 AND b.is_approved = true AND r.is_approved = true
          ORDER BY r.created_at DESC
          LIMIT $2 OFFSET $3`,
         [businessId, limit, offset]
@@ -290,7 +290,7 @@ export const reviewRouter = t.router({
         `SELECT r.*, u.name as user_name
          FROM reviews r
          JOIN users u ON r.user_id = u.id
-         WHERE r.appointment_id = $1`,
+         WHERE r.appointment_id = $1 AND r.is_approved = true`,
         [input.appointmentId]
       );
 
@@ -350,9 +350,9 @@ export const reviewRouter = t.router({
         throw new Error('Yorum bulunamadı veya bu işletmeye ait değil');
       }
 
-      // Yanıt ekle
+      // Yanıt ekle (onay bekliyor)
       const result = await pool.query(
-        `UPDATE reviews SET business_reply = $1, business_reply_at = NOW() WHERE id = $2 RETURNING *`,
+        `UPDATE reviews SET business_reply = $1, business_reply_at = NOW(), business_reply_approved = false WHERE id = $2 RETURNING *`,
         [reply, reviewId]
       );
 

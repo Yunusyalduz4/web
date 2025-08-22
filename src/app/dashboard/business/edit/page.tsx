@@ -24,13 +24,13 @@ export default function BusinessEditPage() {
     genderService: 'unisex' as 'male' | 'female' | 'unisex',
   });
 
-  const [images, setImages] = useState<Array<{ id: string; image_url: string; image_order: number }>>([]);
+  const [images, setImages] = useState<Array<{ id: string; image_url: string; image_order: number; is_approved: boolean }>>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateBusinessMutation = trpc.business.updateBusiness.useMutation();
-  const getBusinessImagesQuery = trpc.business.getBusinessImages.useQuery(
+  const getBusinessImagesQuery = trpc.business.getBusinessImagesForOwner.useQuery(
     { businessId: business?.id || '' },
     { enabled: !!business?.id }
   );
@@ -469,6 +469,20 @@ export default function BusinessEditPage() {
               .map((image, index, arr) => (
                 <div key={image.id} className="relative group">
                   <img src={image.image_url} alt={`Resim ${index + 1}`} className="w-full h-24 object-cover rounded-md border border-white/50" />
+                  
+                  {/* Onay Durumu Badge */}
+                  <div className="absolute top-1 left-1">
+                    {image.is_approved ? (
+                      <div className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-[10px] font-semibold shadow">
+                        ✅ Onaylı
+                      </div>
+                    ) : (
+                      <div className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-[10px] font-semibold shadow">
+                        ⏳ Onay Bekliyor
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-white/90 border border-white/60 text-[10px] font-semibold text-gray-900 shadow">{index + 1} / {arr.length}</div>
                   <div className="absolute top-1 right-1 flex gap-1 opacity-100 group-hover:opacity-100">
                     <button onClick={() => moveImageFirst(index)} disabled={index === 0} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Başa al">

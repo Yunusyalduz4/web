@@ -74,7 +74,13 @@ export const businessRouter = t.router({
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
-        `SELECT * FROM businesses WHERE id = $1 AND is_approved = true`, 
+        `SELECT 
+          id, name, description, address, latitude, longitude, phone, email, 
+          created_at, updated_at, profile_image_url, gender_preference, 
+          working_hours_enabled, is_verified, average_rating, total_reviews, 
+          gender_service, is_approved, profile_image_approved
+        FROM businesses 
+        WHERE id = $1 AND is_approved = true`, 
         [input.businessId]
       );
       return result.rows[0];
@@ -122,20 +128,28 @@ export const businessRouter = t.router({
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
-        `SELECT * FROM business_images WHERE business_id = $1 AND is_active = true ORDER BY image_order ASC`,
+        `SELECT * FROM business_images WHERE business_id = $1 AND is_active = true AND is_approved = true ORDER BY image_order ASC`,
         [input.businessId]
       );
       return result.rows;
     }),
-  addBusinessImage: t.procedure.use(isBusiness)
-    .input(businessImageSchema)
-    .mutation(async ({ input }) => {
+
+  // İşletme sahibi için tüm görselleri getir (onay durumu ile)
+  getBusinessImagesForOwner: t.procedure.use(isBusiness)
+    .input(z.object({ businessId: z.string().uuid() }))
+    .query(async ({ input, ctx }) => {
+      // İşletmenin bu kullanıcıya ait olduğunu kontrol et
+      if (ctx.user.businessId !== input.businessId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu işletmeye erişim yetkiniz yok' });
+      }
+
       const result = await pool.query(
-        `INSERT INTO business_images (business_id, image_url, image_order) VALUES ($1, $2, $3) RETURNING *`,
-        [input.businessId, input.imageUrl, input.imageOrder || 0]
+        `SELECT * FROM business_images WHERE business_id = $1 ORDER BY image_order ASC`,
+        [input.businessId]
       );
-      return result.rows[0];
+      return result.rows;
     }),
+
   updateBusinessImage: t.procedure.use(isBusiness)
     .input(z.object({
       id: z.string().uuid(),
@@ -349,6 +363,30 @@ export const businessRouter = t.router({
         `SELECT * FROM businesses WHERE owner_user_id = $1`,
         [input.userId]
       );
+      return result.rows[0];
+    }),
+
+  // Business görseli ekleme (onay bekliyor)
+  addBusinessImage: t.procedure.use(isBusiness)
+    .input(z.object({ 
+      businessId: z.string().uuid(),
+      imageUrl: z.string().url(),
+      imageOrder: z.number().min(0).default(0)
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // İşletmenin bu kullanıcıya ait olduğunu kontrol et
+      if (ctx.user.businessId !== input.businessId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu işletmeye erişim yetkiniz yok' });
+      }
+
+      // Görsel ekle (onay bekliyor)
+      const result = await pool.query(
+        `INSERT INTO business_images (business_id, image_url, image_order, is_approved) 
+         VALUES ($1, $2, $3, false) 
+         RETURNING *`,
+        [input.businessId, input.imageUrl, input.imageOrder]
+      );
+
       return result.rows[0];
     }),
 }); 

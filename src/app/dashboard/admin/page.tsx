@@ -14,6 +14,8 @@ type AdminTab =
   | 'services' 
   | 'employees' 
   | 'reviews' 
+  | 'review-approval'
+  | 'slider-approval'
   | 'analytics';
 
 export default function AdminDashboard() {
@@ -36,6 +38,9 @@ export default function AdminDashboard() {
   const servicesQuery = trpc.admin.listServices.useQuery(undefined, { enabled: isAdmin && activeTab === 'services' });
   const employeesQuery = trpc.admin.listEmployees.useQuery(undefined, { enabled: isAdmin && activeTab === 'employees' });
   const reviewsQuery = trpc.admin.listReviews.useQuery(undefined, { enabled: isAdmin && activeTab === 'reviews' });
+  const pendingReviewsQuery = trpc.admin.getPendingReviews.useQuery(undefined, { enabled: isAdmin && activeTab === 'review-approval' });
+  const pendingRepliesQuery = trpc.admin.getPendingReplies.useQuery(undefined, { enabled: isAdmin && activeTab === 'review-approval' });
+  const pendingBusinessImagesQuery = trpc.admin.getPendingBusinessImages.useQuery(undefined, { enabled: isAdmin && activeTab === 'slider-approval' });
 
   useEffect(() => {
     if (session && !isAdmin) router.push('/unauthorized');
@@ -89,6 +94,8 @@ export default function AdminDashboard() {
             { id: 'services', label: '🔧 Hizmetler', icon: '🔧' },
             { id: 'employees', label: '👨‍💼 Çalışanlar', icon: '👨‍💼' },
             { id: 'reviews', label: '⭐ Değerlendirmeler', icon: '⭐' },
+            { id: 'review-approval', label: '✅ Yorum Onayları', icon: '✅' },
+            { id: 'slider-approval', label: '🖼️ Slider Onayları', icon: '🖼️' },
             { id: 'analytics', label: '📈 Analitik', icon: '📈' }
           ] as const).map(tab => (
             <button
@@ -117,6 +124,8 @@ export default function AdminDashboard() {
         {activeTab === 'services' && <ServicesPanel data={servicesQuery.data} isLoading={servicesQuery.isLoading} />}
         {activeTab === 'employees' && <EmployeesPanel data={employeesQuery.data} isLoading={employeesQuery.isLoading} />}
         {activeTab === 'reviews' && <ReviewsPanel data={reviewsQuery.data} isLoading={reviewsQuery.isLoading} />}
+        {activeTab === 'review-approval' && <ReviewApprovalPanel pendingReviews={pendingReviewsQuery.data} pendingReplies={pendingRepliesQuery.data} isLoading={pendingReviewsQuery.isLoading || pendingRepliesQuery.isLoading} />}
+        {activeTab === 'slider-approval' && <SliderApprovalPanel pendingBusinessImages={pendingBusinessImagesQuery.data} isLoading={pendingBusinessImagesQuery.isLoading} />}
         {activeTab === 'analytics' && <AnalyticsPanel />}
       </div>
     </main>
@@ -161,7 +170,7 @@ function OverviewPanel({ stats, setActiveTab }: { stats: any; setActiveTab: (tab
       </div>
 
       {/* Pending Approvals Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
           <div className="text-3xl mb-2">⏳</div>
           <div className="text-2xl font-bold text-yellow-800">{stats?.pendingBusinesses || 0}</div>
@@ -173,12 +182,30 @@ function OverviewPanel({ stats, setActiveTab }: { stats: any; setActiveTab: (tab
           <div className="text-2xl font-bold text-blue-800">{stats?.pendingImages || 0}</div>
           <div className="text-sm text-blue-700">Görsel Onay Bekleyen</div>
         </div>
+
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 text-center">
+          <div className="text-3xl mb-2">⭐</div>
+          <div className="text-2xl font-bold text-orange-800">{stats?.pendingReviews || 0}</div>
+          <div className="text-sm text-orange-700">Onay Bekleyen Yorum</div>
+        </div>
+
+        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6 text-center">
+          <div className="text-3xl mb-2">💬</div>
+          <div className="text-2xl font-bold text-purple-800">{stats?.pendingReplies || 0}</div>
+          <div className="text-sm text-purple-700">Onay Bekleyen Yanıt</div>
+        </div>
+
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 text-center">
+          <div className="text-3xl mb-2">🖼️</div>
+          <div className="text-2xl font-bold text-indigo-800">{stats?.pendingSliderImages || 0}</div>
+          <div className="text-sm text-indigo-700">Onay Bekleyen Slider Görsel</div>
+        </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 Hızlı İşlemler</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button 
             onClick={() => setActiveTab('pending')}
             className="p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all"
@@ -201,6 +228,22 @@ function OverviewPanel({ stats, setActiveTab }: { stats: any; setActiveTab: (tab
           >
             <div className="text-2xl mb-2">👥</div>
             <div className="font-medium">Kullanıcıları Yönet</div>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('review-approval')}
+            className="p-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all"
+          >
+            <div className="text-2xl mb-2">✅</div>
+            <div className="font-medium">Yorum Onayları</div>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('slider-approval')}
+            className="p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all"
+          >
+            <div className="text-2xl mb-2">🖼️</div>
+            <div className="font-medium">Slider Onayları</div>
           </button>
         </div>
       </div>
@@ -838,7 +881,7 @@ function ReviewsPanel({ data, isLoading }: { data: any[] | undefined; isLoading:
 function PendingApprovalsPanel({ data, isLoading }: { data: any[] | undefined; isLoading: boolean }) {
   const utils = trpc.useUtils();
   const approveBusiness = trpc.admin.approveBusiness.useMutation();
-  const approveImage = trpc.admin.approveBusinessImage.useMutation();
+  const approveImage = trpc.admin.approveBusinessProfileImage.useMutation();
   const [approvalNote, setApprovalNote] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
 
@@ -1115,6 +1158,295 @@ function EditBusinessModal({ data, onClose, onSave }: any) {
           <button className="py-2 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm" onClick={onClose}>Vazgeç</button>
           <button className="py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold" onClick={()=> onSave(form)}>Kaydet</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SliderApprovalPanel({ pendingBusinessImages, isLoading }: { pendingBusinessImages: any[] | undefined; isLoading: boolean }) {
+  const utils = trpc.useUtils();
+  const approveBusinessSliderImage = trpc.admin.approveBusinessSliderImage.useMutation();
+  const [approvalNote, setApprovalNote] = useState('');
+
+  const handleApproveBusinessSliderImage = async (imageId: string, approve: boolean) => {
+    try {
+      await approveBusinessSliderImage.mutateAsync({ imageId, approve, note: approvalNote });
+      utils.admin.getPendingBusinessImages.invalidate();
+      utils.admin.getStats.invalidate();
+      setApprovalNote('');
+    } catch (error) {
+      console.error('Business image approval error:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-gray-500">Yükleniyor…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">🖼️ İşletme Slider Görselleri Onay Sistemi</h2>
+        <p className="text-gray-600">İşletme slider/galeri görselleri için onay yönetimi</p>
+      </div>
+
+      {/* Approval Note Input */}
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-4">
+        <label className="block mb-2">
+          <span className="text-sm font-medium text-gray-700">Onay Notu (Opsiyonel)</span>
+          <input
+            type="text"
+            value={approvalNote}
+            onChange={(e) => setApprovalNote(e.target.value)}
+            placeholder="Onay veya red nedeni..."
+            className="mt-1 w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none"
+          />
+        </label>
+      </div>
+
+      {/* Pending Slider Images */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">🖼️ Onay Bekleyen İşletme Görselleri ({pendingBusinessImages?.length || 0})</h3>
+        
+        {!pendingBusinessImages || pendingBusinessImages.length === 0 ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+            <p className="text-green-700">🎉 Onay bekleyen işletme görseli bulunmuyor!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingBusinessImages.map((image: any) => (
+              <div key={image.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900">{image.business_name}</h4>
+                    <p className="text-xs text-gray-600 mt-1">{image.owner_name}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(image.created_at).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900">
+                      🖼️ Sıra: {image.image_order}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Image Preview */}
+                <div className="mb-3">
+                  <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
+                    <img 
+                      src={image.image_url} 
+                      alt={`İşletme görseli`} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzExNi41NjkgMTMwIDEzMCAxMTYuNTY5IDEzMCAxMDBDMTMwIDgzLjQzMTQgMTE2LjU2OSA3MCAxMDAgNzBDODMuNDMxNCA3MCA3MCA4My40MzE0IDcwIDEwMEM3MCAxMTYuNTY5IDgzLjQzMTQgMTMwIDEwMCAxMzBaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMDAgMTEwQzEwNS41MjMgMTEwIDExMCAxMDUuNTIzIDExMCAxMDBDMTEwIDk0LjQ3NzIgMTA1LjUyMyA5MCAxMDAgOTBDOTQuNDc3MiA5MCA5MCA5NC40Nzc3IDkwIDEwMEM5MCAxMDUuNTIzIDk0LjQ3NzIgMTEwIDEwMCAxMTBaIiBmaWxsPSIjOUI5QkEwIi8+Cjwvc3ZnPgo=';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApproveBusinessSliderImage(image.id, true)}
+                    disabled={approveBusinessSliderImage.isPending}
+                    className="flex-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-xs font-medium disabled:opacity-50"
+                  >
+                    ✅ Onayla
+                  </button>
+                  <button
+                    onClick={() => handleApproveBusinessSliderImage(image.id, false)}
+                    disabled={approveBusinessSliderImage.isPending}
+                    className="flex-1 px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition-colors text-xs font-medium disabled:opacity-50"
+                  >
+                    ❌ Reddet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReviewApprovalPanel({ pendingReviews, pendingReplies, isLoading }: { pendingReviews: any[] | undefined; pendingReplies: any[] | undefined; isLoading: boolean }) {
+  const utils = trpc.useUtils();
+  const approveReview = trpc.admin.approveReview.useMutation();
+  const approveReply = trpc.admin.approveBusinessReply.useMutation();
+  const [approvalNote, setApprovalNote] = useState('');
+
+  const handleApproveReview = async (reviewId: string, approve: boolean) => {
+    try {
+      await approveReview.mutateAsync({ reviewId, approve, note: approvalNote });
+      utils.admin.getPendingReviews.invalidate();
+      utils.admin.getStats.invalidate();
+      setApprovalNote('');
+    } catch (error) {
+      console.error('Review approval error:', error);
+    }
+  };
+
+  const handleApproveReply = async (reviewId: string, approve: boolean) => {
+    try {
+      await approveReply.mutateAsync({ reviewId, approve, note: approvalNote });
+      utils.admin.getPendingReplies.invalidate();
+      utils.admin.getStats.invalidate();
+      setApprovalNote('');
+    } catch (error) {
+      console.error('Reply approval error:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-gray-500">Yükleniyor…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">✅ Yorum Onay Sistemi</h2>
+        <p className="text-gray-600">Müşteri yorumları ve işletme yanıtları için onay yönetimi</p>
+      </div>
+
+      {/* Approval Note Input */}
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-4">
+        <label className="block mb-2">
+          <span className="text-sm font-medium text-gray-700">Onay Notu (Opsiyonel)</span>
+          <input
+            type="text"
+            value={approvalNote}
+            onChange={(e) => setApprovalNote(e.target.value)}
+            placeholder="Onay veya red nedeni..."
+            className="mt-1 w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none"
+          />
+        </label>
+      </div>
+
+      {/* Pending Reviews */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">⭐ Onay Bekleyen Yorumlar ({pendingReviews?.length || 0})</h3>
+        
+        {!pendingReviews || pendingReviews.length === 0 ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+            <p className="text-green-700">🎉 Onay bekleyen yorum bulunmuyor!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingReviews.map((review: any) => (
+              <div key={review.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900">{review.user_name}</h4>
+                    <p className="text-xs text-gray-600 mt-1">{review.business_name}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(review.appointment_datetime).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900">
+                      ⭐ {review.service_rating}/5
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      👨‍💼 {review.employee_rating}/5
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
+                    "{review.comment}"
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApproveReview(review.id, true)}
+                    disabled={approveReview.isPending}
+                    className="flex-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-xs font-medium disabled:opacity-50"
+                  >
+                    ✅ Onayla
+                  </button>
+                  <button
+                    onClick={() => handleApproveReview(review.id, false)}
+                    disabled={approveReview.isPending}
+                    className="flex-1 px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition-colors text-xs font-medium disabled:opacity-50"
+                  >
+                    ❌ Reddet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Pending Replies */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">💬 Onay Bekleyen İşletme Yanıtları ({pendingReplies?.length || 0})</h3>
+        
+        {!pendingReplies || pendingReplies.length === 0 ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+            <p className="text-green-700">🎉 Onay bekleyen işletme yanıtı bulunmuyor!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingReplies.map((review: any) => (
+              <div key={review.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900">{review.business_name}</h4>
+                    <p className="text-xs text-gray-600 mt-1">Yanıt veren işletme</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900">
+                      👤 {review.user_name}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {new Date(review.appointment_datetime).toLocaleDateString('tr-TR')}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
+                    "{review.business_reply}"
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApproveReply(review.id, true)}
+                    disabled={approveReply.isPending}
+                    className="flex-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-xs font-medium disabled:opacity-50"
+                  >
+                    ✅ Onayla
+                  </button>
+                  <button
+                    onClick={() => handleApproveReply(review.id, false)}
+                    disabled={approveReply.isPending}
+                    className="flex-1 px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition-colors text-xs font-medium disabled:opacity-50"
+                  >
+                    ❌ Reddet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
