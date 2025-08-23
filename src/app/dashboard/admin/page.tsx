@@ -61,7 +61,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className="text-lg font-bold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">
-              🛡️ Admin Panel • KUADO
+              🛡️ Admin Panel • RANDEVUO
             </div>
             <div className="text-xs text-gray-500 bg-white/60 px-2 py-1 rounded-full">
               {session.user.email}
@@ -139,7 +139,7 @@ function OverviewPanel({ stats, setActiveTab }: { stats: any; setActiveTab: (tab
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Sistem Genel Bakış</h2>
-        <p className="text-gray-600">KUADO platformunun genel durumu ve istatistikleri</p>
+        <p className="text-gray-600">RANDEVUO platformunun genel durumu ve istatistikleri</p>
       </div>
 
       {/* Stats Grid */}
@@ -1038,7 +1038,7 @@ function AnalyticsPanel() {
     <section className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">📈 Sistem Analitikleri</h2>
-        <p className="text-gray-600">KUADO platformunun detaylı analizleri ve raporları</p>
+        <p className="text-gray-600">RANDEVUO platformunun detaylı analizleri ve raporları</p>
       </div>
 
       {/* Analytics Grid */}

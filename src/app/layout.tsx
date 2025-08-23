@@ -9,14 +9,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="tr">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>KUADO</title>
+        <title>RANDEVUO</title>
         
         {/* PWA Meta Tags */}
-        <meta name="application-name" content="KUADO" />
+        <meta name="application-name" content="RANDEVUO" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="KUADO" />
-        <meta name="description" content="KUADO - Kuaför randevu ve yönetim uygulaması" />
+        <meta name="apple-mobile-web-app-title" content="RANDEVUO" />
+        <meta name="description" content="RANDEVUO - Kuaför randevu ve yönetim uygulaması" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/icons/browserconfig.xml" />

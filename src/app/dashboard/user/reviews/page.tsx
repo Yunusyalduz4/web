@@ -202,7 +202,7 @@ function UserReviewsPageContent() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">
-              kuado
+              randevuo
             </div>
             <button
               onClick={() => router.push('/dashboard/user')}

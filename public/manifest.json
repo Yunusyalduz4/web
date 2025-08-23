@@ -1,7 +1,7 @@
 {
-  "name": "KUADO",
-  "short_name": "KUADO",
-  "description": "KUADO - Kuaför randevu ve yönetim uygulaması",
+  "name": "RANDEVUO",
+  "short_name": "RANDEVUO",
+  "description": "RANDEVUO - Kuaför randevu ve yönetim uygulaması",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

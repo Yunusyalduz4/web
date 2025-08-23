@@ -32,7 +32,7 @@ export default function FavoritesPage() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <button
             onClick={() => router.push('/dashboard/user/businesses')}
             className="px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 border border-white/40 text-gray-900 text-sm shadow-sm transition"
