@@ -54,13 +54,11 @@ function StarRating({
     <div className="flex items-center gap-2">
       <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((star) => (
-          <button
+          <div
             key={star}
-            type="button"
             onClick={() => handleClick(star)}
             onMouseEnter={() => handleMouseEnter(star)}
             onMouseLeave={handleMouseLeave}
-            disabled={readonly}
             className={`${sizeClasses[size]} transition-all duration-200 ${
               readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'
             } ${
@@ -70,7 +68,7 @@ function StarRating({
             }`}
           >
             {star <= displayRating ? '★' : '☆'}
-          </button>
+          </div>
         ))}
       </div>
       {showValue && (
@@ -272,7 +270,19 @@ export default function BusinessDetailPage() {
           {/* Business Rating - Tıklanabilir */}
           {businessRating && businessRating.total_reviews > 0 && (
             <button 
-              onClick={() => setActiveTab('reviews')}
+              onClick={() => {
+                setActiveTab('reviews');
+                // Sayfayı yorumlar sekmesine scroll yap
+                setTimeout(() => {
+                  const reviewsSection = document.querySelector('[data-tab="reviews"]');
+                  if (reviewsSection) {
+                    reviewsSection.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'start' 
+                    });
+                  }
+                }, 100);
+              }}
               className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-2xl border border-yellow-100/50 hover:from-yellow-100/80 hover:to-orange-100/60 hover:border-yellow-200/70 transition-all duration-200 cursor-pointer group mx-auto"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform">
@@ -453,7 +463,7 @@ export default function BusinessDetailPage() {
 
       {/* Reviews Section - table */}
       {activeTab === 'reviews' && (
-      <div className="mb-6 md:mb-8">
+      <div className="mb-6 md:mb-8" data-tab="reviews">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Müşteri Değerlendirmeleri</h2>
         </div>
