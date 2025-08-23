@@ -424,7 +424,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-3 py-8">
       <div className="w-full max-w-md">
-        <div className="mb-3 text-center text-sm font-bold text-gray-800 select-none">KUADO</div>
+        <div className="mb-3 text-center text-sm font-bold text-gray-800 select-none">RANDEVUO</div>
         <div className="w-full bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-3 animate-fade-in">
           <h2 className="text-lg font-semibold text-center text-gray-900 mb-2">Kayıt Ol</h2>
           {/* Steps */}

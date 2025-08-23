@@ -41,7 +41,7 @@ self.addEventListener('activate', (event) => {
 
 // Push notification event listener
 self.addEventListener('push', (event) => {
-  let title = 'Kuado';
+  let title = 'RANDEVUO';
   const options = {
     body: 'Yeni bir bildirim var!',
     icon: '/icons/icon-192x192.png',

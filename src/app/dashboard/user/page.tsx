@@ -112,7 +112,7 @@ export default function UserDashboard() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">kuado</div>
+          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <div className="inline-flex items-center gap-2">
             <button
               onClick={() => setHistoryOpen(true)}
@@ -217,7 +217,7 @@ export default function UserDashboard() {
       </div>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        :root { --kuado-radius: 16px; --kuado-shadow: 0 8px 24px -12px rgba(0,0,0,0.25); }
+        :root { --randevuo-radius: 16px; --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25); }
         html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
       `}</style>
 
