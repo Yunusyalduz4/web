@@ -19,6 +19,7 @@ Modern, kullanıcı dostu berber randevu yönetim sistemi. İşletme sahipleri v
 - 📱 **Randevu Takibi** - Randevu geçmişi ve durumu
 - ⭐ **Değerlendirme** - Tamamlanan hizmetleri değerlendirme
 - 👤 **Profil Yönetimi** - Kişisel bilgi güncelleme
+- 🔐 **Şifre Sıfırlama** - Güvenli email ile şifre sıfırlama
 
 ## 🛠️ Teknolojiler
 
@@ -26,6 +27,7 @@ Modern, kullanıcı dostu berber randevu yönetim sistemi. İşletme sahipleri v
 - **Styling**: Tailwind CSS
 - **Backend**: tRPC, PostgreSQL
 - **Authentication**: NextAuth.js
+- **Email Service**: Resend
 - **Database**: PostgreSQL (Neon)
 - **Deployment**: Vercel
 - **UI Components**: Custom components with modern design
@@ -56,6 +58,8 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
 VAPID_PRIVATE_KEY=your-vapid-private-key
 VAPID_EMAIL=your-email@example.com
+RESEND_API_KEY=your-resend-api-key
+RANDEVUO_DOMAIN=randevuo.com
 ```
 
 ### Database Setup
@@ -70,11 +74,19 @@ VAPID_EMAIL=your-email@example.com
 -- src/server/db/schema.sql dosyasındaki SQL'i çalıştırın
 ```
 
+3. **Email Tokens Tablosu:**
+```bash
+npm run migrate:email-tokens
+```
+
 ## 📦 Kurulum
 
 ```bash
 # Dependencies kurulumu
 npm install
+
+# Email tokens tablosu oluşturma
+npm run migrate:email-tokens
 
 # Development server başlatma
 npm run dev

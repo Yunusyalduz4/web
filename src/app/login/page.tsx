@@ -2,6 +2,7 @@
 import { signIn } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useUserCredentials } from '../../hooks/useLocalStorage';
 
 export default function LoginPage() {
@@ -84,6 +85,16 @@ export default function LoginPage() {
               aria-label="Şifre"
             />
           </label>
+          
+          {/* Şifremi Unuttum Linki */}
+          <div className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-[11px] text-rose-600 hover:text-rose-700 underline"
+            >
+              Şifremi Unuttum
+            </Link>
+          </div>
           
           {/* Beni Hatırla ve Bilgileri Temizle */}
           <div className="flex items-center justify-between">
