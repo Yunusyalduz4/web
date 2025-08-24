@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "next build"
+    "vercel-build": "next build",
+    "migrate:email-tokens": "node migrate_password_reset.js"
   },
   "dependencies": {
     "@fluentui/svg-icons": "^1.1.307",
@@ -29,6 +30,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
+    "resend": "^6.0.1",
     "sharp": "^0.34.3",
     "sql-template-tag": "^5.2.1",
     "swiper": "^11.2.10",
