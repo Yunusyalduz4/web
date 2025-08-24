@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -165,7 +165,25 @@ export default function ResetPasswordPage() {
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in { animation: fade-in .5s cubic-bezier(0.4,0,0.2,1) both; }
-      `}</style>
+      `}      </style>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-3">
+        <div className="w-full max-w-md text-center">
+          <div className="mb-3 text-sm font-bold text-gray-800">RANDEVUO</div>
+          <div className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Yükleniyor...</h2>
+            <p className="text-gray-600">Şifre sıfırlama sayfası yükleniyor...</p>
+          </div>
+        </div>
+      </main>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
