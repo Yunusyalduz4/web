@@ -255,10 +255,45 @@ export const appointmentRouter = t.router({
   cancelAppointment: t.procedure.use(isUser)
     .input(z.object({ id: z.string().uuid(), userId: z.string().uuid() }))
     .mutation(async ({ input }) => {
+      // Mevcut durumu ve randevu bilgilerini al
+      const appointmentRes = await pool.query(
+        `SELECT a.status, a.business_id, a.appointment_datetime, b.name as business_name 
+         FROM appointments a 
+         JOIN businesses b ON a.business_id = b.id 
+         WHERE a.id = $1 AND a.user_id = $2`,
+        [input.id, input.userId]
+      );
+      
+      if (appointmentRes.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
+      }
+
+      const oldStatus = appointmentRes.rows[0].status;
+      const businessId = appointmentRes.rows[0].business_id;
+      const appointmentDateTime = appointmentRes.rows[0].appointment_datetime;
+      const businessName = appointmentRes.rows[0].business_name;
+
       const result = await pool.query(
         `UPDATE appointments SET status = 'cancelled' WHERE id = $1 AND user_id = $2 RETURNING *`,
         [input.id, input.userId]
       );
+      
+      // Push notification gönder
+      try {
+        const { sendAppointmentStatusUpdateNotification } = await import('../../utils/pushNotification');
+        await sendAppointmentStatusUpdateNotification(
+          input.id,
+          businessId,
+          input.userId,
+          oldStatus,
+          'cancelled',
+          appointmentDateTime,
+          businessName
+        );
+      } catch (error) {
+        console.error('Cancel appointment push notification error:', error);
+        // Push notification hatası randevu iptalını etkilemesin
+      }
       
       // UTC'den Türkiye saatine çevir
       if (result.rows[0]) {
@@ -641,9 +676,9 @@ export const appointmentRouter = t.router({
       status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']),
     }))
     .mutation(async ({ input }) => {
-      // Randevunun bu işletmeye ait olduğunu kontrol et
+      // Randevunun bu işletmeye ait olduğunu kontrol et ve mevcut durumu al
       const appointmentCheck = await pool.query(
-        `SELECT id FROM appointments WHERE id = $1 AND business_id = $2`,
+        `SELECT id, status, user_id, appointment_datetime FROM appointments WHERE id = $1 AND business_id = $2`,
         [input.appointmentId, input.businessId]
       );
       
@@ -651,11 +686,39 @@ export const appointmentRouter = t.router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
       }
 
+      const oldStatus = appointmentCheck.rows[0].status;
+      const userId = appointmentCheck.rows[0].user_id;
+      const appointmentDateTime = appointmentCheck.rows[0].appointment_datetime;
+
       // Durumu güncelle
       const result = await pool.query(
         `UPDATE appointments SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
         [input.status, input.appointmentId]
       );
+
+      // İşletme adını al
+      const businessRes = await pool.query(
+        'SELECT name FROM businesses WHERE id = $1',
+        [input.businessId]
+      );
+      const businessName = businessRes.rows[0]?.name || 'İşletme';
+
+      // Push notification gönder
+      try {
+        const { sendAppointmentStatusUpdateNotification } = await import('../../utils/pushNotification');
+        await sendAppointmentStatusUpdateNotification(
+          input.appointmentId,
+          input.businessId,
+          userId,
+          oldStatus,
+          input.status,
+          appointmentDateTime,
+          businessName
+        );
+      } catch (error) {
+        console.error('Push notification error:', error);
+        // Push notification hatası randevu güncellemeyi etkilemesin
+      }
 
       return result.rows[0];
     }),

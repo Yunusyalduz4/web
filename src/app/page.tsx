@@ -1,8 +1,22 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LandingPage() {
   const router = useRouter();
+
+  // Sayfa yüklendiğinde push notification izni iste
+  useEffect(() => {
+    // 3 saniye sonra izin iste (sayfa yüklendikten sonra)
+    const timer = setTimeout(() => {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-4">
       <div className="w-full max-w-md py-10 animate-fade-in">

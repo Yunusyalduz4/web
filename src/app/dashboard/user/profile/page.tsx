@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import React from 'react';
 import { handleLogout } from '../../../../utils/authUtils';
+import { useUserPushNotifications } from '../../../../hooks/useUserPushNotifications';
 
 export default function UserProfilePage() {
   const { data: session } = useSession();
@@ -25,6 +26,9 @@ export default function UserProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
+  
+  // Push notification hook
+  const { isSupported, isSubscribed, isLoading: pushLoading, error: pushError, subscribe, unsubscribe } = useUserPushNotifications();
 
   // Profil yüklendiğinde inputlara aktar
   React.useEffect(() => {
@@ -297,6 +301,37 @@ export default function UserProfilePage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Push Notification - Kullanıcı */}
+      {isSupported && (
+        <section className="mt-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-gray-800">Push Bildirimleri</div>
+              <div className="text-[12px] text-gray-600">
+                {isSubscribed 
+                  ? 'Randevu güncellemeleri için bildirim alınıyor' 
+                  : 'Randevu güncellemeleri için bildirim almak ister misiniz?'
+                }
+              </div>
+            </div>
+            <button 
+              onClick={isSubscribed ? unsubscribe : subscribe} 
+              disabled={pushLoading} 
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                isSubscribed ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+              } disabled:opacity-50`}
+            >
+              {pushLoading ? '⏳' : isSubscribed ? 'Kapat' : 'Aç'}
+            </button>
+          </div>
+          {pushError && (
+            <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700">
+              {pushError}
             </div>
           )}
         </section>
