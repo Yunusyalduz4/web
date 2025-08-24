@@ -145,7 +145,45 @@ export const adminRouter = t.router({
   updateAppointmentStatus: t.procedure.use(isAdmin)
     .input(z.object({ id: z.string().uuid(), status: z.enum(['pending','confirmed','cancelled','completed']) }))
     .mutation(async ({ input }) => {
+      // Mevcut durumu ve randevu bilgilerini al
+      const appointmentRes = await pool.query(
+        `SELECT a.status, a.user_id, a.business_id, a.appointment_datetime, b.name as business_name 
+         FROM appointments a 
+         JOIN businesses b ON a.business_id = b.id 
+         WHERE a.id = $1`,
+        [input.id]
+      );
+      
+      if (appointmentRes.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
+      }
+
+      const oldStatus = appointmentRes.rows[0].status;
+      const userId = appointmentRes.rows[0].user_id;
+      const businessId = appointmentRes.rows[0].business_id;
+      const appointmentDateTime = appointmentRes.rows[0].appointment_datetime;
+      const businessName = appointmentRes.rows[0].business_name;
+
+      // Durumu güncelle
       const res = await pool.query(`UPDATE appointments SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *`, [input.status, input.id]);
+
+      // Push notification gönder
+      try {
+        const { sendAppointmentStatusUpdateNotification } = await import('../../utils/pushNotification');
+        await sendAppointmentStatusUpdateNotification(
+          input.id,
+          businessId,
+          userId,
+          oldStatus,
+          input.status,
+          appointmentDateTime,
+          businessName
+        );
+      } catch (error) {
+        console.error('Admin push notification error:', error);
+        // Push notification hatası randevu güncellemeyi etkilemesin
+      }
+
       return res.rows[0];
     }),
 
