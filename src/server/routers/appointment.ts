@@ -9,7 +9,7 @@ export const appointmentRouter = t.router({
     .input(z.object({
       userId: z.string().uuid(),
       businessId: z.string().uuid(),
-      appointmentDatetime: z.string(), // ISO string
+      appointmentDatetime: z.string(), // ISO string (Türkiye saati olarak geliyor)
       services: z.array(z.object({
         serviceId: z.string().uuid(),
         employeeId: z.string().uuid(),
@@ -18,8 +18,8 @@ export const appointmentRouter = t.router({
     .mutation(async ({ input }) => {
       const BUFFER_MINUTES = 10; // Randevular arasında tampon süre
       
-      // Frontend'den gelen appointmentDatetime zaten UTC formatında
-      const utcDateTime = new Date(input.appointmentDatetime); // UTC olarak kullan
+      // Frontend'den gelen appointmentDatetime direkt kullan (database UTC olarak kaydedecek)
+      const utcDateTime = new Date(input.appointmentDatetime);
       
       // 0. İşletme onay durumunu kontrol et
       const businessCheck = await pool.query(
@@ -55,11 +55,10 @@ export const appointmentRouter = t.router({
       const endBuffered = new Date(end.getTime() + BUFFER_MINUTES * 60000);
 
       // Geçmiş zamana randevu alınamaz
-      // Türkiye saati ile kontrol et (UTC +3 saat)
-      const nowTurkey = new Date(Date.now() + (3 * 60 * 60 * 1000)); // UTC'yi Türkiye saatine çevir
-      const startTurkey = new Date(start.getTime() + (3 * 60 * 60 * 1000)); // UTC'yi Türkiye saatine çevir
+      // Şu anki zamanı UTC olarak al
+      const nowUTC = new Date();
       
-      if (startTurkey.getTime() <= nowTurkey.getTime()) {
+      if (start.getTime() <= nowUTC.getTime()) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
       }
 
@@ -141,7 +140,7 @@ export const appointmentRouter = t.router({
         );
         const serviceNames = servicesRes.rows.map(r => r.name).join(', ');
         
-        const appointmentDate = new Date(appointmentResult.rows[0].appointment_datetime.getTime() + (3 * 60 * 60 * 1000)); // UTC'yi Türkiye saatine çevir
+        const appointmentDate = new Date(appointmentResult.rows[0].appointment_datetime); // UTC'yi Türkiye saatine çevir
         const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
           day: '2-digit',
           month: '2-digit',
@@ -193,7 +192,7 @@ export const appointmentRouter = t.router({
       const rows = result.rows.map(row => ({
         ...row,
         appointment_datetime: new Date(row.appointment_datetime).toISOString(),
-        turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+        turkey_datetime: new Date(row.appointment_datetime).toISOString()
       }));
       
       return rows;
@@ -224,7 +223,7 @@ export const appointmentRouter = t.router({
       const rows = result.rows.map(row => ({
         ...row,
         appointment_datetime: new Date(row.appointment_datetime).toISOString(),
-        turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+        turkey_datetime: new Date(row.appointment_datetime).toISOString()
       }));
       
       return rows;
@@ -237,9 +236,8 @@ export const appointmentRouter = t.router({
       durationMinutes: z.number(),
     }))
     .query(async ({ input }) => {
-      // Frontend'den gelen appointmentDatetime'i Türkiye saati olarak kabul et ve UTC'ye çevir
-      const turkeyDateTime = new Date(input.appointmentDatetime);
-      const utcDateTime = new Date(turkeyDateTime.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
+      // Frontend'den gelen appointmentDatetime direkt kullan
+      const utcDateTime = new Date(input.appointmentDatetime);
       
       // Çakışan randevu var mı?
       const start = utcDateTime;
@@ -301,7 +299,7 @@ export const appointmentRouter = t.router({
         return {
           ...row,
           appointment_datetime: new Date(row.appointment_datetime).toISOString(),
-          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+          turkey_datetime: new Date(row.appointment_datetime).toISOString()
         };
       }
       
@@ -314,10 +312,9 @@ export const appointmentRouter = t.router({
       durationMinutes: z.number(),
     }))
     .query(async ({ input }) => {
-      // Gelen tarihi Türkiye saati olarak kabul et ve UTC'ye çevir
-      const turkeyDate = new Date(input.date + 'T00:00:00');
-      const utcStartOfDay = new Date(turkeyDate.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
-      const utcEndOfDay = new Date(turkeyDate.getTime() + (21 * 60 * 60 * 1000) - 1000); // 23:59:59 UTC'ye çevir
+      // Gelen tarihi direkt kullan
+      const utcStartOfDay = new Date(input.date + 'T00:00:00');
+      const utcEndOfDay = new Date(input.date + 'T23:59:59');
       
       const result = await pool.query(
         `SELECT appointment_datetime, service_id FROM appointments WHERE employee_id = $1 AND status IN ('pending','confirmed') AND appointment_datetime >= $2 AND appointment_datetime <= $3`,
@@ -333,17 +330,16 @@ export const appointmentRouter = t.router({
         const end = new Date(start.getTime() + dur * 60000);
         busySlots.push({ start, end });
       }
-      // 00:00-23:59 arası 15dk slotları üret (Türkiye saati olarak)
+      // 00:00-23:59 arası 15dk slotları üret
       const slots: Record<string, boolean> = {};
       for (let h = 0; h < 24; h++) {
         for (let m = 0; m < 60; m += 30) {
           const slot = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-          // Türkiye saati olarak slot oluştur
-          const turkeySlotStart = new Date(input.date + 'T' + slot + ':00');
-          const utcSlotStart = new Date(turkeySlotStart.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
-          const utcSlotEnd = new Date(utcSlotStart.getTime() + input.durationMinutes * 60000);
-          // Çakışan randevu var mı? - Slot'un başlangıcından itibaren hizmet süresi kadar süre doldurulur
-          const conflict = busySlots.some(b => utcSlotStart < b.end && utcSlotEnd > b.start);
+          // Slot oluştur
+          const slotStart = new Date(input.date + 'T' + slot + ':00');
+          const slotEnd = new Date(slotStart.getTime() + input.durationMinutes * 60000);
+          // Çakışan randevu var mı?
+          const conflict = busySlots.some(b => slotStart < b.end && slotEnd > b.start);
           slots[slot] = conflict;
         }
       }
@@ -358,10 +354,9 @@ export const appointmentRouter = t.router({
       durationMinutes: z.number().min(1),
     }))
     .query(async ({ input }) => {
-      // Gelen tarihi Türkiye saati olarak kabul et ve UTC'ye çevir
-      const turkeyDate = new Date(input.date + 'T00:00:00');
-      const utcStartOfDay = new Date(turkeyDate.getTime() - (3 * 60 * 60 * 1000)); // UTC'ye çevir
-      const utcEndOfDay = new Date(turkeyDate.getTime() + (21 * 60 * 60 * 1000) - 1000); // 23:59:59 UTC'ye çevir
+      // Gelen tarihi direkt kullan
+      const utcStartOfDay = new Date(input.date + 'T00:00:00');
+      const utcEndOfDay = new Date(input.date + 'T23:59:59');
       
       const res = await pool.query(
         `SELECT a.id, a.appointment_datetime, SUM(aps.duration_minutes) AS total_duration
@@ -380,13 +375,11 @@ export const appointmentRouter = t.router({
         const dur = Number(row.total_duration) || input.durationMinutes;
         const utcEnd = new Date(utcStart.getTime() + dur * 60000);
         
-        // UTC slot'ları Türkiye saatine çevir ve 15dk'lık slot'lara böl
+        // 15dk'lık slot'lara böl
         // Sadece gerçek randevu süresi içindeki slot'ları meşgul olarak işaretle
         for (let t = new Date(utcStart); t < utcEnd; t = new Date(t.getTime() + 15 * 60000)) {
-          // UTC'yi Türkiye saatine çevir (+3 saat)
-          const turkeyTime = new Date(t.getTime() + (3 * 60 * 60 * 1000));
-          const hh = String(turkeyTime.getHours()).padStart(2, '0');
-          const mm = String(turkeyTime.getMinutes()).padStart(2, '0');
+          const hh = String(t.getHours()).padStart(2, '0');
+          const mm = String(t.getMinutes()).padStart(2, '0');
           const slotKey = `${hh}:${mm}`;
           
           // Slot meşgul olarak işaretle (çünkü bu slot mevcut randevunun süresi içinde)
@@ -407,9 +400,9 @@ export const appointmentRouter = t.router({
       const startDate = new Date(input.startDate + 'T00:00:00');
       const endDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000); // +6 gün
       
-      // UTC'ye çevir
-      const utcStartDate = new Date(startDate.getTime() - (3 * 60 * 60 * 1000));
-      const utcEndDate = new Date(endDate.getTime() - (3 * 60 * 60 * 1000));
+      // Tarihleri direkt kullan
+      const utcStartDate = startDate;
+      const utcEndDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
       
       // İşletmenin çalışanlarını ve müsaitlik bilgilerini al
       const employeesRes = await pool.query(
@@ -453,9 +446,9 @@ export const appointmentRouter = t.router({
         const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
         const dateStr = currentDate.toISOString().split('T')[0];
         
-        // UTC'ye çevir
-        const utcCurrentDate = new Date(currentDate.getTime() - (3 * 60 * 60 * 1000));
-        const utcNextDate = new Date(utcCurrentDate.getTime() + 24 * 60 * 60 * 1000);
+                  // Tarihleri direkt kullan
+          const utcCurrentDate = currentDate;
+          const utcNextDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
         
         // O gün için randevuları al
         const appointmentsRes = await pool.query(
@@ -483,18 +476,17 @@ export const appointmentRouter = t.router({
           const aptStart = new Date(apt.appointment_datetime);
           const aptEnd = new Date(aptStart.getTime() + Number(apt.total_duration) * 60000);
           
-          // Her 15dk'lık slot için kontrol et
-          for (let time = new Date(aptStart); time < aptEnd; time = new Date(time.getTime() + 15 * 60000)) {
-            const turkeyTime = new Date(time.getTime() + (3 * 60 * 60 * 1000));
-            const hh = String(turkeyTime.getHours()).padStart(2, '0');
-            const mm = String(turkeyTime.getMinutes()).padStart(2, '0');
-            const slotKey = `${hh}:${mm}`;
-            
-            // Sadece 08:00-20:00 arası slot'ları kaydet
-            if (turkeyTime.getHours() >= 8 && turkeyTime.getHours() < 20) {
-              busySlots[slotKey] = true;
-            }
+                  // Her 15dk'lık slot için kontrol et
+        for (let time = new Date(aptStart); time < aptEnd; time = new Date(time.getTime() + 15 * 60000)) {
+          const hh = String(time.getHours()).padStart(2, '0');
+          const mm = String(time.getMinutes()).padStart(2, '0');
+          const slotKey = `${hh}:${mm}`;
+          
+          // Sadece 08:00-20:00 arası slot'ları kaydet
+          if (time.getHours() >= 8 && time.getHours() < 20) {
+            busySlots[slotKey] = true;
           }
+        }
         }
         
         // O gün için çalışan müsaitlik bilgilerini al
@@ -605,13 +597,12 @@ export const appointmentRouter = t.router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      // UTC'ye çevir (Türkiye saati -3 saat)
-      const turkeyDateTime = new Date(input.appointmentDatetime);
-      const utcDateTime = new Date(turkeyDateTime.getTime() - (3 * 60 * 60 * 1000));
+      // Direkt kullan
+      const utcDateTime = new Date(input.appointmentDatetime);
       
       // Geçmiş zamana randevu alınamaz
-      const nowTurkey = new Date(Date.now() + (3 * 60 * 60 * 1000));
-      if (turkeyDateTime.getTime() <= nowTurkey.getTime()) {
+      const nowUTC = new Date();
+      if (utcDateTime.getTime() <= nowUTC.getTime()) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
       }
 
