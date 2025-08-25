@@ -256,8 +256,8 @@ export default function BookAppointmentPage() {
       return;
     }
 
-    // Türkiye saatini açıkça belirt (UTC+3)
-    const turkeyDateTime = new Date(`${date}T${time}:00+03:00`);
+    // Türkiye saatini UTC olarak gönder (backend'de UTC olarak işlenecek)
+    const turkeyDateTime = new Date(`${date}T${time}:00`);
     const appointmentDatetime = turkeyDateTime.toISOString();
     
     try {
