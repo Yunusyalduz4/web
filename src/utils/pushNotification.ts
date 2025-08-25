@@ -176,8 +176,8 @@ export async function sendAppointmentStatusUpdateNotification(
     
     // Tarihi Türkiye saatine çevir
     const appointmentDate = new Date(appointmentDateTime);
-    const turkeyDate = new Date(appointmentDate.getTime() + (3 * 60 * 60 * 1000));
-    const formattedDate = turkeyDate.toLocaleDateString('tr-TR', {
+    // ✅ DOĞRU - Direkt kullan
+    const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
