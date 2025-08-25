@@ -775,11 +775,11 @@ function WeeklySlotView({
                 : 'bg-white/80 text-gray-900 hover:bg-white/90'
             }`}
           >
-            {/* Gün adı */}
+            {/* Gün adı - Frontend'de tekrar hesapla */}
             <div className={`text-[10px] font-bold mb-1 ${
               selectedDate === day.date ? 'text-white' : 'text-gray-600'
             }`}>
-              {day.dayShort}
+              {new Date(day.date).toLocaleDateString('tr-TR', { weekday: 'short' })}
             </div>
             
             {/* Gün numarası */}
