@@ -32,6 +32,8 @@ export default function BookAppointmentPage() {
   const [time, setTime] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   // Tek çalışan varsa otomatik seçim yap
   useEffect(() => {
@@ -64,52 +66,37 @@ export default function BookAppointmentPage() {
     }, 0);
   }, [selectedServices]);
 
-  // Hizmet ekleme fonksiyonu
-  const addService = () => {
-    if (selectedServices.length >= 5) {
-      setError('En fazla 5 hizmet seçebilirsiniz.');
-      return;
-    }
+  // Hizmet seçim modal'ından seçilen hizmetleri ekle
+  const addSelectedServices = () => {
+    if (selectedServiceIds.length === 0) return;
     
-    const newService = {
-      serviceId: '',
-      employeeId: '',
-      service: null,
-      employee: null
-    };
+    const newSelections: ServiceSelection[] = selectedServiceIds.map(serviceId => {
+      const service = services?.find((s: any) => s.id === serviceId);
+      const newSelection = {
+        serviceId,
+        employeeId: '',
+        service,
+        employee: null
+      };
 
-    // Eğer tek çalışan varsa, yeni hizmet için de otomatik seç
-    if (employees && employees.length === 1) {
-      newService.employeeId = employees[0].id;
-      newService.employee = employees[0];
-    }
+      // Eğer tek çalışan varsa, yeni hizmet için de otomatik seç
+      if (employees && employees.length === 1) {
+        newSelection.employeeId = employees[0].id;
+        newSelection.employee = employees[0];
+      }
 
-    setSelectedServices([...selectedServices, newService]);
+      return newSelection;
+    });
+
+    setSelectedServices([...selectedServices, ...newSelections]);
+    setSelectedServiceIds([]);
+    setShowServiceModal(false);
     setError('');
   };
 
   // Hizmet kaldırma fonksiyonu
   const removeService = (index: number) => {
     setSelectedServices(selectedServices.filter((_, i) => i !== index));
-  };
-
-  // Hizmet seçimi güncelleme
-  const updateServiceSelection = (index: number, serviceId: string) => {
-    const service = services?.find((s: any) => s.id === serviceId);
-    const newSelections = [...selectedServices];
-    newSelections[index] = {
-      ...newSelections[index],
-      serviceId,
-      service
-    };
-
-    // Eğer tek çalışan varsa, hizmet seçildiğinde çalışanı da otomatik seç
-    if (employees && employees.length === 1) {
-      newSelections[index].employeeId = employees[0].id;
-      newSelections[index].employee = employees[0];
-    }
-
-    setSelectedServices(newSelections);
   };
 
   // Çalışan seçimi güncelleme
@@ -327,91 +314,213 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {/* Hizmet Seçimi */}
+        {/* Modern Hizmet Seçimi */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-800">Hizmetler</h2>
             <button
               type="button"
-              onClick={addService}
+              onClick={() => setShowServiceModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold shadow hover:shadow-lg active:scale-95 transition"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              Hizmet Ekle
+              Hizmet Seç
             </button>
           </div>
 
-          {selectedServices.map((selection, index) => (
-            <div key={index} className="p-4 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-gray-800">Hizmet {index + 1}</h3>
-                <button
-                  type="button"
-                  onClick={() => removeService(index)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-white/40 text-rose-700 hover:bg-white/90 transition"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                  Kaldır
-                </button>
-              </div>
+          {/* Seçili Hizmetler */}
+          {selectedServices.length > 0 ? (
+            <div className="space-y-3">
+              {selectedServices.map((selection, index) => (
+                <div key={index} className="group relative p-4 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-md transition-all duration-200">
+                  {/* Hizmet Bilgisi */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white text-sm font-bold grid place-items-center">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-lg">{selection.service?.name}</h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-rose-500">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                              {selection.service?.duration_minutes} dk
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-fuchsia-500">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                              ₺{selection.service?.price}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Kaldır Butonu */}
+                    <button
+                      type="button"
+                      onClick={() => removeService(index)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="flex flex-col gap-1 text-gray-700 font-medium">
-                  Hizmet
-                  <select
-                    value={selection.serviceId}
-                    onChange={(e) => updateServiceSelection(index, e.target.value)}
-                    required
-                    className="border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition"
-                  >
-                    <option value="">Seçiniz</option>
-                    {services?.map((s: any) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} (₺{s.price} • {s.duration_minutes} dk)
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  {/* Çalışan Seçimi */}
+                  <div className="ml-11">
+                    <label className="flex flex-col gap-2 text-gray-700 font-medium">
+                      <span className="text-sm text-gray-600">Çalışan Seçin</span>
+                      <div className="relative">
+                        <select
+                          value={selection.employeeId}
+                          onChange={(e) => updateEmployeeSelection(index, e.target.value)}
+                          required
+                          disabled={!selection.serviceId || (employees && employees.length === 1)}
+                          className="w-full border border-white/60 bg-white/80 text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition disabled:bg-gray-100 appearance-none cursor-pointer"
+                        >
+                          <option value="">Çalışan seçiniz</option>
+                          {selection.serviceId && getEmployeesForService(selection.serviceId).map((e: any) => (
+                            <option key={e.id} value={e.id}>{e.name}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        </div>
+                      </div>
+                      {employees && employees.length === 1 && (
+                        <span className="text-xs text-blue-600 flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Tek çalışan olduğu için otomatik seçildi
+                        </span>
+                      )}
+                    </label>
 
-                <label className="flex flex-col gap-1 text-gray-700 font-medium">
-                  Çalışan
-                  <select
-                    value={selection.employeeId}
-                    onChange={(e) => updateEmployeeSelection(index, e.target.value)}
-                    required
-                    disabled={!selection.serviceId || (employees && employees.length === 1)}
-                    className="border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition disabled:bg-gray-100"
-                  >
-                    <option value="">Seçiniz</option>
-                    {selection.serviceId && getEmployeesForService(selection.serviceId).map((e: any) => (
-                      <option key={e.id} value={e.id}>{e.name}</option>
-                    ))}
-                  </select>
-                  {employees && employees.length === 1 && (
-                    <span className="text-xs text-blue-600 mt-1">
-                      ⚡ Tek çalışan olduğu için otomatik seçildi
-                    </span>
-                  )}
-                </label>
-              </div>
-
-              {selection.service && (
-                <div className="mt-3 p-3 rounded-xl bg-white/60 backdrop-blur-md border border-white/40">
-                  <p className="text-sm text-gray-800">
-                    <strong>{selection.service.name}</strong> • ₺{selection.service.price || 0} • {selection.service.duration_minutes || 0} dk
-                    {selection.employee && ` • ${selection.employee.name}`}
-                  </p>
+                    {/* Seçili Çalışan Bilgisi */}
+                    {selection.employee && (
+                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-fuchsia-50 to-indigo-50 border border-fuchsia-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-white text-sm font-bold grid place-items-center">
+                            {selection.employee.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-fuchsia-900">{selection.employee.name}</p>
+                            <p className="text-xs text-fuchsia-700">Seçili çalışan</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-
-          {selectedServices.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Henüz hizmet seçilmedi. Yukarıdaki butona tıklayarak hizmet ekleyin.
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <p className="text-lg font-medium mb-2">Henüz hizmet seçilmedi</p>
+              <p className="text-sm">Yukarıdaki butona tıklayarak hizmet seçin</p>
             </div>
           )}
         </div>
+
+        {/* Hizmet Seçim Modal */}
+        {showServiceModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-900">Hizmet Seçin</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowServiceModal(false)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">İstediğiniz hizmetleri seçin (çoklu seçim yapabilirsiniz)</p>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
+                  {services?.map((service: any) => (
+                    <label key={service.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-fuchsia-300 hover:bg-fuchsia-50 transition cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={selectedServiceIds.includes(service.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedServiceIds([...selectedServiceIds, service.id]);
+                          } else {
+                            setSelectedServiceIds(selectedServiceIds.filter(id => id !== service.id));
+                          }
+                        }}
+                        className="mt-1 w-4 h-4 text-fuchsia-600 border-gray-300 rounded focus:ring-fuchsia-500"
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 group-hover:text-fuchsia-700 transition">{service.name}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <span className="flex items-center gap-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-rose-500">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                              <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                            {service.duration_minutes} dk
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-fuchsia-500">
+                              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                            ₺{service.price}
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-gray-100 bg-gray-50">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowServiceModal(false)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addSelectedServices}
+                    disabled={selectedServiceIds.length === 0}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                  >
+                    {selectedServiceIds.length > 0 ? `${selectedServiceIds.length} Hizmet Ekle` : 'Hizmet Ekle'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tarih ve Saat Seçimi */}
         {selectedServices.length > 0 && (

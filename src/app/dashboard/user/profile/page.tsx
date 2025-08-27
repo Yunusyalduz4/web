@@ -205,10 +205,10 @@ export default function UserProfilePage() {
 
             <button
               type="submit"
-              disabled={updateMutation.isLoading}
+              disabled={updateMutation.isPending}
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition disabled:opacity-60"
             >
-              {updateMutation.isLoading ? 'Güncelleniyor…' : 'Kaydet'}
+              {updateMutation.isPending ? 'Güncelleniyor…' : 'Kaydet'}
             </button>
           </form>
         </section>
@@ -239,63 +239,81 @@ export default function UserProfilePage() {
           ) : (
             <div className="space-y-3">
               {userReviews.reviews.map((review: any) => (
-                <div key={review.id} className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">{review.business_name}</h3>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
+                <div key={review.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl p-4 hover:bg-white/70 transition-all duration-200">
+                  {/* Üst Kısım */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 grid place-items-center">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm3 2a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">{review.business_name}</h3>
+                        <div className="text-xs text-gray-500">
+                          {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </div>
                       </div>
                     </div>
+                    
+                    {/* Sağ Kısım */}
                     <div className="flex items-center gap-2">
-                      {/* Onay Durumu Badge */}
+                      {/* Durum */}
                       {review.is_approved ? (
-                        <div className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-[10px] font-semibold">
-                          ✅ Onaylı
+                        <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                          ✓ Onaylı
                         </div>
                       ) : (
-                        <div className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-[10px] font-semibold">
-                          ⏳ Onay Bekliyor
+                        <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                          ⏳ Bekliyor
                         </div>
                       )}
-                      <div className="flex items-center gap-1 text-xs">
-                        <span className="text-yellow-500">⭐</span>
-                        <span className="font-medium">{((review.service_rating + review.employee_rating) / 2).toFixed(1)}</span>
+                      
+                      {/* Puan */}
+                      <div className="text-sm font-semibold text-gray-700">
+                        {((review.service_rating + review.employee_rating) / 2).toFixed(1)}
                       </div>
                     </div>
                   </div>
                   
-                  <div className="text-xs text-gray-700 mb-2">
-                    <div>Hizmet: {Array.isArray(review.service_names) ? review.service_names.join(', ') : '—'}</div>
+                  {/* Hizmet ve Çalışan */}
+                  <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
+                    <span>Hizmet: {Array.isArray(review.service_names) ? review.service_names.join(', ') : '—'}</span>
                     {review.employee_names && review.employee_names.length > 0 && (
-                      <div>Çalışan: {review.employee_names.join(', ')}</div>
+                      <span>Çalışan: {review.employee_names.join(', ')}</span>
                     )}
                   </div>
 
+                  {/* Yorum */}
                   {review.comment && (
-                    <div className="text-xs text-gray-800 bg-white/50 rounded-lg p-2 border border-white/30">
+                    <div className="text-xs text-gray-700 bg-gray-50 rounded-lg p-3 mb-3">
                       "{review.comment}"
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mt-2">
+                  {/* Alt Kısım */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span>Hizmet: ⭐ {review.service_rating}/5</span>
-                      <span>Çalışan: ⭐ {review.employee_rating}/5</span>
+                      <span>Hizmet: {review.service_rating}/5</span>
+                      <span>Çalışan: {review.employee_rating}/5</span>
                     </div>
+                    
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">{new Date(review.created_at).toLocaleDateString('tr-TR')}</span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(review.created_at).toLocaleDateString('tr-TR')}
+                      </span>
+                      
                       <button
                         onClick={() => handleDeleteReview(review.id)}
-                        disabled={deleteReviewMutation.isLoading}
-                        className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs font-medium transition-colors disabled:opacity-50"
+                        disabled={deleteReviewMutation.isPending}
+                        className="px-2 py-1 rounded-md bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium transition-colors disabled:opacity-50"
                         title="Bu değerlendirmeyi sil"
                       >
-                        {deleteReviewMutation.isLoading ? 'Siliniyor...' : '🗑️ Sil'}
+                        {deleteReviewMutation.isPending ? 'Siliniyor...' : '🗑️'}
                       </button>
                     </div>
                   </div>
