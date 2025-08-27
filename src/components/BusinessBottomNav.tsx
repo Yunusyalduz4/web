@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { 
@@ -70,7 +70,24 @@ const navItems = [
 ];
 
 export default function BusinessBottomNav() {
-  const pathname = usePathname();
+  const [currentPath, setCurrentPath] = useState("");
+  
+  useEffect(() => {
+    // Get current pathname after component mounts
+    setCurrentPath(window.location.pathname);
+    
+    // Listen for route changes
+    const handleRouteChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    
+    // Add event listener for popstate (back/forward buttons)
+    window.addEventListener('popstate', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
   
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
@@ -80,7 +97,7 @@ export default function BusinessBottomNav() {
       {/* Navigation items */}
       <div className="relative flex justify-around items-center h-24 px-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = currentPath === item.href;
           return (
             <Link
               key={item.href}
@@ -90,6 +107,7 @@ export default function BusinessBottomNav() {
                   ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
               }`}
+              onClick={() => setCurrentPath(item.href)}
             >
               {/* Active indicator */}
               {isActive && (

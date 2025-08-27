@@ -15,19 +15,27 @@ export function usePushNotifications(businessId?: string) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Check if we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Check if push notifications are supported
   useEffect(() => {
+    if (!isClient) return;
+    
     setIsSupported(
       'serviceWorker' in navigator &&
       'PushManager' in window &&
       'Notification' in window
     );
-  }, []);
+  }, [isClient]);
 
   // Check subscription status when component mounts
   useEffect(() => {
-    if (!isSupported) return;
+    if (!isClient || !isSupported) return;
 
     const checkStatus = async () => {
       try {
@@ -42,10 +50,10 @@ export function usePushNotifications(businessId?: string) {
     };
 
     checkStatus();
-  }, [isSupported]);
+  }, [isClient, isSupported]);
 
   const subscribeToPushNotifications = async () => {
-    if (!isSupported || !businessId || !session?.user?.id) {
+    if (!isClient || !isSupported || !businessId || !session?.user?.id) {
       setError('Push notifications not supported or missing required data');
       return false;
     }
@@ -126,7 +134,7 @@ export function usePushNotifications(businessId?: string) {
   };
 
   const unsubscribeFromPushNotifications = async () => {
-    if (!isSupported) return false;
+    if (!isClient || !isSupported) return false;
 
     setIsLoading(true);
     setError(null);
@@ -152,7 +160,7 @@ export function usePushNotifications(businessId?: string) {
   };
 
   const checkSubscriptionStatus = async () => {
-    if (!isSupported) return;
+    if (!isClient || !isSupported) return;
 
     try {
       const registration = await navigator.serviceWorker.getRegistration();
@@ -164,6 +172,19 @@ export function usePushNotifications(businessId?: string) {
       console.error('Check subscription status error:', err);
     }
   };
+
+  // Return default values during SSR
+  if (!isClient) {
+    return {
+      isSupported: false,
+      isSubscribed: false,
+      isLoading: false,
+      error: null,
+      subscribe: async () => false,
+      unsubscribe: async () => false,
+      checkStatus: async () => {}
+    };
+  }
 
   return {
     isSupported,
