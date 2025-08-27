@@ -14,6 +14,7 @@ interface MapProps {
   showUserLocation?: boolean;
   onMapClick?: (position: { lat: number; lng: number }) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 // Global flag to prevent multiple script loads
@@ -33,7 +34,7 @@ export default function Map(props: MapProps) {
     onMarkerClick,
     showUserLocation = true,
     onMapClick,
-    className = "w-full h-96"
+    className = "w-full h-full"
   } = props || {};
 
   const mapRef = useRef<HTMLDivElement>(null);
@@ -60,8 +61,10 @@ export default function Map(props: MapProps) {
     }
 
     if (isStartingRef.current || isTrackingLocation) {
+      console.log('Konum takibi zaten başlatılıyor veya aktif');
       return; // Zaten başlatılıyor veya aktif
     }
+    
     isStartingRef.current = true;
     console.log('Konum takibi başlatılıyor...');
 
@@ -71,8 +74,8 @@ export default function Map(props: MapProps) {
         navigator.geolocation.getCurrentPosition(resolve, reject, opts);
       });
 
-    const lowAccuracy: PositionOptions = { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 };
-    const highAccuracy: PositionOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+    const lowAccuracy: PositionOptions = { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 };
+    const highAccuracy: PositionOptions = { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 };
 
     let firstFix: GeolocationPosition | null = null;
     try {
@@ -93,9 +96,24 @@ export default function Map(props: MapProps) {
       const userPos = { lat: firstFix.coords.latitude, lng: firstFix.coords.longitude };
       setUserLocation(userPos);
       if (map) {
-        map.setCenter(userPos);
-        map.setZoom(15);
-        updateUserMarker(userPos);
+        // Eski marker'ları tamamen temizle
+        if (userMarker) {
+          userMarker.setMap(null);
+          userMarker.setPosition(null);
+          userMarker.setTitle(null);
+          userMarker.setIcon(null);
+          userMarker.setLabel(null);
+          userMarker.setClickable(false);
+          userMarker.setDraggable(false);
+          userMarker.setVisible(false);
+          userMarker.setZIndex(null);
+          userMarker.setOpacity(0);
+          userMarker.setAnimation(null);
+          userMarker.setOptions({});
+          setUserMarker(null);
+        }
+        
+        updateUserLocation(userPos);
       }
     }
 
@@ -107,16 +125,40 @@ export default function Map(props: MapProps) {
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
+        // Eğer konum takibi durdurulduysa güncelleme yapma
+        if (!isTrackingLocation || isStartingRef.current) {
+          return;
+        }
+        
         const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        
+        // Konum değişimi kontrol et (çok küçük değişimleri görmezden gel)
+        if (userLocation) {
+          const latDiff = Math.abs(userPos.lat - userLocation.lat);
+          const lngDiff = Math.abs(userPos.lng - userLocation.lng);
+          
+          // Sadece belirli bir mesafeden fazla değişim varsa güncelle
+          if (latDiff < 0.0001 && lngDiff < 0.0001) {
+            return; // Çok küçük değişim, güncelleme yapma
+          }
+        }
+        
         setUserLocation(userPos);
-        if (map) updateUserMarker(userPos);
+        if (map) {
+          // Konum güncelle
+          updateUserLocation(userPos);
+        }
       },
       (error) => {
         console.error('Konum takibi hatası:', error);
         setIsTrackingLocation(false);
         isStartingRef.current = false;
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+              { 
+          enableHighAccuracy: false, // Düşük doğruluk (daha az sık güncelleme)
+          timeout: 30000, // 30 saniye timeout
+          maximumAge: 120000 // 2 dakika cache (çok daha az sık güncelleme)
+        }
     );
 
     watchIdRef.current = watchId;
@@ -126,40 +168,60 @@ export default function Map(props: MapProps) {
 
   // Konum takibini durdur
   const stopLocationTracking = () => {
+    console.log('Konum takibi durduruluyor...');
+    
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    
+    // Konum marker'ını ve bilgisini temizle
+    if (userMarker) {
+      userMarker.setMap(null);
+      setUserMarker(null);
+    }
+    setUserLocation(null);
+    
     setIsTrackingLocation(false);
+    isStartingRef.current = false;
     console.log('Konum takibi durduruldu');
   };
 
-  // Kullanıcı marker'ını güncelle
-  const updateUserMarker = (position: { lat: number; lng: number }) => {
+  // Kullanıcı konumunu güncelle ve marker ekle
+  const updateUserLocation = (position: { lat: number; lng: number }) => {
     if (!map || !window.google) return;
-
-    // Eski marker'ı kaldır
-    if (userMarker) {
-      userMarker.setMap(null);
+    
+    // Eğer marker yoksa yeni oluştur
+    if (!userMarker) {
+      const newUserMarker = new window.google.maps.Marker({
+        position: position,
+        map: map,
+        title: 'Konumunuz',
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="white" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" fill="white"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(24, 24),
+          anchor: new window.google.maps.Point(12, 12)
+        }
+      });
+      
+      // Marker'ı set et
+      setUserMarker(newUserMarker);
+    } else {
+      // Mevcut marker'ın pozisyonunu güncelle
+      userMarker.setPosition(position);
     }
-
-    // Yeni marker ekle
-    const newUserMarker = new window.google.maps.Marker({
-      position: position,
-      map: map,
-      title: 'Konumunuz',
-      icon: {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="white" stroke-width="2"/>
-            <circle cx="12" cy="12" r="3" fill="white"/>
-          </svg>
-        `),
-        scaledSize: new window.google.maps.Size(24, 24),
-        anchor: new window.google.maps.Point(12, 12)
-      }
-    });
-    setUserMarker(newUserMarker);
+    
+    // Haritayı kullanıcı konumuna odakla
+    map.setCenter(position);
+    map.setZoom(15);
+    
+    // Konum bilgisini güncelle
+    setUserLocation(position);
   };
 
   // Google Maps yükleme
@@ -252,11 +314,67 @@ export default function Map(props: MapProps) {
           streetViewControl: false,
           fullscreenControl: true,
           zoomControl: true,
+          // Konum butonu ekle
+          mapTypeControlOptions: {
+            style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+            position: window.google.maps.ControlPosition.TOP_RIGHT
+          },
+
           styles: [
             {
               featureType: 'poi',
               elementType: 'labels',
               stylers: [{ visibility: 'off' }]
+            },
+            {
+              featureType: 'transit',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }]
+            },
+            {
+              featureType: 'landscape',
+              elementType: 'geometry',
+              stylers: [{ color: '#f8fafc' }]
+            },
+            {
+              featureType: 'water',
+              elementType: 'geometry',
+              stylers: [{ color: '#e0f2fe' }]
+            },
+            {
+              featureType: 'road',
+              elementType: 'geometry',
+              stylers: [{ color: '#ffffff' }]
+            },
+            {
+              featureType: 'road',
+              elementType: 'geometry.stroke',
+              stylers: [{ color: '#e2e8f0' }]
+            },
+            {
+              featureType: 'road',
+              elementType: 'labels.text.fill',
+              stylers: [{ color: '#475569' }]
+            },
+            {
+              featureType: 'road',
+              elementType: 'labels.text.stroke',
+              stylers: [{ color: '#ffffff' }]
+            },
+            {
+              featureType: 'administrative',
+              elementType: 'geometry',
+              stylers: [{ color: '#f1f5f9' }]
+            },
+            {
+              featureType: 'administrative',
+              elementType: 'geometry.stroke',
+              stylers: [{ color: '#cbd5e1' }]
+            },
+            {
+              featureType: 'administrative',
+              elementType: 'labels.text.fill',
+              stylers: [{ color: '#64748b' }]
             }
           ]
         });
@@ -299,10 +417,12 @@ export default function Map(props: MapProps) {
   useEffect(() => {
     if (map && showUserLocation && !isTrackingLocation && !isStartingRef.current) {
       console.log('Harita hazır, otomatik konum takibi başlatılıyor...');
-      // 1 saniye bekle ve sonra konum izni iste
+      // 2 saniye bekle ve sonra konum izni iste
       setTimeout(() => {
-        startLocationTracking();
-      }, 1000);
+        if (!isStartingRef.current && !isTrackingLocation) {
+          startLocationTracking();
+        }
+      }, 2000);
     }
   }, [map, showUserLocation, isTrackingLocation]);
 
@@ -332,21 +452,43 @@ export default function Map(props: MapProps) {
           title: markerData.title || 'Marker',
           icon: markerData.color ? {
             url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 0C10.477 0 6 4.477 6 10c0 7 10 22 10 22s10-15 10-22c0-5.523-4.477-10-10-10z" fill="${markerData.color}"/>
-                <circle cx="16" cy="10" r="4" fill="white"/>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/>
+                  </filter>
+                </defs>
+                <path d="M20 0C13.373 0 8 5.373 8 12c0 8.5 12 28 12 28s12-19.5 12-28c0-6.627-5.373-12-12-12z" fill="${markerData.color}" filter="url(#shadow)"/>
+                <circle cx="20" cy="12" r="6" fill="white" stroke="${markerData.color}" stroke-width="2"/>
+                <circle cx="20" cy="12" r="3" fill="${markerData.color}"/>
               </svg>
             `)}`,
-            scaledSize: new window.google.maps.Size(32, 32),
-            anchor: new window.google.maps.Point(16, 32)
-          } : undefined
+            scaledSize: new window.google.maps.Size(40, 40),
+            anchor: new window.google.maps.Point(20, 40)
+          } : undefined,
+          animation: window.google.maps.Animation.DROP
         });
 
         if (onMarkerClick) {
           marker.addListener('click', () => {
+            // Marker'a tıklandığında bounce animasyonu
+            marker.setAnimation(window.google.maps.Animation.BOUNCE);
+            setTimeout(() => {
+              marker.setAnimation(null);
+            }, 750);
+            
             onMarkerClick(markerData.id);
           });
         }
+
+        // Hover efektleri
+        marker.addListener('mouseover', () => {
+          marker.setZIndex(1000);
+        });
+        
+        marker.addListener('mouseout', () => {
+          marker.setZIndex(1);
+        });
       });
     } catch (err) {
       console.error('Marker eklenirken hata:', err);
@@ -354,7 +496,7 @@ export default function Map(props: MapProps) {
   }, [map, markers, onMarkerClick]);
 
   return (
-    <div className="relative" style={{ minHeight: '300px' }}>
+    <div className="relative w-full h-full">
       {/* Harita div'i her zaman render edilir */}
       <div 
         ref={mapRef} 
@@ -362,7 +504,7 @@ export default function Map(props: MapProps) {
         style={{ 
           width: '100%', 
           height: '100%', 
-          minHeight: '300px',
+          minHeight: '500px',
           position: 'relative',
           zIndex: 1
         }}
@@ -389,62 +531,9 @@ export default function Map(props: MapProps) {
         </div>
       )}
       
-      {/* Konum butonları */}
-      {showUserLocation && !isLoading && !error && (
-        <div className="absolute top-4 right-4 flex flex-col gap-2" style={{ zIndex: 3 }}>
-          <button
-            onClick={() => {
-              if (isTrackingLocation) {
-                stopLocationTracking();
-              } else {
-                startLocationTracking();
-              }
-            }}
-            className={`p-2 rounded-lg shadow-lg transition-colors ${
-              isTrackingLocation 
-                ? 'bg-red-500 text-white hover:bg-red-600' 
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            }`}
-            title={isTrackingLocation ? 'Konum takibini durdur' : 'Konum takibini başlat'}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
-              <circle cx="12" cy="9" r="2.5" fill="white"/>
-            </svg>
-          </button>
-          
-          <button
-            onClick={() => {
-              if (map) {
-                map.setCenter(mapCenter);
-                map.setZoom(zoom);
-              }
-            }}
-            className="bg-white p-2 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
-            title="Merkeze odaklan"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#3b82f6"/>
-              <circle cx="12" cy="9" r="2.5" fill="white"/>
-            </svg>
-          </button>
-        </div>
-      )}
 
-      {/* Konum durumu */}
-      {userLocation && (
-        <div className="absolute bottom-4 left-4 bg-white px-3 py-2 rounded-lg shadow-lg text-sm" style={{ zIndex: 3 }}>
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isTrackingLocation ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-            <span className="text-gray-700">
-              {isTrackingLocation ? 'Konum takip ediliyor' : 'Konum alındı'}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
-          </div>
-        </div>
-      )}
+
+
     </div>
   );
 }

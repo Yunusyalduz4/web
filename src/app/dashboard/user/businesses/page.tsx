@@ -384,7 +384,7 @@ export default function UserBusinessesPage() {
           </div>
         )}
         {view === 'map' && (
-          <div className="w-full h-[70vh] min-h-[300px] rounded-2xl overflow-hidden animate-fade-in">
+          <div className="w-full h-[55vh] min-h-[400px] rounded-2xl overflow-hidden animate-fade-in">
             <Map
               center={{ lat: 39.9334, lng: 32.8597 }} // Ankara merkez
               zoom={10}

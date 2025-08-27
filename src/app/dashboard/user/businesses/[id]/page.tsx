@@ -504,21 +504,20 @@ export default function BusinessDetailPage() {
 
         
         {filteredAndSortedReviews.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {filteredAndSortedReviews.slice(0, 5).map((review: any) => (
-              <div key={review.id} className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-6 shadow hover:shadow-lg transition-all">
+              <div key={review.id} className="bg-white/30 backdrop-blur-sm border border-white/20 rounded-lg p-3 hover:bg-white/40 transition-all duration-200">
                 {/* Kullanıcı Bilgisi ve Genel Puan */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 text-white grid place-items-center text-lg font-semibold">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-xs font-medium">
                       {(review.user_name?.charAt(0).toUpperCase() || 'M')}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">{review.user_name || 'Anonim'}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs font-medium text-gray-800">{review.user_name || 'Anonim'}</div>
+                      <div className="text-[10px] text-gray-500">
                         {new Date(review.created_at).toLocaleDateString('tr-TR', { 
-                          year: 'numeric', 
-                          month: 'long', 
+                          month: 'short', 
                           day: 'numeric' 
                         })}
                       </div>
@@ -527,62 +526,53 @@ export default function BusinessDetailPage() {
                   
                   {/* Genel Puan */}
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-yellow-600">
+                    <div className="text-sm font-semibold text-amber-600">
                       {(((review.service_rating || 0) + (review.employee_rating || 0)) / 2).toFixed(1)}
                     </div>
-                    <div className="text-sm text-gray-500">/ 5</div>
+                    <div className="text-[10px] text-gray-400">/ 5</div>
                   </div>
                 </div>
 
-                {/* Detaylı Rating'ler */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-blue-50 rounded-lg p-3">
-                    <div className="text-sm text-blue-600 font-medium mb-1">Hizmet Kalitesi</div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <span key={star} className={star <= review.service_rating ? 'text-yellow-400' : 'text-gray-300'}>
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                      <span className="text-sm font-semibold text-blue-800">{review.service_rating}/5</span>
+                {/* Rating'ler */}
+                <div className="flex items-center gap-3 mb-2 text-[10px]">
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <span>Hizmet:</span>
+                    <div className="flex text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= review.service_rating ? 'text-amber-400' : 'text-gray-300'}>
+                          ★
+                        </span>
+                      ))}
                     </div>
                   </div>
                   
-                  <div className="bg-green-50 rounded-lg p-3">
-                    <div className="text-sm text-green-600 font-medium mb-1">Çalışan Performansı</div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <span key={star} className={star <= review.employee_rating ? 'text-yellow-400' : 'text-gray-300'}>
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                      <span className="text-sm font-semibold text-green-800">{review.employee_rating}/5</span>
+                  <div className="flex items-center gap-1 text-emerald-600">
+                    <span>Çalışan:</span>
+                    <div className="flex text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= review.employee_rating ? 'text-amber-400' : 'text-gray-300'}>
+                          ★
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Yorum Metni */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="text-sm text-gray-700 leading-relaxed">"{review.comment}"</div>
-                </div>
+                <div className="text-xs text-gray-700 leading-relaxed mb-2">"{review.comment}"</div>
 
                 {/* İşletme Yanıtı */}
                 {review.business_reply && (
-                  <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-400">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white grid place-items-center text-xs">🏢</div>
-                        <span className="text-sm font-medium text-blue-800">İşletme Yanıtı</span>
+                  <div className="bg-blue-50/30 rounded-lg p-2 border-l border-blue-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-medium text-blue-700">🏢 İşletme Yanıtı</span>
                       </div>
-                      <span className="text-xs text-blue-600">
+                      <span className="text-[10px] text-blue-500">
                         {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
                       </span>
                     </div>
-                    <div className="text-sm text-blue-700 leading-relaxed">{review.business_reply}</div>
+                    <div className="text-[10px] text-blue-600 leading-relaxed">{review.business_reply}</div>
                   </div>
                 )}
               </div>
@@ -593,7 +583,7 @@ export default function BusinessDetailPage() {
               <div className="text-center">
                 <button
                   onClick={() => { setReviewsOpen(true); setReviewsPage(1); }}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold shadow hover:shadow-lg transition-all hover:scale-105"
+                  className="px-3 py-1.5 rounded-md bg-white/40 backdrop-blur-sm border border-white/30 text-gray-600 text-xs font-medium hover:bg-white/60 transition-all duration-200"
                 >
                   Tüm Değerlendirmeleri Gör ({reviewsData.pagination.total})
                 </button>
@@ -645,50 +635,64 @@ export default function BusinessDetailPage() {
               <div className="text-center text-gray-500">Yükleniyor...</div>
             )}
             {fullReviews?.reviews?.map((review: any) => (
-              <div key={review.id} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 text-white grid place-items-center text-sm font-semibold">
+              <div key={review.id} className="border border-white/30 bg-white/40 backdrop-blur-sm rounded-lg p-3 hover:bg-white/50 transition-all duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-xs font-medium">
                       {(review.user_name?.charAt(0).toUpperCase() || 'M')}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">{review.user_name || 'Anonim'}</div>
+                      <div className="text-sm font-medium text-gray-800">{review.user_name || 'Anonim'}</div>
                       <div className="text-xs text-gray-500" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR').format(new Date(review.created_at))}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-yellow-600">
+                    <div className="text-base font-semibold text-amber-600">
                       {(((review.service_rating || 0) + (review.employee_rating || 0)) / 2).toFixed(1)}
                     </div>
-                    <div className="text-xs text-gray-500">/ 5</div>
+                    <div className="text-xs text-gray-400">/ 5</div>
                   </div>
                 </div>
 
-                {/* Detaylı Rating'ler */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-blue-50 rounded-lg p-2">
-                    <div className="text-xs text-blue-600 font-medium">Hizmet: {review.service_rating}/5</div>
+                {/* Rating'ler */}
+                <div className="flex items-center gap-3 mb-2 text-xs">
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <span>Hizmet:</span>
+                    <div className="flex text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= review.service_rating ? 'text-amber-400' : 'text-gray-300'}>
+                          ★
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-2">
-                    <div className="text-xs text-green-600 font-medium">Çalışan: {review.employee_rating}/5</div>
+                  
+                  <div className="flex items-center gap-1 text-emerald-600">
+                    <span>Çalışan:</span>
+                    <div className="flex text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= review.employee_rating ? 'text-amber-400' : 'text-gray-300'}>
+                          ★
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-800 mb-3">"{review.comment}"</div>
+                <div className="text-sm text-gray-700 mb-2 leading-relaxed">"{review.comment}"</div>
 
                 {/* İşletme Yanıtı */}
                 {review.business_reply && (
-                  <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-400">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-blue-600 text-white grid place-items-center text-xs">🏢</div>
-                        <span className="text-xs font-medium text-blue-800">İşletme Yanıtı</span>
+                  <div className="bg-blue-50/50 rounded-lg p-2 border-l-2 border-blue-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-blue-700">🏢 İşletme Yanıtı</span>
                       </div>
-                      <span className="text-xs text-blue-600">
+                      <span className="text-xs text-blue-500">
                         {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
                       </span>
                     </div>
-                    <div className="text-xs text-blue-700 leading-relaxed">{review.business_reply}</div>
+                    <div className="text-xs text-blue-600 leading-relaxed">{review.business_reply}</div>
                   </div>
                 )}
               </div>
