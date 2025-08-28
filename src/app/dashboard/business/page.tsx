@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../utils/trpcClient';
 import { usePushNotifications } from '../../../hooks/usePushNotifications';
+import { useSocket } from '../../../hooks/useSocket';
 import { useState, useMemo, useEffect } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import WeeklySlotView from '../../../components/WeeklySlotView';
@@ -18,7 +19,7 @@ export default function BusinessDashboard() {
   const business = businesses?.find((b: any) => b.owner_user_id === session?.user?.id);
 
   // Randevuları getir
-  const { data: appointments } = trpc.appointment.getByBusiness.useQuery(
+  const { data: appointments, refetch: refetchAppointments } = trpc.appointment.getByBusiness.useQuery(
     businessId ? { businessId } : skipToken
   );
 
@@ -39,6 +40,32 @@ export default function BusinessDashboard() {
     error: pushError,
     subscribe
   } = usePushNotifications(businessId || undefined);
+
+  // Socket.io hook'u
+  const { isConnected: socketConnected, events: socketEvents } = useSocket();
+
+  // Appointments'ı yenileme event'ini dinle
+  useEffect(() => {
+    let refreshTimer: NodeJS.Timeout;
+
+    const handleRefreshAppointments = (event: CustomEvent) => {
+      if (event.detail.businessId === businessId) {
+        // Debouncing - çok sık yenileme yapmasın
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => {
+          console.log('🔄 Appointments yenileniyor...');
+          refetchAppointments();
+        }, 200); // 200ms debounce
+      }
+    };
+
+    window.addEventListener('refreshAppointments', handleRefreshAppointments as EventListener);
+
+    return () => {
+      clearTimeout(refreshTimer);
+      window.removeEventListener('refreshAppointments', handleRefreshAppointments as EventListener);
+    };
+  }, [businessId, refetchAppointments]);
 
   // Aktif randevuları hesapla (pending + confirmed)
   const activeAppointments = appointments?.filter((a: any) => 

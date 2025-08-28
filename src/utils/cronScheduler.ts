@@ -24,7 +24,6 @@ export function initializeCronJobs(): void {
       console.error('Error in appointment reminder cron job:', error);
     }
   }, {
-    scheduled: true,
     timezone: 'Europe/Istanbul' // Türkiye saati
   });
 
@@ -52,7 +51,6 @@ export function initializeCronJobs(): void {
       console.error('Error cleaning up old reminder records:', error);
     }
   }, {
-    scheduled: true,
     timezone: 'Europe/Istanbul'
   });
 

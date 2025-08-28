@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db';
 import { TRPCError } from '@trpc/server';
 import { sendNotificationToBusiness } from '../../utils/pushNotification';
+import { getSocketServer } from '../socket';
 
 export const appointmentRouter = t.router({
   book: t.procedure.use(isUser)
@@ -159,6 +160,28 @@ export const appointmentRouter = t.router({
             businessId: input.businessId
           }
         );
+
+        // 6. Socket.io event gönder
+        try {
+          const socketServer = getSocketServer();
+          if (socketServer) {
+            socketServer.emitAppointmentCreated({
+              appointmentId,
+              businessId: input.businessId,
+              userId: input.userId,
+              appointmentDateTime: utcDateTime.toISOString(),
+              services: serviceNames.split(', '),
+              employeeId: input.services[0]?.employeeId,
+              status: 'pending',
+              createdAt: new Date(),
+              totalDuration,
+              customerName: userName
+            });
+          }
+        } catch (error) {
+          console.error('Socket.io event error:', error);
+          // Socket.io hatası randevu oluşturmayı etkilemesin
+        }
       } catch (error) {
         console.error('Push notification error:', error);
         // Push notification hatası randevu oluşturmayı etkilemesin
@@ -492,6 +515,32 @@ export const appointmentRouter = t.router({
       console.log(`Randevu oluşturuldu: ${appointmentId}, Toplam süre: ${totalDuration} dakika`);
       console.log(`Başlangıç: ${start.toISOString()}, Bitiş: ${end.toISOString()}`);
 
+      // Socket.io event gönder
+      try {
+        const socketServer = getSocketServer();
+        if (socketServer) {
+          // Hizmet adlarını al
+          const serviceNames = servicesRes.rows.map(s => s.name);
+          
+          socketServer.emitManualAppointmentCreated({
+            appointmentId,
+            businessId: input.businessId,
+            customerName: `${input.customerName} ${input.customerSurname}`,
+            customerPhone: input.customerPhone,
+            appointmentDateTime: appointmentDatetime.toISOString(),
+            services: serviceNames,
+            employeeId: input.employeeId,
+            notes: input.notes,
+            isManual: true,
+            createdAt: new Date(),
+            totalDuration
+          });
+        }
+      } catch (error) {
+        console.error('Socket.io event error:', error);
+        // Socket.io hatası randevu oluşturmayı etkilemesin
+      }
+
       return appointmentResult.rows[0];
     }),
 
@@ -545,6 +594,26 @@ export const appointmentRouter = t.router({
       } catch (error) {
         console.error('Push notification error:', error);
         // Push notification hatası randevu güncellemeyi etkilemesin
+      }
+
+      // Socket.io event gönder
+      try {
+        const socketServer = getSocketServer();
+        if (socketServer) {
+          socketServer.emitAppointmentStatusUpdated({
+            appointmentId: input.appointmentId,
+            businessId: input.businessId,
+            userId,
+            oldStatus,
+            newStatus: input.status,
+            appointmentDateTime,
+            businessName,
+            updatedAt: new Date()
+          });
+        }
+      } catch (error) {
+        console.error('Socket.io event error:', error);
+        // Socket.io hatası randevu güncellemeyi etkilemesin
       }
 
       return result.rows[0];
