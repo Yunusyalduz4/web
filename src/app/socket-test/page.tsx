@@ -1,92 +1,62 @@
-'use client';
+"use client";
 
 import { useSocket } from '../../hooks/useSocket';
-import { useState } from 'react';
+import { useEffect } from 'react';
 
 export default function SocketTestPage() {
-  const { socket, isConnected, isConnecting, error, events, emit, clearEvents } = useSocket();
-  const [testMessage, setTestMessage] = useState('');
+  const { socket, isConnected, isConnecting, error, events } = useSocket();
 
-  const sendTestMessage = () => {
-    if (testMessage.trim()) {
-      emit('test:message', testMessage);
-      setTestMessage('');
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Test mesajı gönder
+      socket.emit('test:message', 'Merhaba Socket.io!');
     }
-  };
+  }, [socket, isConnected]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Socket.IO Test Sayfası</h1>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Socket.io Test Sayfası</h1>
         
-        {/* Connection Status */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Bağlantı Durumu</h2>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm">
-                {isConnected ? 'Bağlı' : isConnecting ? 'Bağlanıyor...' : 'Bağlı Değil'}
-              </span>
-            </div>
-            {error && (
-              <div className="text-red-600 text-sm">
-                Hata: {error}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Test Message */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Test Mesajı Gönder</h2>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={testMessage}
-              onChange={(e) => setTestMessage(e.target.value)}
-              placeholder="Test mesajınızı yazın..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={sendTestMessage}
-              disabled={!isConnected || !testMessage.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Gönder
-            </button>
-          </div>
-        </div>
-
-        {/* Events */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Socket Events</h2>
-            <button
-              onClick={clearEvents}
-              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-            >
-              Temizle
-            </button>
+        <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium">
+              Durum: {isConnected ? 'Bağlı' : isConnecting ? 'Bağlanıyor...' : 'Bağlı Değil'}
+            </span>
           </div>
           
-          {events.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">Henüz event yok</p>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {events.map((event, index) => (
-                <div key={index} className="p-3 bg-gray-50 rounded-md">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-sm">{event.type}</span>
-                    <span className="text-xs text-gray-500">
-                      {event.timestamp.toLocaleTimeString()}
-                    </span>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <strong>Hata:</strong> {error}
+            </div>
+          )}
+          
+          <div className="bg-gray-50 rounded p-4">
+            <h3 className="font-medium text-gray-900 mb-2">Socket Events:</h3>
+            <div className="space-y-2">
+              {events.length === 0 ? (
+                <p className="text-gray-500">Henüz event yok</p>
+              ) : (
+                events.map((event, index) => (
+                  <div key={index} className="text-sm bg-white p-2 rounded border">
+                    <div className="font-medium">{event.type}</div>
+                    <div className="text-gray-600">{JSON.stringify(event.data)}</div>
+                    <div className="text-xs text-gray-400">{event.timestamp.toLocaleTimeString()}</div>
                   </div>
-                  <pre className="text-xs text-gray-600 overflow-x-auto">
-                    {JSON.stringify(event.data, null, 2)}
-                  </pre>
-                </div>
-              ))}
+                ))
+              )}
+            </div>
+          </div>
+          
+          {socket && (
+            <div className="bg-blue-50 rounded p-4">
+              <h3 className="font-medium text-blue-900 mb-2">Socket Bilgileri:</h3>
+              <div className="text-sm text-blue-800">
+                <div>ID: {socket.id}</div>
+                <div>Connected: {socket.connected ? 'Evet' : 'Hayır'}</div>
+                <div>Transport: {socket.io.engine.transport.name}</div>
+              </div>
             </div>
           )}
         </div>

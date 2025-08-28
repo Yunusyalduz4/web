@@ -36,8 +36,7 @@ export class SocketServer {
       upgradeTimeout: 20000, // 20 saniye
       maxHttpBufferSize: 1e6, // 1MB
       perMessageDeflate: false, // Compression'ı kapat (performance için)
-      httpCompression: false, // HTTP compression'ı kapat
-      wsEngine: 'ws' // WebSocket engine'i optimize et
+      httpCompression: false // HTTP compression'ı kapat
     });
 
     this.setupMiddleware();

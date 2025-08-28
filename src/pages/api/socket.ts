@@ -39,9 +39,19 @@ export default function handler(req: SocketApiRequest, res: NextApiResponse) {
     
     console.log('✅ Socket.io server başarıyla başlatıldı');
     res.json({ status: 'Socket.io server started successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Socket.io server başlatma hatası:', error);
-    console.error('❌ Error details:', error);
-    res.status(500).json({ error: 'Socket.io server başlatılamadı' });
+    console.error('❌ Error name:', error?.name);
+    console.error('❌ Error message:', error?.message);
+    console.error('❌ Error stack:', error?.stack);
+    console.error('❌ Full error object:', error);
+    res.status(500).json({ 
+      error: 'Socket.io server başlatılamadı',
+      details: {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      }
+    });
   }
 }
