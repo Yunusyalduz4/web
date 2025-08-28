@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { trpc } from '../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
+import { useSocket } from '../hooks/useSocket';
 
 interface WeeklySlotViewProps {
   businessId: string;
@@ -15,6 +16,9 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<string | null>(null);
   const [showManualAppointmentModal, setShowManualAppointmentModal] = useState(false);
   const [selectedSlotData, setSelectedSlotData] = useState<{date: string, time: string} | null>(null);
+
+  // Socket.IO hook'u
+  const { isConnected, socket } = useSocket();
 
   // TRPC queries
   const { data: weeklySlots, isLoading: weeklyLoading, refetch: refetchWeeklySlots } = trpc.slots.getWeeklySlots.useQuery(
@@ -32,6 +36,66 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
   const { data: employees } = trpc.business.getEmployees.useQuery(
     businessId ? { businessId } : skipToken
   );
+
+  // Socket.IO event'lerini dinle ve UI'ı güncelle
+  useEffect(() => {
+    if (!isConnected || !socket) return;
+
+    // Debouncing için timer
+    let refreshTimer: NodeJS.Timeout;
+
+    // Batch update fonksiyonu
+    const batchRefresh = () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        console.log('🔄 Batch refresh yapılıyor...');
+        refetchWeeklySlots();
+        if (customDate) {
+          refetchCustomDate();
+        }
+        // Parent component'e randevuları yenilemesi için event gönder
+        window.dispatchEvent(new CustomEvent('refreshAppointments', { detail: { businessId } }));
+      }, 300); // 300ms debounce
+    };
+
+    // Randevu durumu güncellendiğinde slot'ları yenile
+    const handleAppointmentStatusUpdate = (data: any) => {
+      console.log('🔔 Randevu durumu güncellendi:', data);
+      if (data.businessId === businessId) {
+        batchRefresh();
+      }
+    };
+
+    // Randevu oluşturulduğunda slot'ları yenile
+    const handleAppointmentCreated = (data: any) => {
+      console.log('🔔 Yeni randevu oluşturuldu:', data);
+      if (data.businessId === businessId) {
+        batchRefresh();
+      }
+    };
+
+    // Event listener'ları ekle
+    socket.on('socket:appointment:status_updated', handleAppointmentStatusUpdate);
+    socket.on('socket:appointment:created', handleAppointmentCreated);
+
+    return () => {
+      // Cleanup
+      clearTimeout(refreshTimer);
+      socket.off('socket:appointment:status_updated', handleAppointmentStatusUpdate);
+      socket.off('socket:appointment:created', handleAppointmentCreated);
+    };
+  }, [isConnected, socket, businessId, customDate, refetchWeeklySlots, refetchCustomDate]);
+
+  // Randevu durumu değiştiğinde slot'ları yenile
+  useEffect(() => {
+    if (appointments && appointments.length > 0) {
+      // Randevular değiştiğinde slot'ları yenile
+      refetchWeeklySlots();
+      if (customDate) {
+        refetchCustomDate();
+      }
+    }
+  }, [appointments, customDate, refetchWeeklySlots, refetchCustomDate]);
 
   const createManualAppointment = trpc.appointment.createManualAppointment.useMutation({
     onSuccess: () => {
@@ -52,6 +116,10 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
         refetchCustomDate();
         console.log('Custom date slots yenilendi');
       }
+
+      // Parent component'e appointments'ı yenilemesi için event gönder
+      window.dispatchEvent(new CustomEvent('refreshAppointments', { detail: { businessId } }));
+      console.log('Appointments yenileme event\'i gönderildi');
     },
     onError: (error) => {
       console.error('Manuel randevu oluşturma hatası:', error);
@@ -143,7 +211,10 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
     });
   }, [customDate, appointments]);
 
-  if (weeklyLoading) {
+  // Loading state'i optimize et
+  const isLoading = weeklyLoading || !weeklySlots;
+
+  if (isLoading) {
     return (
       <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-4 shadow">
         <div className="flex items-center justify-center py-8 text-gray-400 animate-pulse">

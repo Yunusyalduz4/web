@@ -2,8 +2,9 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../../utils/trpcClient';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { skipToken } from '@tanstack/react-query';
+import { useSocket } from '../../../../hooks/useSocket';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -32,28 +33,133 @@ export default function BusinessAppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState<'all'|'pending'|'confirmed'|'cancelled'|'completed'>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  
+  // Optimistic updates için local state
+  const [optimisticAppointments, setOptimisticAppointments] = useState<any[]>([]);
+  const [updatingAppointmentId, setUpdatingAppointmentId] = useState<string | null>(null);
+
+  // Socket.IO hook'u
+  const { isConnected, socket } = useSocket();
+
+  // Appointments'ı yenileme event'ini dinle
+  useEffect(() => {
+    let refreshTimer: NodeJS.Timeout;
+
+    const handleRefreshAppointments = (event: CustomEvent) => {
+      if (event.detail.businessId === businessId) {
+        // Debouncing - çok sık yenileme yapmasın
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => {
+          console.log('🔄 Appointments sayfasında randevular yenileniyor...');
+          appointmentsQuery.refetch();
+        }, 200); // 200ms debounce
+      }
+    };
+
+    window.addEventListener('refreshAppointments', handleRefreshAppointments as EventListener);
+
+    return () => {
+      clearTimeout(refreshTimer);
+      window.removeEventListener('refreshAppointments', handleRefreshAppointments as EventListener);
+    };
+  }, [businessId, appointmentsQuery]);
+
+  // Socket.IO event'lerini dinle ve randevuları güncelle
+  useEffect(() => {
+    if (!isConnected || !socket || !businessId) return;
+
+    // Randevu durumu güncellendiğinde UI'ı hemen yenile
+    const handleAppointmentStatusUpdate = (data: any) => {
+      console.log('🔔 Randevu durumu güncellendi:', data);
+      if (data.businessId === businessId) {
+        // Optimistic update varsa temizle
+        setOptimisticAppointments([]);
+        // Randevuları hemen yenile
+        appointmentsQuery.refetch();
+      }
+    };
+
+    // Randevu oluşturulduğunda UI'ı hemen yenile
+    const handleAppointmentCreated = (data: any) => {
+      console.log('🔔 Yeni randevu oluşturuldu:', data);
+      if (data.businessId === businessId) {
+        // Optimistic update varsa temizle
+        setOptimisticAppointments([]);
+        // Randevuları hemen yenile
+        appointmentsQuery.refetch();
+      }
+    };
+
+    // Event listener'ları ekle
+    socket.on('socket:appointment:status_updated', handleAppointmentStatusUpdate);
+    socket.on('socket:appointment:created', handleAppointmentCreated);
+
+    return () => {
+      // Cleanup
+      socket.off('socket:appointment:status_updated', handleAppointmentStatusUpdate);
+      socket.off('socket:appointment:created', handleAppointmentCreated);
+    };
+  }, [isConnected, socket, businessId, appointmentsQuery]);
+
+  // Randevu durumu değiştiğinde otomatik olarak yenile
+  useEffect(() => {
+    if (appointments && appointments.length > 0) {
+      // Randevular değiştiğinde UI'ı güncelle
+      console.log('📅 Randevular güncellendi, UI yenileniyor...');
+    }
+  }, [appointments]);
 
   const handleStatus = async (id: string, status: 'pending' | 'confirmed' | 'cancelled' | 'completed') => {
     setError('');
     setSuccess('');
+    setUpdatingAppointmentId(id);
+
+    // Optimistic update - UI'ı hemen güncelle
+    const oldAppointments = appointments || [];
+    const updatedAppointments = oldAppointments.map((apt: any) => 
+      apt.id === id ? { ...apt, status } : apt
+    );
+
+    // Local state'i hemen güncelle
+    setOptimisticAppointments(updatedAppointments);
+
     try {
       await updateStatus.mutateAsync({ appointmentId: id, businessId: businessId || '', status });
       setSuccess('Randevu güncellendi!');
-      appointmentsQuery.refetch();
+      
+      // Socket.IO event'i beklemeden UI'ı güncelle
+      setTimeout(() => {
+        appointmentsQuery.refetch();
+        setOptimisticAppointments([]); // Optimistic state'i temizle
+        setUpdatingAppointmentId(null);
+      }, 100); // 100ms sonra server'dan güncel veriyi al
+      
       setTimeout(() => setSuccess(''), 1200);
     } catch (err: any) {
+      // Hata durumunda eski veriyi geri yükle
+      setOptimisticAppointments(oldAppointments);
+      setUpdatingAppointmentId(null);
       setError(err.message || 'Hata oluştu');
     }
   };
 
+  // Aktif randevuları hesapla (pending + confirmed)
   const activeAppointments = useMemo(() => {
-    if (!appointments) return [] as any[];
-    return appointments.filter((a: any) => a.status === 'pending' || a.status === 'confirmed');
-  }, [appointments]);
+    const currentAppointments = optimisticAppointments.length > 0 ? optimisticAppointments : appointments;
+    if (!currentAppointments) return [];
+    
+    return currentAppointments.filter((a: any) => 
+      a.status === 'pending' || a.status === 'confirmed'
+    );
+  }, [optimisticAppointments, appointments]);
+
+  const activeAppointmentsCount = activeAppointments.length;
 
   const filteredHistory = useMemo(() => {
-    if (!appointments) return [] as any[];
-    return appointments.filter((a: any) => {
+    const currentAppointments = optimisticAppointments.length > 0 ? optimisticAppointments : appointments;
+    if (!currentAppointments) return [];
+    
+    return currentAppointments.filter((a: any) => {
       // Status
       if (statusFilter !== 'all' && a.status !== statusFilter) return false;
       // Services by names
@@ -64,7 +170,7 @@ export default function BusinessAppointmentsPage() {
       // Employees by names
       if (employeeFilters.length > 0) {
         const names: string[] = Array.isArray(a.employee_names) ? a.employee_names : [];
-        if (!employeeFilters.some((e) => names.includes(e))) return false;
+        if (!serviceFilters.some((e) => names.includes(e))) return false;
       }
       // Date range
       if (dateFrom) {
@@ -77,7 +183,7 @@ export default function BusinessAppointmentsPage() {
       }
       return true;
     });
-  }, [appointments, statusFilter, serviceFilters, employeeFilters, dateFrom, dateTo]);
+  }, [optimisticAppointments, appointments, statusFilter, serviceFilters, employeeFilters, dateFrom, dateTo]);
 
   return (
     <main className="relative max-w-3xl mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -96,7 +202,7 @@ export default function BusinessAppointmentsPage() {
         <div className="mt-3 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-[13px] text-gray-800">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            Aktif randevular
+            Aktif randevular ({activeAppointmentsCount})
           </div>
           <button onClick={() => setShowHistory(true)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[13px] font-semibold shadow-sm hover:shadow-md">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -111,7 +217,8 @@ export default function BusinessAppointmentsPage() {
         </div>
       )}
       <div className="grid gap-3">
-        {activeAppointments.map((a: any) => (
+        {/* Sadece aktif randevuları göster (pending + confirmed) */}
+        {activeAppointments?.map((a: any) => (
           <div
             key={a.id}
             className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3"
@@ -148,12 +255,42 @@ export default function BusinessAppointmentsPage() {
             <div className="flex gap-6">
               {a.status === 'pending' && (
                 <>
-                  <button className="text-[13px] font-medium text-emerald-700" onClick={() => handleStatus(a.id, 'confirmed')}>Onayla</button>
-                  <button className="text-[13px] font-medium text-rose-700" onClick={() => handleStatus(a.id, 'cancelled')}>İptal Et</button>
+                  <button 
+                    className={`text-[13px] font-medium transition-all ${
+                      updatingAppointmentId === a.id 
+                        ? 'text-gray-400 cursor-not-allowed' 
+                        : 'text-emerald-700 hover:text-emerald-800'
+                    }`} 
+                    onClick={() => handleStatus(a.id, 'confirmed')}
+                    disabled={updatingAppointmentId === a.id}
+                  >
+                    {updatingAppointmentId === a.id ? 'Güncelleniyor...' : 'Onayla'}
+                  </button>
+                  <button 
+                    className={`text-[13px] font-medium transition-all ${
+                      updatingAppointmentId === a.id 
+                        ? 'text-gray-400 cursor-not-allowed' 
+                        : 'text-rose-700 hover:text-rose-800'
+                    }`} 
+                    onClick={() => handleStatus(a.id, 'cancelled')}
+                    disabled={updatingAppointmentId === a.id}
+                  >
+                    {updatingAppointmentId === a.id ? 'Güncelleniyor...' : 'İptal Et'}
+                  </button>
                 </>
               )}
               {a.status === 'confirmed' && (
-                <button className="text-[13px] font-medium text-indigo-700" onClick={() => handleStatus(a.id, 'completed')}>Tamamlandı</button>
+                <button 
+                  className={`text-[13px] font-medium transition-all ${
+                    updatingAppointmentId === a.id 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-indigo-700 hover:text-indigo-800'
+                  }`} 
+                  onClick={() => handleStatus(a.id, 'completed')}
+                  disabled={updatingAppointmentId === a.id}
+                >
+                  {updatingAppointmentId === a.id ? 'Güncelleniyor...' : 'Tamamlandı'}
+                </button>
               )}
               {a.status === 'completed' && (
                 <div className="text-[13px] text-gray-700">Tamamlandı</div>
@@ -164,10 +301,10 @@ export default function BusinessAppointmentsPage() {
             </div>
           </div>
         ))}
-        {(!appointments || appointments.length === 0) && !isLoading && (
+        {(!activeAppointments || activeAppointments.length === 0) && !isLoading && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500 animate-fade-in">
             <span className="text-5xl mb-2">📭</span>
-            <span className="text-lg">Henüz randevu yok</span>
+            <span className="text-lg">Aktif randevu yok</span>
           </div>
         )}
       </div>
