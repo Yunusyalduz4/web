@@ -438,23 +438,23 @@ export default function RegisterPage() {
               <>
                 <label className="block">
                   <span className="block text-[11px] text-gray-600 mb-1">Ad Soyad</span>
-                  <input type="text" value={formData.name} onChange={e => updateFormData('name', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                  <input type="text" value={formData.name} onChange={e => updateFormData('name', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                 </label>
                 <label className="block">
                   <span className="block text-[11px] text-gray-600 mb-1">E-posta</span>
-                  <input type="email" value={formData.email} onChange={e => updateFormData('email', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                  <input type="email" value={formData.email} onChange={e => updateFormData('email', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                 </label>
                 <label className="block">
                   <span className="block text-[11px] text-gray-600 mb-1">Şifre</span>
-                  <input type="password" value={formData.password} onChange={e => updateFormData('password', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                  <input type="password" value={formData.password} onChange={e => updateFormData('password', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                 </label>
                 <label className="block">
                   <span className="block text-[11px] text-gray-600 mb-1">Şifre Tekrar</span>
-                  <input type="password" value={formData.confirmPassword} onChange={e => updateFormData('confirmPassword', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                  <input type="password" value={formData.confirmPassword} onChange={e => updateFormData('confirmPassword', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                 </label>
                 <label className="block">
                   <span className="block text-[11px] text-gray-600 mb-1">Hesap Türü</span>
-                  <select value={formData.role} onChange={e => updateFormData('role', e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                  <select value={formData.role} onChange={e => updateFormData('role', e.target.value)} className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300">
                     <option value="user">Müşteri</option>
                     <option value="business">İşletme</option>
                   </select>
@@ -466,19 +466,19 @@ export default function RegisterPage() {
                   <>
                     <label className="block">
                       <span className="block text-[11px] text-gray-600 mb-1">İşletme Adı</span>
-                      <input type="text" value={formData.businessName} onChange={e => updateFormData('businessName', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                      <input type="text" value={formData.businessName} onChange={e => updateFormData('businessName', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                     </label>
                     <label className="block">
                       <span className="block text-[11px] text-gray-600 mb-1">İşletme Açıklaması</span>
-                      <textarea value={formData.businessDescription} onChange={e => updateFormData('businessDescription', e.target.value)} rows={3} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 resize-none" />
+                      <textarea value={formData.businessDescription} onChange={e => updateFormData('businessDescription', e.target.value)} rows={3} className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300 resize-none" />
                     </label>
                     <label className="block">
                       <span className="block text-[11px] text-gray-600 mb-1">İşletme Telefonu</span>
-                      <input type="tel" value={formData.businessPhone} onChange={e => updateFormData('businessPhone', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                      <input type="tel" value={formData.businessPhone} onChange={e => updateFormData('businessPhone', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                     </label>
                     <label className="block">
                       <span className="block text-[11px] text-gray-600 mb-1">İşletme E-posta (Opsiyonel)</span>
-                      <input type="email" value={formData.businessEmail} onChange={e => updateFormData('businessEmail', e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                      <input type="email" value={formData.businessEmail} onChange={e => updateFormData('businessEmail', e.target.value)} className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                     </label>
                     <div>
                       <span className="block text-[11px] text-gray-600 mb-1">İşletme Konumu</span>
@@ -522,11 +522,11 @@ export default function RegisterPage() {
                   <>
                     <label className="block">
                       <span className="block text-[11px] text-gray-600 mb-1">Telefon Numarası</span>
-                      <input type="tel" value={formData.customerPhone} onChange={e => updateFormData('customerPhone', e.target.value)} required className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+                      <input type="tel" value={formData.customerPhone} onChange={e => updateFormData('customerPhone', e.target.value)} required className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300" />
                     </label>
                     <label className="block">
                       <span className="block text-[11px] text-gray-600 mb-1">Adres (Opsiyonel)</span>
-                      <textarea value={formData.customerAddress} onChange={e => updateFormData('customerAddress', e.target.value)} rows={3} className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 resize-none" />
+                      <textarea value={formData.customerAddress} onChange={e => updateFormData('customerAddress', e.target.value)} rows={3} className="w-full rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300 resize-none" />
                     </label>
                     <div>
                       <span className="block text-[11px] text-gray-600 mb-1">Konum (Opsiyonel)</span>
