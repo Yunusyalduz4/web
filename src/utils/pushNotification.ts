@@ -67,7 +67,7 @@ export async function sendNotificationToBusiness(
     );
 
     if (subscriptions.rows.length === 0) {
-      return { success: false, error: 'No subscriptions found' };
+      return { success: false, error: 'No business subscriptions found' };
     }
 
     const results = await Promise.allSettled(
@@ -87,6 +87,26 @@ export async function sendNotificationToBusiness(
 
     const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
     const failed = results.length - successful;
+
+    // İşletme bildirimlerini veritabanına kaydet
+    try {
+      // Önce business_id'ye karşılık gelen user_id'yi bul
+      const businessUser = await pool.query(
+        'SELECT user_id FROM businesses WHERE id = $1',
+        [businessId]
+      );
+      
+      if (businessUser.rows.length > 0) {
+        const userId = businessUser.rows[0].user_id;
+        await pool.query(
+          'INSERT INTO notifications (user_id, message, read, type) VALUES ($1, $2, false, $3)',
+          [userId, body, data?.type || 'system']
+        );
+      }
+    } catch (dbError) {
+      console.error('Database business notification save error:', dbError);
+      // Push notification başarılı olsa bile veritabanı hatası loglanır
+    }
 
     return {
       success: true,

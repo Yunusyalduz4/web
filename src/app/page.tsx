@@ -105,6 +105,14 @@ export default function LandingPage() {
         {/* Footer */}
         <div className="mt-6 text-center">
           <div className="text-[11px] text-gray-500">© {new Date().getFullYear()} RANDEVUO</div>
+          <div className="mt-2">
+            <a 
+              href="/test-notifications" 
+              className="text-[11px] text-blue-600 hover:text-blue-700 underline"
+            >
+              Test Bildirimleri
+            </a>
+          </div>
         </div>
       </div>
       <style jsx global>{`
