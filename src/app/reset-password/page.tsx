@@ -107,6 +107,7 @@ function ResetPasswordContent() {
               onChange={e => setPassword(e.target.value)}
               required
               className="rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              style={{ fontSize: '16px' }}
               autoComplete="new-password"
               placeholder="••••••"
               aria-label="Yeni Şifre"
@@ -122,6 +123,7 @@ function ResetPasswordContent() {
               onChange={e => setConfirmPassword(e.target.value)}
               required
               className="rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              style={{ fontSize: '16px' }}
               autoComplete="new-password"
               placeholder="••••••"
               aria-label="Şifre Tekrar"

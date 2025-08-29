@@ -67,6 +67,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               required
               className="rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300"
+              style={{ fontSize: '16px' }}
               autoComplete="email"
               placeholder="ornek@mail.com"
               aria-label="E-posta"
@@ -80,6 +81,7 @@ export default function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               required
               className="rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300"
+              style={{ fontSize: '16px' }}
               autoComplete="current-password"
               placeholder="••••••"
               aria-label="Şifre"
@@ -104,6 +106,7 @@ export default function LoginPage() {
                 checked={rememberMe}
                 onChange={e => setRememberMe(e.target.checked)}
                 className="w-5 h-5 text-rose-600 bg-white/90 border-2 border-gradient-to-r from-rose-200 to-fuchsia-200 rounded-lg focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300 shadow-md"
+                style={{ fontSize: '16px' }}
               />
               <span className="text-[11px] text-gray-700">Beni Hatırla</span>
             </label>

@@ -402,17 +402,17 @@ export default function BusinessEditPage() {
                 ⚠️ {uploadError}
               </div>
             )}
-            <input name="name" value={formData.name} onChange={handleInputChange} required placeholder="İşletme adı" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
-            <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Açıklama (opsiyonel)" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+            <input name="name" value={formData.name} onChange={handleInputChange} required placeholder="İşletme adı" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
+            <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Açıklama (opsiyonel)" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
           </div>
         </details>
 
         <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
           <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">İletişim</summary>
           <div className="mt-3 grid grid-cols-1 gap-3">
-            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Telefon" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="E-posta" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
-            <input name="address" value={formData.address} onChange={handleInputChange} required placeholder="Adres" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
+            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Telefon" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="E-posta" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
+            <input name="address" value={formData.address} onChange={handleInputChange} required placeholder="Adres" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
           </div>
         </details>
 
