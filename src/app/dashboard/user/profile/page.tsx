@@ -7,6 +7,7 @@ import { skipToken } from '@tanstack/react-query';
 import React from 'react';
 import { handleLogout } from '../../../../utils/authUtils';
 import { useUserPushNotifications } from '../../../../hooks/useUserPushNotifications';
+import NotificationsButton from '../../../../components/NotificationsButton';
 
 export default function UserProfilePage() {
   const { data: session } = useSession();
@@ -92,7 +93,7 @@ export default function UserProfilePage() {
             <span className="hidden sm:inline">Geri</span>
           </button>
           <div className="text-sm font-bold tracking-tight text-gray-800">Profil</div>
-          <div className="w-6" />
+          <NotificationsButton userType="user" />
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { trpc } from '../../../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import ReviewModal from '../../../components/ReviewModal';
+import NotificationsButton from '../../../components/NotificationsButton';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -114,6 +115,7 @@ export default function UserDashboard() {
         <div className="flex items-center justify-between">
           <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <div className="inline-flex items-center gap-2">
+            <NotificationsButton userType="user" />
             <button
               onClick={() => setHistoryOpen(true)}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 text-gray-900 border border-white/40 shadow-sm transition"

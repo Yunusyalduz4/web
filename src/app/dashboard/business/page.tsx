@@ -7,6 +7,7 @@ import { useSocket } from '../../../hooks/useSocket';
 import { useState, useMemo, useEffect } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import WeeklySlotView from '../../../components/WeeklySlotView';
+import NotificationsButton from '../../../components/NotificationsButton';
 
 export default function BusinessDashboard() {
   const { data: session } = useSession();
@@ -143,10 +144,13 @@ export default function BusinessDashboard() {
       <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
         <div className="flex items-center justify-between">
           <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-          <button onClick={() => router.push('/dashboard')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs shadow-sm">
-            <span>←</span>
-            <span className="hidden sm:inline">User</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationsButton userType="business" />
+            <button onClick={() => router.push('/dashboard')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs shadow-sm">
+              <span>←</span>
+              <span className="hidden sm:inline">User</span>
+            </button>
+          </div>
         </div>
       </div>
 
