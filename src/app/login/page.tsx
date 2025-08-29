@@ -66,7 +66,7 @@ export default function LoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              className="rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300"
               autoComplete="email"
               placeholder="ornek@mail.com"
               aria-label="E-posta"
@@ -79,7 +79,7 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              className="rounded-xl px-4 py-3 text-base bg-white/90 border-2 border-gradient-to-r from-rose-200 via-fuchsia-200 to-indigo-200 shadow-lg shadow-rose-100/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300"
               autoComplete="current-password"
               placeholder="••••••"
               aria-label="Şifre"
@@ -103,7 +103,7 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-rose-600 bg-white/80 border border-white/50 rounded focus:ring-rose-200 focus:ring-2"
+                className="w-5 h-5 text-rose-600 bg-white/90 border-2 border-gradient-to-r from-rose-200 to-fuchsia-200 rounded-lg focus:ring-4 focus:ring-rose-200/50 focus:border-rose-300 transition-all duration-300 shadow-md"
               />
               <span className="text-[11px] text-gray-700">Beni Hatırla</span>
             </label>
