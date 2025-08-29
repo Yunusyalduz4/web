@@ -28,6 +28,7 @@ export default function BusinessEditPage() {
   const [newImageUrl, setNewImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const updateBusinessMutation = trpc.business.updateBusiness.useMutation();
   const getBusinessImagesQuery = trpc.business.getBusinessImagesForOwner.useQuery(
@@ -98,12 +99,26 @@ export default function BusinessEditPage() {
 
   // Image resize helper to keep payloads small
   const resizeImageToDataUrl = async (file: File, maxSize = 1600, quality = 0.8): Promise<string> => {
+    // FileReader API kontrolü
+    if (typeof FileReader === 'undefined') {
+      throw new Error('Bu cihazda dosya okuma desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
+    }
+
     const dataUrl: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Dosya okunamadı'));
-      reader.readAsDataURL(file);
+      try {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error('Dosya okuma hatası: ' + (error as Error).message));
+      }
     });
+
+    // Canvas API kontrolü
+    if (typeof document.createElement('canvas').getContext === 'undefined') {
+      throw new Error('Bu cihazda görsel işleme desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
+    }
 
     const img = document.createElement('img');
     await new Promise<void>((resolve, reject) => {
@@ -127,12 +142,34 @@ export default function BusinessEditPage() {
     return out;
   };
 
+  // Mobil cihazlar için basit dosya yükleme (resize olmadan)
+  const uploadFileSimple = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error('Dosya okuma hatası: ' + (error as Error).message));
+      }
+    });
+  };
+
   const handleFileSelect = async (file: File) => {
     if (!file || !business) return;
     setUploading(true);
+    setUploadError(null); // Hata mesajını temizle
     try {
-      // Resize before upload to avoid 413
-      let dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
+      let dataUrl: string;
+      
+      // Mobil cihazlarda resize yapmaya çalış, başarısız olursa basit yükleme yap
+      try {
+        dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
+      } catch (resizeError) {
+        console.warn('Resize başarısız, basit yükleme yapılıyor:', resizeError);
+        dataUrl = await uploadFileSimple(file);
+      }
 
       const resp = await fetch('/api/upload_base64', {
         method: 'POST',
@@ -145,7 +182,13 @@ export default function BusinessEditPage() {
 
       // If API returned data URL fallback, try more compression and retry once to avoid huge payloads in DB
       if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
-        dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        try {
+          dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        } catch (resizeError) {
+          console.warn('İkinci resize denemesi başarısız:', resizeError);
+          dataUrl = await uploadFileSimple(file);
+        }
+        
         const resp2 = await fetch('/api/upload_base64', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -169,7 +212,10 @@ export default function BusinessEditPage() {
       });
       getBusinessImagesQuery.refetch();
     } catch (e: any) {
-      alert(e.message || 'Dosya yüklenemedi');
+      console.error('Dosya yükleme hatası:', e);
+      const errorMessage = e.message || 'Dosya yüklenemedi';
+      setUploadError(errorMessage);
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -179,9 +225,17 @@ export default function BusinessEditPage() {
   const handleProfileFileSelect = async (file: File) => {
     if (!file) return;
     setUploading(true);
+    setUploadError(null); // Hata mesajını temizle
     try {
-      // Resize before upload to avoid 413
-      let dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
+      let dataUrl: string;
+      
+      // Mobil cihazlarda resize yapmaya çalış, başarısız olursa basit yükleme yap
+      try {
+        dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
+      } catch (resizeError) {
+        console.warn('Profil resmi resize başarısız, basit yükleme yapılıyor:', resizeError);
+        dataUrl = await uploadFileSimple(file);
+      }
 
       const resp = await fetch('/api/upload_base64', {
         method: 'POST',
@@ -192,7 +246,13 @@ export default function BusinessEditPage() {
       if (!resp.ok) throw new Error(json.error || 'Upload failed');
       // If API returned data URL fallback, try stronger compression and retry once
       if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
-        dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        try {
+          dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        } catch (resizeError) {
+          console.warn('Profil resmi ikinci resize denemesi başarısız:', resizeError);
+          dataUrl = await uploadFileSimple(file);
+        }
+        
         const resp2 = await fetch('/api/upload_base64', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -208,7 +268,10 @@ export default function BusinessEditPage() {
       const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
       setFormData(prev => ({ ...prev, profileImageUrl: absoluteUrl }));
     } catch (e: any) {
-      alert(e.message || 'Profil fotoğrafı yüklenemedi');
+      console.error('Profil resmi yükleme hatası:', e);
+      const errorMessage = e.message || 'Profil fotoğrafı yüklenemedi';
+      setUploadError(errorMessage);
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -332,6 +395,13 @@ export default function BusinessEditPage() {
                 )}
               </div>
             </div>
+            
+            {/* Profil fotoğrafı hata mesajı */}
+            {uploadError && (
+              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">
+                ⚠️ {uploadError}
+              </div>
+            )}
             <input name="name" value={formData.name} onChange={handleInputChange} required placeholder="İşletme adı" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
             <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Açıklama (opsiyonel)" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" />
           </div>
@@ -431,12 +501,19 @@ export default function BusinessEditPage() {
       {/* Images */}
       <details className="mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
         <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Görseller</summary>
-        <div className="mt-3 space-y-3">
-          <div
-            className="relative rounded-2xl border border-white/50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/70 backdrop-blur-md p-3 flex items-center justify-between shadow-sm"
-            onDragOver={(e) => { e.preventDefault(); }}
-            onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
-          >
+                  <div className="mt-3 space-y-3">
+            {/* Hata mesajı gösterimi */}
+            {uploadError && (
+              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">
+                ⚠️ {uploadError}
+              </div>
+            )}
+            
+            <div
+              className="relative rounded-2xl border border-white/50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/70 backdrop-blur-md p-3 flex items-center justify-between shadow-sm"
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
+            >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center shadow">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
