@@ -44,8 +44,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const ext = mime.split('/')[1] || 'bin';
     const safeName = (filename || `upload_${Date.now()}.${ext}`).replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    // On Vercel, use Blob Storage for large/resilient uploads
-    if (process.env.VERCEL) {
+    // VPS'de Vercel Blob kullanma, direkt local file system kullan
+    // Vercel Blob sadece gerçek Vercel production'da kullan
+    if (false) { // Vercel Blob'u devre dışı bırak
       try {
         const fileName = `uploads/${Date.now()}_${safeName}`;
         // Convert Buffer to ArrayBuffer for @vercel/blob
