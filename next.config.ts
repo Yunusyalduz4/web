@@ -7,6 +7,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Environment değişkenlerini debug et
+  env: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    VERCEL: process.env.VERCEL,
+  },
   // PWA ve Push Notification için gerekli headers
   async headers() {
     return [
