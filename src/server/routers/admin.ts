@@ -293,7 +293,7 @@ export const adminRouter = t.router({
   // Reviews CRUD
   listReviews: t.procedure.use(isAdmin).query(async () => {
     const res = await pool.query(`
-      SELECT r.*, u.name as user_name, b.name as business_name, a.appointment_datetime
+      SELECT r.*, u.name as user_name, b.name as business_name, a.appointment_datetime, r.photos
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN businesses b ON r.business_id = b.id

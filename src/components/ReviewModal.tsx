@@ -3,6 +3,56 @@ import { useState } from 'react';
 import { trpc } from '../utils/trpcClient';
 import StarRating from './StarRating';
 
+// Helper functions
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
+
+const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<File> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      let { width, height } = img;
+      
+      // Calculate new dimensions
+      if (width > height) {
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(new File([blob], file.name, { type: file.type }));
+        } else {
+          resolve(file);
+        }
+      }, file.type, 0.8);
+    };
+    
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,6 +75,8 @@ export default function ReviewModal({
   const [serviceRating, setServiceRating] = useState(0);
   const [employeeRating, setEmployeeRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [error, setError] = useState('');
 
   const createReviewMutation = trpc.review.create.useMutation({
@@ -35,6 +87,7 @@ export default function ReviewModal({
       setServiceRating(0);
       setEmployeeRating(0);
       setComment('');
+      setPhotos([]);
       setError('');
     },
     onError: (error) => {
@@ -65,8 +118,54 @@ export default function ReviewModal({
       appointmentId,
       serviceRating,
       employeeRating,
-      comment
+      comment,
+      photos
     });
+  };
+
+  const handlePhotoUpload = async (files: FileList) => {
+    if (photos.length + files.length > 5) {
+      setError('En fazla 5 fotoğraf yükleyebilirsiniz');
+      return;
+    }
+
+    setUploadingPhotos(true);
+    setError('');
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        // Resize image if too large
+        const resizedFile = await resizeImage(file, 800, 600);
+        
+        // Convert to base64
+        const base64 = await fileToBase64(resizedFile);
+        
+        // Upload to server
+        const response = await fetch('/api/upload_base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl: base64, filename: file.name })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+        
+        const { url } = await response.json();
+        return url;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      setPhotos(prev => [...prev, ...uploadedUrls]);
+    } catch (error) {
+      setError('Fotoğraf yükleme hatası: ' + (error as Error).message);
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
   const isFormValid = serviceRating > 0 && employeeRating > 0 && comment.length >= 20;
@@ -157,6 +256,74 @@ export default function ReviewModal({
                 En az 20 karakter gerekli ({20 - comment.length} karakter daha)
               </p>
             )}
+          </div>
+
+          {/* Photo Upload */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700">
+              Fotoğraflar (İsteğe bağlı)
+            </label>
+            
+            {/* Photo Upload Area */}
+            <div className="space-y-3">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => e.target.files && handlePhotoUpload(e.target.files)}
+                className="hidden"
+                id="photo-upload"
+                disabled={uploadingPhotos || photos.length >= 5}
+              />
+              <label
+                htmlFor="photo-upload"
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 ${
+                  uploadingPhotos || photos.length >= 5
+                    ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                    : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400'
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {uploadingPhotos ? (
+                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <div className="w-8 h-8 text-blue-500 mb-2">📷</div>
+                  )}
+                  <p className="text-sm text-gray-500 text-center">
+                    {uploadingPhotos
+                      ? 'Yükleniyor...'
+                      : photos.length >= 5
+                      ? 'Maksimum 5 fotoğraf'
+                      : 'Fotoğraf eklemek için tıklayın'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {photos.length}/5 fotoğraf
+                  </p>
+                </div>
+              </label>
+
+              {/* Photo Preview Grid */}
+              {photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={photo}
+                        alt={`Review photo ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Error Message */}
