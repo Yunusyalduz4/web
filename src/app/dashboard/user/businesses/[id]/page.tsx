@@ -105,6 +105,9 @@ export default function BusinessDetailPage() {
   const [activeTab, setActiveTab] = useState<'services' | 'employees' | 'reviews'>('services');
   const [slider, setSlider] = useState<any>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [photoSliderOpen, setPhotoSliderOpen] = useState(false);
+  const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const minServicePrice = useMemo(() => {
     if (!services || services.length === 0) return null as number | null;
@@ -221,11 +224,21 @@ export default function BusinessDetailPage() {
                 '/file.svg',
               ]).map((img: string, idx: number) => (
             <SwiperSlide key={idx}>
-              <div className="relative w-full h-full">
+              <div 
+                className="relative w-full h-full cursor-pointer"
+                onClick={() => {
+                  const businessImagesList = businessImages && businessImages.length > 0
+                    ? businessImages.map((img: any) => img.image_url)
+                    : ['/globe.svg', '/window.svg', '/file.svg'];
+                  setCurrentPhotos(businessImagesList);
+                  setCurrentPhotoIndex(idx);
+                  setPhotoSliderOpen(true);
+                }}
+              >
                 <img
                   src={img}
                   alt={`İşletme görseli ${idx + 1}`}
-                  className="object-cover w-full h-full select-none"
+                  className="object-cover w-full h-full select-none hover:scale-105 transition-transform duration-300"
                   draggable={false}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -233,6 +246,16 @@ export default function BusinessDetailPage() {
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                  <div className="opacity-0 hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 {/* Fallback for failed images */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center hidden">
                   <div className="text-center text-gray-500">
@@ -681,6 +704,38 @@ export default function BusinessDetailPage() {
 
                 <div className="text-sm text-gray-700 mb-2 leading-relaxed">"{review.comment}"</div>
 
+                {/* Review Photos */}
+                {review.photos && review.photos.length > 0 && (
+                  <div className="mb-3">
+                    <div className="grid grid-cols-5 gap-1">
+                      {review.photos.slice(0, 5).map((photo: string, index: number) => (
+                        <div
+                          key={index}
+                          className="relative aspect-square cursor-pointer group"
+                          onClick={() => {
+                            setCurrentPhotos(review.photos);
+                            setCurrentPhotoIndex(index);
+                            setPhotoSliderOpen(true);
+                          }}
+                        >
+                          <img
+                            src={photo}
+                            alt={`Review photo ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg hover:opacity-80 transition-opacity"
+                          />
+                          {index === 4 && review.photos.length > 5 && (
+                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                              <span className="text-white text-xs font-medium">
+                                +{review.photos.length - 5}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* İşletme Yanıtı */}
                 {review.business_reply && (
                   <div className="bg-blue-50/50 rounded-lg p-2 border-l-2 border-blue-300">
@@ -747,6 +802,81 @@ export default function BusinessDetailPage() {
         </div>
       </div>
     </div>
+
+    {/* Photo Slider Modal */}
+    {photoSliderOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-4">
+        <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
+          {/* Close Button */}
+          <button
+            onClick={() => setPhotoSliderOpen(false)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+          >
+            <span className="text-xl">×</span>
+          </button>
+
+          {/* Photo Counter */}
+          <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
+            {currentPhotoIndex + 1} / {currentPhotos.length}
+          </div>
+
+          {/* Main Photo */}
+          <div className="flex-1 flex items-center justify-center">
+            <img
+              src={currentPhotos[currentPhotoIndex]}
+              alt={`Review photo ${currentPhotoIndex + 1}`}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+
+          {/* Navigation */}
+          {currentPhotos.length > 1 && (
+            <>
+              {/* Previous Button */}
+              {currentPhotoIndex > 0 && (
+                <button
+                  onClick={() => setCurrentPhotoIndex(prev => prev - 1)}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                >
+                  <span className="text-2xl">‹</span>
+                </button>
+              )}
+
+              {/* Next Button */}
+              {currentPhotoIndex < currentPhotos.length - 1 && (
+                <button
+                  onClick={() => setCurrentPhotoIndex(prev => prev + 1)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                >
+                  <span className="text-2xl">›</span>
+                </button>
+              )}
+
+              {/* Thumbnail Strip */}
+              <div className="flex justify-center gap-2 p-4 overflow-x-auto">
+                {currentPhotos.map((photo, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentPhotoIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      index === currentPhotoIndex
+                        ? 'border-white'
+                        : 'border-white/30 hover:border-white/60'
+                    }`}
+                  >
+                    <img
+                      src={photo}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )}
     </>
   );
 } 

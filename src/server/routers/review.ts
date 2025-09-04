@@ -9,6 +9,7 @@ const createReviewSchema = z.object({
   serviceRating: z.number().min(1).max(5),
   employeeRating: z.number().min(1).max(5),
   comment: z.string().min(20, 'Yorum en az 20 karakter olmalıdır'),
+  photos: z.array(z.string().url()).optional().default([]),
 });
 
 // Review reply schema
@@ -29,7 +30,7 @@ export const reviewRouter = t.router({
     .use(isUser)
     .input(createReviewSchema)
     .mutation(async ({ input, ctx }) => {
-      const { appointmentId, serviceRating, employeeRating, comment } = input;
+      const { appointmentId, serviceRating, employeeRating, comment, photos } = input;
       const userId = ctx.user.id;
 
       // Check if appointment exists and belongs to user
@@ -83,10 +84,10 @@ export const reviewRouter = t.router({
 
       // Create review (onay bekliyor)
       const result = await pool.query(
-        `INSERT INTO reviews (appointment_id, user_id, business_id, service_rating, employee_rating, comment, is_approved) 
-         VALUES ($1, $2, $3, $4, $5, $6, false) 
+        `INSERT INTO reviews (appointment_id, user_id, business_id, service_rating, employee_rating, comment, photos, is_approved) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, false) 
          RETURNING *`,
-        [appointmentId, userId, appointment.business_id, serviceRating, employeeRating, comment]
+        [appointmentId, userId, appointment.business_id, serviceRating, employeeRating, comment, JSON.stringify(photos || [])]
       );
 
       // Update business ratings
@@ -166,7 +167,7 @@ export const reviewRouter = t.router({
       const offset = (page - 1) * limit;
 
       const result = await pool.query(
-        `SELECT r.*, b.name as business_name, a.appointment_datetime,
+        `SELECT r.*, b.name as business_name, a.appointment_datetime, r.photos,
                 COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
                 COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names
          FROM reviews r
@@ -176,7 +177,7 @@ export const reviewRouter = t.router({
          LEFT JOIN services s ON aps.service_id = s.id
          LEFT JOIN employees e ON aps.employee_id = e.id
          WHERE r.user_id = $1
-         GROUP BY r.id, b.name, a.appointment_datetime
+         GROUP BY r.id, b.name, a.appointment_datetime, r.photos
          ORDER BY r.created_at DESC
          LIMIT $2 OFFSET $3`,
         [userId, limit, offset]
@@ -215,7 +216,7 @@ export const reviewRouter = t.router({
 
       const result = await pool.query(
         `SELECT r.*, u.name as user_name, a.appointment_datetime,
-                b.name as business_name, r.business_reply, r.business_reply_at
+                b.name as business_name, r.business_reply, r.business_reply_at, r.photos
          FROM reviews r
          JOIN users u ON r.user_id = u.id
          JOIN appointments a ON r.appointment_id = a.id
