@@ -134,6 +134,9 @@ export const appointmentRouter = t.router({
         const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [input.userId]);
         const userName = userRes.rows[0]?.name || 'Müşteri';
         
+        const businessRes = await pool.query('SELECT name FROM businesses WHERE id = $1', [input.businessId]);
+        const businessName = businessRes.rows[0]?.name || 'İşletme';
+        
         const servicesRes = await pool.query(
           `SELECT s.name FROM services s 
            WHERE s.id = ANY($1::uuid[])`,
@@ -150,15 +153,16 @@ export const appointmentRouter = t.router({
           minute: '2-digit'
         });
 
-        await sendNotificationToBusiness(
+        // Yeni bildirim sistemi kullan
+        const { sendNewAppointmentNotification } = await import('../../utils/pushNotification');
+        await sendNewAppointmentNotification(
+          appointmentId,
           input.businessId,
-          'Yeni Randevu! 📅',
-          `${userName} adlı müşteri ${formattedDate} tarihinde randevu aldı. Hizmetler: ${serviceNames}`,
-          {
-            type: 'new_appointment',
-            appointmentId,
-            businessId: input.businessId
-          }
+          input.userId,
+          utcDateTime.toISOString(),
+          businessName,
+          userName,
+          serviceNames.split(', ')
         );
 
         // 6. Socket.io event gönder

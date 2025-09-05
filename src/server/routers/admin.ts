@@ -389,6 +389,18 @@ export const adminRouter = t.router({
       const { businessId, approve, note } = input;
       const adminId = ctx.session?.user?.id;
 
+      // İşletme bilgilerini al
+      const businessRes = await pool.query(
+        'SELECT name FROM businesses WHERE id = $1',
+        [businessId]
+      );
+      
+      if (businessRes.rows.length === 0) {
+        throw new Error('İşletme bulunamadı');
+      }
+      
+      const businessName = businessRes.rows[0].name;
+
       if (approve) {
         await pool.query(
           `UPDATE businesses SET 
@@ -409,6 +421,20 @@ export const adminRouter = t.router({
            WHERE id = $3`,
           [note || 'Reddedildi', adminId, businessId]
         );
+      }
+
+      // Push notification gönder
+      try {
+        const { sendBusinessApprovalNotification } = await import('../../utils/pushNotification');
+        await sendBusinessApprovalNotification(
+          businessId,
+          approve ? 'approved' : 'rejected',
+          businessName,
+          note
+        );
+      } catch (error) {
+        console.error('Business approval notification error:', error);
+        // Push notification hatası onay işlemini etkilemesin
       }
 
       return { success: true };

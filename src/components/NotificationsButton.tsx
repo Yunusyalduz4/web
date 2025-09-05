@@ -18,7 +18,7 @@ export default function NotificationsButton({ userType }: NotificationsButtonPro
     if (session?.user?.id) {
       fetchUnreadCount();
     }
-  }, [session]);
+  }, [session, userType]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -26,6 +26,13 @@ export default function NotificationsButton({ userType }: NotificationsButtonPro
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.unreadCount || 0);
+      } else {
+        const errorData = await response.json();
+        console.error('Notifications API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
       }
     } catch (error) {
       console.error('Unread count fetch error:', error);

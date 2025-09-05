@@ -109,11 +109,24 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
   const getNotificationIcon = (type?: string) => {
     switch (type) {
       case 'appointment':
+      case 'new_appointment':
         return <Clock className="w-4 h-4 text-blue-500" />;
       case 'review':
+      case 'new_review':
         return <Check className="w-4 h-4 text-green-500" />;
       case 'reminder':
+      case 'appointment_reminder':
         return <AlertCircle className="w-4 h-4 text-orange-500" />;
+      case 'appointment_status_update':
+        return <Clock className="w-4 h-4 text-purple-500" />;
+      case 'business_approval':
+        return <Check className="w-4 h-4 text-indigo-500" />;
+      case 'employee_appointment':
+        return <Clock className="w-4 h-4 text-cyan-500" />;
+      case 'favorite_business':
+        return <Bell className="w-4 h-4 text-pink-500" />;
+      case 'system':
+        return <AlertCircle className="w-4 h-4 text-gray-500" />;
       default:
         return <Bell className="w-4 h-4 text-gray-500" />;
     }
@@ -140,7 +153,7 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-32">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
@@ -148,7 +161,7 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl max-h-[80vh] overflow-hidden">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl max-h-[70vh] overflow-hidden transform">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
