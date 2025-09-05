@@ -5,6 +5,8 @@ import { trpc } from '../../../../utils/trpcClient';
 import { useState } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import ReviewModal from '../../../../components/ReviewModal';
+import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 // Star Rating Component
 const StarRating = ({ rating, onRatingChange, disabled = false }: { rating: number; onRatingChange: (rating: number) => void; disabled?: boolean }) => {
@@ -32,6 +34,10 @@ function UserReviewsPageContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const userId = session?.user?.id;
+  
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setReviewCallbacks } = useRealTimeReviews(userId);
   
   // Get completed appointments that can be reviewed
   const { data: completedAppointments, refetch: refetchAppointments } = trpc.review.getCompletedAppointmentsForReview.useQuery(

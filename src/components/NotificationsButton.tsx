@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Bell } from 'lucide-react';
 import NotificationsModal from './NotificationsModal';
+import { useWebSocket } from '../contexts/WebSocketContext';
 
 interface NotificationsButtonProps {
   userType: 'user' | 'business';

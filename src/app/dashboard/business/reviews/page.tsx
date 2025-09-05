@@ -4,6 +4,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { skipToken } from '@tanstack/react-query';
+import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 // Yanıt verme modal component'i
 function ReplyModal({ review, isOpen, onClose, onSubmit }: any) {

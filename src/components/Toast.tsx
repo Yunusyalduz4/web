@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { useWebSocket } from '../contexts/WebSocketContext';
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
