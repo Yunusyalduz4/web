@@ -26,11 +26,21 @@ export function usePushNotifications(businessId?: string) {
   useEffect(() => {
     if (!isClient) return;
     
-    setIsSupported(
+    const isSupported = 
       'serviceWorker' in navigator &&
       'PushManager' in window &&
-      'Notification' in window
-    );
+      'Notification' in window &&
+      window.isSecureContext; // PWA için HTTPS gerekli
+    
+    console.log('Push notification support check (business):', {
+      serviceWorker: 'serviceWorker' in navigator,
+      pushManager: 'PushManager' in window,
+      notification: 'Notification' in window,
+      secureContext: window.isSecureContext,
+      isSupported
+    });
+    
+    setIsSupported(isSupported);
   }, [isClient]);
 
   // Check subscription status when component mounts
@@ -68,26 +78,76 @@ export function usePushNotifications(businessId?: string) {
         return false;
       }
 
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Registering service worker for PWA (business)...');
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
+      });
       await navigator.serviceWorker.ready;
+      console.log('Service worker registered successfully (business):', registration);
 
       // Convert VAPID public key to Uint8Array
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
-        throw new Error('VAPID public key not found');
+        throw new Error('VAPID public key not found in environment variables');
       }
+      
+      console.log('VAPID Public Key:', vapidPublicKey);
+      console.log('VAPID Key Length:', vapidPublicKey.length);
 
       const urlBase64ToUint8Array = (base64String: string) => {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding)
-          .replace(/-/g, '+')
-          .replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) {
-          outputArray[i] = rawData.charCodeAt(i);
+        try {
+          // VAPID key formatını kontrol et
+          if (!base64String || typeof base64String !== 'string') {
+            throw new Error('Invalid VAPID public key format');
+          }
+
+          console.log('Original VAPID key:', base64String);
+          console.log('Key length:', base64String.length);
+
+          // String'i temizle - tüm whitespace karakterlerini kaldır
+          let cleanKey = base64String.replace(/\s+/g, '').trim();
+          
+          // Tırnak işaretlerini kaldır
+          cleanKey = cleanKey.replace(/['"]/g, '');
+          
+          // URL-safe base64'i standart base64'e çevir
+          cleanKey = cleanKey.replace(/-/g, '+').replace(/_/g, '/');
+          
+          // Padding ekle
+          const padding = '='.repeat((4 - cleanKey.length % 4) % 4);
+          cleanKey = cleanKey + padding;
+          
+          console.log('Cleaned VAPID key:', cleanKey);
+          console.log('Cleaned key length:', cleanKey.length);
+          
+          // Base64 formatını kontrol et
+          if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanKey)) {
+            console.error('Invalid base64 characters found:', cleanKey);
+            console.error('Invalid characters at positions:', 
+              [...cleanKey].map((char, i) => !/^[A-Za-z0-9+/=]$/.test(char) ? `${char}(${i})` : null).filter(Boolean)
+            );
+            throw new Error('Invalid base64 format in VAPID public key');
+          }
+
+          // atob ile decode etmeyi dene
+          try {
+            const rawData = window.atob(cleanKey);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+              outputArray[i] = rawData.charCodeAt(i);
+            }
+            console.log('VAPID key conversion successful, output length:', outputArray.length);
+            return outputArray;
+          } catch (atobError) {
+            console.error('atob error:', atobError);
+            console.error('Failed to decode key:', cleanKey);
+            throw new Error('Failed to decode base64: ' + (atobError instanceof Error ? atobError.message : 'Unknown error'));
+          }
+        } catch (err) {
+          console.error('VAPID key conversion error:', err);
+          console.error('Original key:', base64String);
+          throw new Error('Failed to convert VAPID public key: ' + (err instanceof Error ? err.message : 'Unknown error'));
         }
-        return outputArray;
       };
 
       // Subscribe to push notifications

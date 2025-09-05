@@ -9,7 +9,7 @@ const vapidKeys = {
 // VAPID details'i güvenli şekilde set et
 try {
   webpush.setVapidDetails(
-    'mailto:your-email@example.com',
+    process.env.VAPID_EMAIL || 'mailto:yalduzbey@gmail.com',
     vapidKeys.publicKey,
     vapidKeys.privateKey
   );
@@ -90,18 +90,23 @@ export async function sendNotificationToBusiness(
 
     // İşletme bildirimlerini veritabanına kaydet
     try {
-      // Önce business_id'ye karşılık gelen user_id'yi bul
+      // Önce business_id'ye karşılık gelen owner_user_id'yi bul
+      console.log('Looking for business owner for businessId:', businessId);
       const businessUser = await pool.query(
-        'SELECT user_id FROM businesses WHERE id = $1',
+        'SELECT owner_user_id FROM businesses WHERE id = $1',
         [businessId]
       );
       
       if (businessUser.rows.length > 0) {
-        const userId = businessUser.rows[0].user_id;
+        const userId = businessUser.rows[0].owner_user_id;
+        console.log('Found business owner userId:', userId);
+        console.log('Saving notification:', { userId, body, type: data?.type || 'system' });
+        
         await pool.query(
           'INSERT INTO notifications (user_id, message, read, type) VALUES ($1, $2, false, $3)',
           [userId, body, data?.type || 'system']
         );
+        console.log('Notification saved successfully');
         
         // WebSocket ile real-time bildirim gönder
         try {
@@ -418,7 +423,7 @@ export async function sendBusinessApprovalNotification(
     
     // İşletme sahibini bul
     const businessRes = await pool.query(
-      'SELECT user_id FROM businesses WHERE id = $1',
+      'SELECT owner_user_id FROM businesses WHERE id = $1',
       [businessId]
     );
     
@@ -426,7 +431,7 @@ export async function sendBusinessApprovalNotification(
       return { success: false, error: 'Business not found' };
     }
     
-    const userId = businessRes.rows[0].user_id;
+    const userId = businessRes.rows[0].owner_user_id;
     
     let title = '';
     let message = '';
@@ -466,6 +471,7 @@ export async function sendBusinessApprovalNotification(
 }
 
 // Yeni: Çalışan randevu bildirimi
+// NOT: Employees tablosunda user_id kolonu yok, bu fonksiyon şimdilik devre dışı
 export async function sendEmployeeAppointmentNotification(
   employeeId: string,
   appointmentId: string,
@@ -475,39 +481,35 @@ export async function sendEmployeeAppointmentNotification(
   serviceNames?: string[]
 ) {
   try {
-    const { pool } = await import('../server/db');
+    // Çalışanlar için ayrı user_id sistemi yok, bu yüzden sadece işletme sahibine bildirim gönder
+    console.log('Employee notification skipped - no user_id in employees table');
     
-    // Çalışan bilgilerini al
-    const employeeRes = await pool.query(
-      'SELECT name, user_id FROM employees WHERE id = $1',
-      [employeeId]
+    // İşletme sahibine bildirim gönder
+    const { pool } = await import('../server/db');
+    const businessRes = await pool.query(
+      'SELECT owner_user_id FROM businesses WHERE id = $1',
+      [businessId]
     );
     
-    if (employeeRes.rows.length === 0) {
-      return { success: false, error: 'Employee not found' };
-    }
-    
-    const employeeUserId = employeeRes.rows[0].user_id;
-    const employeeName = employeeRes.rows[0].name;
-    
-    // Tarihi Türkiye saatine çevir
-    const appointmentDate = new Date(appointmentDateTime);
-    const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (businessRes.rows.length > 0) {
+      const businessOwnerId = businessRes.rows[0].owner_user_id;
+      
+      // Tarihi Türkiye saatine çevir
+      const appointmentDate = new Date(appointmentDateTime);
+      const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-    const serviceText = serviceNames && serviceNames.length > 0 
-      ? ` (${serviceNames.join(', ')})` 
-      : '';
+      const serviceText = serviceNames && serviceNames.length > 0 
+        ? ` (${serviceNames.join(', ')})` 
+        : '';
 
-    // Çalışana bildirim gönder (eğer user_id varsa)
-    if (employeeUserId) {
       await sendNotificationToUser(
-        employeeUserId,
+        businessOwnerId,
         'Yeni Randevu Atandı! 👤',
         `${customerName} adlı müşteriye ${formattedDate} tarihinde randevu atandı${serviceText}.`,
         {

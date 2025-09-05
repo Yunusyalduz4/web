@@ -10,18 +10,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   
   const { credentials, saveCredentials, clearCredentials } = useUserCredentials();
 
-  // Sayfa yüklendiğinde kayıtlı bilgileri yükle
+  // Client-side hydration'ı bekle
   useEffect(() => {
-    if (credentials.rememberMe && credentials.email && credentials.password) {
+    setIsClient(true);
+  }, []);
+
+  // Sayfa yüklendiğinde kayıtlı bilgileri yükle (sadece client-side'da)
+  useEffect(() => {
+    if (isClient && credentials.rememberMe && credentials.email && credentials.password) {
       setEmail(credentials.email);
       setPassword(credentials.password);
       setRememberMe(true);
     }
-  }, [credentials]);
+  }, [credentials, isClient]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +116,7 @@ export default function LoginPage() {
               />
               <span className="text-[11px] text-gray-700">Beni Hatırla</span>
             </label>
-            {credentials.rememberMe && credentials.email && (
+            {isClient && credentials.rememberMe && credentials.email && (
               <button
                 type="button"
                 onClick={handleClearCredentials}

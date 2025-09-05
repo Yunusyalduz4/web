@@ -356,7 +356,10 @@ export default function UserProfilePage() {
           </div>
           {pushError && (
             <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700">
-              {pushError}
+              {pushError.includes('VAPID') 
+                ? 'Push bildirimleri yapılandırılmamış. Lütfen daha sonra tekrar deneyin.' 
+                : pushError
+              }
             </div>
           )}
         </section>
