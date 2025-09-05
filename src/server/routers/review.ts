@@ -102,6 +102,29 @@ export const reviewRouter = t.router({
         await updateEmployeeRatings(firstEmployeeId);
       }
 
+      // Push notification gönder
+      try {
+        // İşletme ve kullanıcı bilgilerini al
+        const businessRes = await pool.query('SELECT name FROM businesses WHERE id = $1', [appointment.business_id]);
+        const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+        
+        const businessName = businessRes.rows[0]?.name || 'İşletme';
+        const userName = userRes.rows[0]?.name || null;
+        
+        const { sendReviewNotification } = await import('../../utils/pushNotification');
+        await sendReviewNotification(
+          result.rows[0].id,
+          appointment.business_id,
+          userId || null,
+          serviceRating,
+          businessName,
+          userName
+        );
+      } catch (error) {
+        console.error('Review notification error:', error);
+        // Push notification hatası review oluşturmayı etkilemesin
+      }
+
       return result.rows[0];
       } catch (error) {
         console.error('Review create error:', error);

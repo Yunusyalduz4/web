@@ -102,6 +102,26 @@ export async function sendNotificationToBusiness(
           'INSERT INTO notifications (user_id, message, read, type) VALUES ($1, $2, false, $3)',
           [userId, body, data?.type || 'system']
         );
+        
+        // WebSocket ile real-time bildirim gönder
+        try {
+          const { getSocketServer } = await import('../server/socket');
+          const socketServer = getSocketServer();
+          if (socketServer) {
+            socketServer.emitNotificationSent({
+              type: 'business',
+              targetId: businessId,
+              notification: {
+                message: body,
+                type: data?.type || 'system',
+                data: data
+              }
+            });
+          }
+        } catch (wsError) {
+          console.error('WebSocket business notification error:', wsError);
+          // WebSocket hatası push notification'ı etkilemesin
+        }
       }
     } catch (dbError) {
       console.error('Database business notification save error:', dbError);
@@ -156,6 +176,37 @@ export async function sendNotificationToUser(
 
     const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
     const failed = results.length - successful;
+
+    // Kullanıcı bildirimlerini veritabanına kaydet
+    try {
+      await pool.query(
+        'INSERT INTO notifications (user_id, message, read, type) VALUES ($1, $2, false, $3)',
+        [userId, body, data?.type || 'system']
+      );
+      
+      // WebSocket ile real-time bildirim gönder
+      try {
+        const { getSocketServer } = await import('../server/socket');
+        const socketServer = getSocketServer();
+        if (socketServer) {
+          socketServer.emitNotificationSent({
+            type: 'user',
+            targetId: userId,
+            notification: {
+              message: body,
+              type: data?.type || 'system',
+              data: data
+            }
+          });
+        }
+      } catch (wsError) {
+        console.error('WebSocket notification error:', wsError);
+        // WebSocket hatası push notification'ı etkilemesin
+      }
+    } catch (dbError) {
+      console.error('Database user notification save error:', dbError);
+      // Push notification başarılı olsa bile veritabanı hatası loglanır
+    }
 
     return {
       success: true,
@@ -245,6 +296,285 @@ export async function sendAppointmentStatusUpdateNotification(
     return { success: true };
   } catch (error) {
     console.error('Appointment status update notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// Yeni: Randevu oluşturulduğunda bildirim gönderme
+export async function sendNewAppointmentNotification(
+  appointmentId: string,
+  businessId: string,
+  userId: string | null,
+  appointmentDateTime: string,
+  businessName: string,
+  customerName?: string,
+  serviceNames?: string[]
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    // Tarihi Türkiye saatine çevir
+    const appointmentDate = new Date(appointmentDateTime);
+    const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const serviceText = serviceNames && serviceNames.length > 0 
+      ? ` (${serviceNames.join(', ')})` 
+      : '';
+
+    // İşletmeye bildirim gönder
+    if (userId) {
+      const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+      const userName = userRes.rows[0]?.name || customerName || 'Müşteri';
+      
+      await sendNotificationToBusiness(
+        businessId,
+        'Yeni Randevu Talebi! 📅',
+        `${userName} adlı müşteri ${formattedDate} tarihinde randevu talebinde bulundu${serviceText}.`,
+        {
+          type: 'new_appointment',
+          appointmentId,
+          businessId,
+          appointmentDateTime: formattedDate
+        }
+      );
+    }
+
+    // Müşteriye bildirim gönder (eğer user_id varsa)
+    if (userId) {
+      await sendNotificationToUser(
+        userId,
+        'Randevu Talebiniz Alındı! ✅',
+        `${businessName} adlı işletmeye ${formattedDate} tarihinde randevu talebiniz gönderildi${serviceText}.`,
+        {
+          type: 'new_appointment',
+          appointmentId,
+          businessId,
+          appointmentDateTime: formattedDate
+        }
+      );
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('New appointment notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// Yeni: Review/yorum bildirimi gönderme
+export async function sendReviewNotification(
+  reviewId: string,
+  businessId: string,
+  userId: string | null,
+  rating: number,
+  businessName: string,
+  customerName?: string
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    const starText = '⭐'.repeat(rating);
+    
+    // İşletmeye bildirim gönder
+    if (userId) {
+      const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+      const userName = userRes.rows[0]?.name || customerName || 'Müşteri';
+      
+      await sendNotificationToBusiness(
+        businessId,
+        'Yeni Yorum Aldınız! ⭐',
+        `${userName} adlı müşteri işletmenize ${starText} puan verdi ve yorum yazdı.`,
+        {
+          type: 'new_review',
+          reviewId,
+          businessId,
+          rating
+        }
+      );
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Review notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// Yeni: İşletme onay durumu bildirimi
+export async function sendBusinessApprovalNotification(
+  businessId: string,
+  status: 'approved' | 'rejected' | 'suspended',
+  businessName: string,
+  reason?: string
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    // İşletme sahibini bul
+    const businessRes = await pool.query(
+      'SELECT user_id FROM businesses WHERE id = $1',
+      [businessId]
+    );
+    
+    if (businessRes.rows.length === 0) {
+      return { success: false, error: 'Business not found' };
+    }
+    
+    const userId = businessRes.rows[0].user_id;
+    
+    let title = '';
+    let message = '';
+    
+    switch (status) {
+      case 'approved':
+        title = 'İşletmeniz Onaylandı! 🎉';
+        message = `${businessName} adlı işletmeniz başarıyla onaylandı. Artık müşteriler randevu alabilir!`;
+        break;
+      case 'rejected':
+        title = 'İşletme Başvurunuz Reddedildi ❌';
+        message = `${businessName} adlı işletme başvurunuz reddedildi.${reason ? ` Sebep: ${reason}` : ''}`;
+        break;
+      case 'suspended':
+        title = 'İşletmeniz Askıya Alındı ⚠️';
+        message = `${businessName} adlı işletmeniz geçici olarak askıya alındı.${reason ? ` Sebep: ${reason}` : ''}`;
+        break;
+    }
+    
+    await sendNotificationToUser(
+      userId,
+      title,
+      message,
+      {
+        type: 'business_approval',
+        businessId,
+        status,
+        reason
+      }
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error('Business approval notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// Yeni: Çalışan randevu bildirimi
+export async function sendEmployeeAppointmentNotification(
+  employeeId: string,
+  appointmentId: string,
+  businessId: string,
+  appointmentDateTime: string,
+  customerName: string,
+  serviceNames?: string[]
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    // Çalışan bilgilerini al
+    const employeeRes = await pool.query(
+      'SELECT name, user_id FROM employees WHERE id = $1',
+      [employeeId]
+    );
+    
+    if (employeeRes.rows.length === 0) {
+      return { success: false, error: 'Employee not found' };
+    }
+    
+    const employeeUserId = employeeRes.rows[0].user_id;
+    const employeeName = employeeRes.rows[0].name;
+    
+    // Tarihi Türkiye saatine çevir
+    const appointmentDate = new Date(appointmentDateTime);
+    const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const serviceText = serviceNames && serviceNames.length > 0 
+      ? ` (${serviceNames.join(', ')})` 
+      : '';
+
+    // Çalışana bildirim gönder (eğer user_id varsa)
+    if (employeeUserId) {
+      await sendNotificationToUser(
+        employeeUserId,
+        'Yeni Randevu Atandı! 👤',
+        `${customerName} adlı müşteriye ${formattedDate} tarihinde randevu atandı${serviceText}.`,
+        {
+          type: 'employee_appointment',
+          appointmentId,
+          businessId,
+          employeeId,
+          appointmentDateTime: formattedDate
+        }
+      );
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Employee appointment notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// Yeni: Favori işletme bildirimi
+export async function sendFavoriteBusinessNotification(
+  businessId: string,
+  userId: string,
+  notificationType: 'new_service' | 'promotion' | 'update',
+  businessName: string,
+  message: string
+) {
+  try {
+    await sendNotificationToUser(
+      userId,
+      `Favori İşletmenizden Haber! ❤️`,
+      `${businessName}: ${message}`,
+      {
+        type: 'favorite_business',
+        businessId,
+        notificationType
+      }
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error('Favorite business notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// Yeni: Sistem bildirimi
+export async function sendSystemNotification(
+  userId: string,
+  title: string,
+  message: string,
+  notificationType: 'maintenance' | 'feature' | 'security' | 'general' = 'general'
+) {
+  try {
+    await sendNotificationToUser(
+      userId,
+      `Sistem Bildirimi: ${title}`,
+      message,
+      {
+        type: 'system',
+        notificationType
+      }
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error('System notification error:', error);
     return { success: false, error };
   }
 }

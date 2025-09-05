@@ -8,8 +8,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  let session;
   try {
-    const session = await getServerSession(req, res, authOptions);
+    session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -27,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (userType === 'user') {
       // Müşteri bildirimleri
       query = `
-        SELECT id, message, read, created_at, type
+        SELECT id, message, read, created_at, COALESCE(type, 'system') as type
         FROM notifications 
         WHERE user_id = $1 
         ORDER BY created_at DESC 
@@ -37,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else if (userType === 'business') {
       // İşletme bildirimleri - notifications tablosundan getir
       query = `
-        SELECT id, message, read, created_at, type
+        SELECT id, message, read, created_at, COALESCE(type, 'system') as type
         FROM notifications 
         WHERE user_id = $1 
         ORDER BY created_at DESC 
@@ -66,6 +67,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Notifications API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      query: req.query,
+      session: session?.user?.id
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? 
+        (error instanceof Error ? error.message : 'Unknown error') : 
+        'Internal server error'
+    });
   }
 }
