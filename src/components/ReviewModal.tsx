@@ -114,13 +114,16 @@ export default function ReviewModal({
       return;
     }
 
-    createReviewMutation.mutate({
+    const reviewData = {
       appointmentId,
       serviceRating,
       employeeRating,
       comment,
       photos
-    });
+    };
+    
+    
+    createReviewMutation.mutate(reviewData);
   };
 
   const handlePhotoUpload = async (files: FileList) => {
@@ -337,10 +340,10 @@ export default function ReviewModal({
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={!isFormValid || createReviewMutation.isLoading}
+            disabled={!isFormValid || createReviewMutation.isPending}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-3"
           >
-            {createReviewMutation.isLoading ? (
+            {createReviewMutation.isPending ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 <span>Gönderiliyor...</span>

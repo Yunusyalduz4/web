@@ -9,7 +9,7 @@ const createReviewSchema = z.object({
   serviceRating: z.number().min(1).max(5),
   employeeRating: z.number().min(1).max(5),
   comment: z.string().min(20, 'Yorum en az 20 karakter olmalıdır'),
-  photos: z.array(z.string().url()).optional().default([]),
+  photos: z.array(z.string()).optional().default([]),
 });
 
 // Review reply schema
@@ -30,6 +30,7 @@ export const reviewRouter = t.router({
     .use(isUser)
     .input(createReviewSchema)
     .mutation(async ({ input, ctx }) => {
+      try {
       const { appointmentId, serviceRating, employeeRating, comment, photos } = input;
       const userId = ctx.user.id;
 
@@ -83,11 +84,14 @@ export const reviewRouter = t.router({
       }
 
       // Create review (onay bekliyor)
+      // PostgreSQL array formatına çevir: [1,2,3] -> {1,2,3}
+      const photosArray = photos && photos.length > 0 ? `{${photos.map(p => `"${p}"`).join(',')}}` : '{}';
+      
       const result = await pool.query(
         `INSERT INTO reviews (appointment_id, user_id, business_id, service_rating, employee_rating, comment, photos, is_approved) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, false) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7::text[], false) 
          RETURNING *`,
-        [appointmentId, userId, appointment.business_id, serviceRating, employeeRating, comment, JSON.stringify(photos || [])]
+        [appointmentId, userId, appointment.business_id, serviceRating, employeeRating, comment, photosArray]
       );
 
       // Update business ratings
@@ -99,6 +103,10 @@ export const reviewRouter = t.router({
       }
 
       return result.rows[0];
+      } catch (error) {
+        console.error('Review create error:', error);
+        throw error;
+      }
     }),
 
   // Yeni: Tamamlanan randevular için yorum yapılmamış olanları getir
@@ -192,7 +200,8 @@ export const reviewRouter = t.router({
         reviews: result.rows.map(row => ({
           ...row,
           appointment_datetime: new Date(row.appointment_datetime).toISOString(),
-          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString()
+          turkey_datetime: new Date(new Date(row.appointment_datetime).getTime() + (3 * 60 * 60 * 1000)).toISOString(),
+          photos: row.photos || []
         })),
         pagination: {
           page,
@@ -227,13 +236,18 @@ export const reviewRouter = t.router({
         [businessId, limit, offset]
       );
 
+
+
       const totalResult = await pool.query(
         'SELECT COUNT(*) as total FROM reviews WHERE business_id = $1',
         [businessId]
       );
 
       return {
-        reviews: result.rows,
+        reviews: result.rows.map(row => ({
+          ...row,
+          photos: row.photos || []
+        })),
         pagination: {
           page,
           limit,

@@ -584,6 +584,38 @@ export default function BusinessDetailPage() {
                 {/* Yorum Metni */}
                 <div className="text-xs text-gray-700 leading-relaxed mb-2">"{review.comment}"</div>
 
+                {/* Review Photos */}
+                {review.photos && review.photos.length > 0 && (
+                  <div className="mb-2">
+                    <div className="grid grid-cols-3 gap-1">
+                      {review.photos.slice(0, 3).map((photo: string, index: number) => (
+                        <div
+                          key={index}
+                          className="relative aspect-square cursor-pointer group"
+                          onClick={() => {
+                            setCurrentPhotos(review.photos);
+                            setCurrentPhotoIndex(index);
+                            setPhotoSliderOpen(true);
+                          }}
+                        >
+                          <img
+                            src={photo}
+                            alt={`Review photo ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg hover:opacity-80 transition-opacity"
+                          />
+                          {index === 2 && review.photos.length > 3 && (
+                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                              <span className="text-white text-xs font-medium">
+                                +{review.photos.length - 3}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* İşletme Yanıtı */}
                 {review.business_reply && (
                   <div className="bg-blue-50/30 rounded-lg p-2 border-l border-blue-300">
