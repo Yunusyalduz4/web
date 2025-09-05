@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import { useRealTimeAppointments } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
+import { useSocket } from '../../../../hooks/useSocket';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
