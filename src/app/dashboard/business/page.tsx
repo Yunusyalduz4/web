@@ -3,17 +3,23 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../utils/trpcClient';
 import { usePushNotifications } from '../../../hooks/usePushNotifications';
-import { useSocket } from '../../../hooks/useSocket';
 import { useState, useMemo, useEffect } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import WeeklySlotView from '../../../components/WeeklySlotView';
 import NotificationsButton from '../../../components/NotificationsButton';
+import { useRealTimeAppointments, useRealTimeBusiness } from '../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
 
 export default function BusinessDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
   const userId = session?.user.id;
   const businessId = session?.user?.businessId;
+
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setAppointmentCallbacks } = useRealTimeAppointments(undefined, businessId);
+  const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness(businessId);
 
   // İşletme bilgilerini getir
   const { data: businesses } = trpc.business.getBusinesses.useQuery();
@@ -42,31 +48,39 @@ export default function BusinessDashboard() {
     subscribe
   } = usePushNotifications(businessId || undefined);
 
-  // Socket.io hook'u
-  const { isConnected: socketConnected, events: socketEvents } = useSocket();
-
-  // Appointments'ı yenileme event'ini dinle
+  // WebSocket callback'lerini ayarla
   useEffect(() => {
-    let refreshTimer: NodeJS.Timeout;
-
-    const handleRefreshAppointments = (event: CustomEvent) => {
-      if (event.detail.businessId === businessId) {
-        // Debouncing - çok sık yenileme yapmasın
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(() => {
-          console.log('🔄 Appointments yenileniyor...');
-          refetchAppointments();
-        }, 200); // 200ms debounce
+    setAppointmentCallbacks({
+      onAppointmentCreated: () => {
+        console.log('🔄 İşletme - Randevu oluşturuldu - liste güncelleniyor');
+        refetchAppointments();
+      },
+      onAppointmentUpdated: () => {
+        console.log('🔄 İşletme - Randevu güncellendi - liste güncelleniyor');
+        refetchAppointments();
+      },
+      onAppointmentCancelled: () => {
+        console.log('🔄 İşletme - Randevu iptal edildi - liste güncelleniyor');
+        refetchAppointments();
+      },
+      onAppointmentCompleted: () => {
+        console.log('🔄 İşletme - Randevu tamamlandı - liste güncelleniyor');
+        refetchAppointments();
       }
-    };
+    });
 
-    window.addEventListener('refreshAppointments', handleRefreshAppointments as EventListener);
-
-    return () => {
-      clearTimeout(refreshTimer);
-      window.removeEventListener('refreshAppointments', handleRefreshAppointments as EventListener);
-    };
-  }, [businessId, refetchAppointments]);
+    setBusinessCallbacks({
+      onBusinessUpdated: () => {
+        console.log('🔄 İşletme bilgileri güncellendi');
+      },
+      onServiceUpdated: () => {
+        console.log('🔄 Hizmetler güncellendi');
+      },
+      onEmployeeUpdated: () => {
+        console.log('🔄 Çalışanlar güncellendi');
+      }
+    });
+  }, [setAppointmentCallbacks, setBusinessCallbacks, refetchAppointments]);
 
   // Aktif randevuları hesapla (pending + confirmed)
   const activeAppointments = appointments?.filter((a: any) => 
@@ -143,7 +157,21 @@ export default function BusinessDashboard() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
         <div className="flex items-center justify-between">
-          <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="flex items-center gap-2">
+            <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+            {/* WebSocket Durumu */}
+            <div className="flex items-center gap-1">
+              {isConnecting && (
+                <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" title="Bağlanıyor..."></div>
+              )}
+              {isConnected && (
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+              )}
+              {socketError && (
+                <div className="w-1.5 h-1.5 bg-red-400 rounded-full" title={`Hata: ${socketError}`}></div>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <NotificationsButton userType="business" />
             <button onClick={() => router.push('/dashboard')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs shadow-sm">

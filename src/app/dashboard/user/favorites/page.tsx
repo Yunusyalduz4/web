@@ -3,12 +3,18 @@ import { trpc } from '../../../../utils/trpcClient';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 // Iconlar: Fluent tarzında inline SVG kullanımı (paket bağımlılığı olmadan)
+import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function FavoritesPage() {
   const router = useRouter();
   const { data: favorites, isLoading } = trpc.favorites.list.useQuery();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'favorites'>('recent');
+
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness();
 
   const list = useMemo(() => {
     let l = (favorites || []).map((b: any) => ({

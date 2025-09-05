@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 // Iconlar: Fluent stilinde inline SVG'ler kullanılacak
 import Map from '../../../../components/Map';
 import Hero from '../../../../components/ui/Hero';
+import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function UserBusinessesPage() {
   const [view, setView] = useState<'list' | 'map'>('list');
@@ -19,6 +21,10 @@ export default function UserBusinessesPage() {
   const [hasEmail, setHasEmail] = useState(false);
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
 
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness();
+
   // Kullanıcı konumunu al
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -29,6 +35,25 @@ export default function UserBusinessesPage() {
       );
     }
   }, []);
+
+  // WebSocket callback'lerini ayarla
+  useEffect(() => {
+    setBusinessCallbacks({
+      onBusinessUpdated: () => {
+        console.log('🔄 İşletme listesi güncellendi');
+        // İşletme listesini yenile
+        window.location.reload();
+      },
+      onServiceUpdated: () => {
+        console.log('🔄 Hizmetler güncellendi');
+        window.location.reload();
+      },
+      onEmployeeUpdated: () => {
+        console.log('🔄 Çalışanlar güncellendi');
+        window.location.reload();
+      }
+    });
+  }, [setBusinessCallbacks]);
 
   // Cinsiyet filtresi ile işletmeleri çek
   const { data: businesses, isLoading } = trpc.user.getBusinessesWithGenderFilter.useQuery({
@@ -111,7 +136,21 @@ export default function UserBusinessesPage() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="flex items-center gap-3">
+            <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+            {/* WebSocket Durumu */}
+            <div className="flex items-center gap-1">
+              {isConnecting && (
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" title="Bağlanıyor..."></div>
+              )}
+              {isConnected && (
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+              )}
+              {socketError && (
+                <div className="w-2 h-2 bg-red-400 rounded-full" title={`Hata: ${socketError}`}></div>
+              )}
+            </div>
+          </div>
           <button
             onClick={() => router.push('/dashboard/user/favorites')}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 border border-white/40 text-gray-900 text-sm shadow-sm"

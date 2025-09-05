@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { trpc } from '../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
+import { useWebSocket } from '../contexts/WebSocketContext';
 import { useSocket } from '../hooks/useSocket';
 
 interface WeeklySlotViewProps {

@@ -3,6 +3,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../utils/trpcClient';
 import { useEffect, useMemo, useState } from 'react';
+import { useRealTimeAppointments, useRealTimeReviews, useRealTimeBusiness, useRealTimeNotifications } from '../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
 
 // Admin panel kategorileri
 type AdminTab = 
@@ -22,6 +24,13 @@ export default function AdminDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
   const isAdmin = session?.user.role === 'admin';
+
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setAppointmentCallbacks } = useRealTimeAppointments();
+  const { setCallbacks: setReviewCallbacks } = useRealTimeReviews();
+  const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness();
+  const { setCallbacks: setNotificationCallbacks } = useRealTimeNotifications();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +55,58 @@ export default function AdminDashboard() {
     if (session && !isAdmin) router.push('/unauthorized');
   }, [session, isAdmin, router]);
 
+  // WebSocket callback'lerini ayarla
+  useEffect(() => {
+    setAppointmentCallbacks({
+      onAppointmentCreated: () => {
+        console.log('🔄 Admin - Randevu oluşturuldu - veriler güncelleniyor');
+        // Tüm admin verilerini yenile
+        window.location.reload(); // Admin için basit yenileme
+      },
+      onAppointmentUpdated: () => {
+        console.log('🔄 Admin - Randevu güncellendi - veriler güncelleniyor');
+        window.location.reload();
+      },
+      onAppointmentCancelled: () => {
+        console.log('🔄 Admin - Randevu iptal edildi - veriler güncelleniyor');
+        window.location.reload();
+      }
+    });
+
+    setReviewCallbacks({
+      onReviewCreated: () => {
+        console.log('🔄 Admin - Yorum oluşturuldu - veriler güncelleniyor');
+        window.location.reload();
+      },
+      onReviewReplied: () => {
+        console.log('🔄 Admin - Yorum yanıtlandı - veriler güncelleniyor');
+        window.location.reload();
+      }
+    });
+
+    setBusinessCallbacks({
+      onBusinessUpdated: () => {
+        console.log('🔄 Admin - İşletme güncellendi - veriler güncelleniyor');
+        window.location.reload();
+      },
+      onServiceUpdated: () => {
+        console.log('🔄 Admin - Hizmet güncellendi - veriler güncelleniyor');
+        window.location.reload();
+      },
+      onEmployeeUpdated: () => {
+        console.log('🔄 Admin - Çalışan güncellendi - veriler güncelleniyor');
+        window.location.reload();
+      }
+    });
+
+    setNotificationCallbacks({
+      onNotificationSent: () => {
+        console.log('🔄 Admin - Bildirim gönderildi - veriler güncelleniyor');
+        window.location.reload();
+      }
+    });
+  }, [setAppointmentCallbacks, setReviewCallbacks, setBusinessCallbacks, setNotificationCallbacks]);
+
   if (!session) {
     return (
       <main className="flex items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -65,6 +126,18 @@ export default function AdminDashboard() {
             </div>
             <div className="text-xs text-gray-500 bg-white/60 px-2 py-1 rounded-full">
               {session.user.email}
+            </div>
+            {/* WebSocket Durumu */}
+            <div className="flex items-center gap-1">
+              {isConnecting && (
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" title="Bağlanıyor..."></div>
+              )}
+              {isConnected && (
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+              )}
+              {socketError && (
+                <div className="w-2 h-2 bg-red-400 rounded-full" title={`Hata: ${socketError}`}></div>
+              )}
             </div>
           </div>
           

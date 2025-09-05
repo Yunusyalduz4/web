@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { trpc } from '../../../../utils/trpcClient';
 import { useMemo, useState, useEffect } from 'react';
 import { skipToken } from '@tanstack/react-query';
-import { useSocket } from '../../../../hooks/useSocket';
+import { useRealTimeAppointments } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",

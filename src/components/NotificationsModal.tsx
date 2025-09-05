@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Bell, X, Check, Clock, AlertCircle } from 'lucide-react';
+import { useRealTimeNotifications } from '../hooks/useRealTimeUpdates';
 
 interface Notification {
   id: string;
@@ -22,12 +23,31 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // WebSocket entegrasyonu
+  const userId = session?.user?.id;
+  const businessId = session?.user?.businessId;
+  const { setCallbacks: setNotificationCallbacks } = useRealTimeNotifications(userId, businessId);
 
   useEffect(() => {
     if (isOpen && session) {
       fetchNotifications();
     }
   }, [isOpen, session]);
+
+  // WebSocket callback'lerini ayarla
+  useEffect(() => {
+    setNotificationCallbacks({
+      onNotificationSent: () => {
+        console.log('🔄 Yeni bildirim geldi - liste güncelleniyor');
+        fetchNotifications();
+      },
+      onNotificationRead: () => {
+        console.log('🔄 Bildirim okundu - liste güncelleniyor');
+        fetchNotifications();
+      }
+    });
+  }, [setNotificationCallbacks]);
 
   const fetchNotifications = async () => {
     if (!session?.user?.id) return;

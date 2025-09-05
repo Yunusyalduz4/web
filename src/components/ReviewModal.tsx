@@ -1,7 +1,8 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '../utils/trpcClient';
 import StarRating from './StarRating';
+import { useWebSocket } from '../contexts/WebSocketContext';
 
 // Helper functions
 const fileToBase64 = (file: File): Promise<string> => {
@@ -78,9 +79,26 @@ export default function ReviewModal({
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [error, setError] = useState('');
+  
+  // WebSocket entegrasyonu
+  const { isConnected, emit } = useWebSocket();
 
   const createReviewMutation = trpc.review.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // WebSocket ile yorum oluşturulduğunu bildir
+      if (isConnected) {
+        emit('review:created', {
+          reviewId: data.id,
+          appointmentId: appointmentId,
+          businessName: businessName,
+          serviceName: serviceName,
+          employeeName: employeeName,
+          rating: serviceRating,
+          comment: comment,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       onReviewSubmitted();
       onClose();
       // Reset form

@@ -8,6 +8,8 @@ import React from 'react';
 import { handleLogout } from '../../../../utils/authUtils';
 import { useUserPushNotifications } from '../../../../hooks/useUserPushNotifications';
 import NotificationsButton from '../../../../components/NotificationsButton';
+import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function UserProfilePage() {
   const { data: session } = useSession();
@@ -27,6 +29,10 @@ export default function UserProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
+  
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setReviewCallbacks } = useRealTimeReviews(userId);
   
   // Push notification hook
   const { isSupported, isSubscribed, isLoading: pushLoading, error: pushError, subscribe, unsubscribe } = useUserPushNotifications();

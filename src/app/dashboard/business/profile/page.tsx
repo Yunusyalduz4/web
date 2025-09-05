@@ -7,6 +7,8 @@ import { skipToken } from '@tanstack/react-query';
 import React from 'react';
 import { usePushNotifications } from '../../../../hooks/usePushNotifications';
 import { handleLogout } from '../../../../utils/authUtils';
+import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function BusinessProfilePage() {
   const { data: session } = useSession();

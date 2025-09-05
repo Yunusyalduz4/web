@@ -3,9 +3,11 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import ReviewModal from '../../../components/ReviewModal';
 import NotificationsButton from '../../../components/NotificationsButton';
+import { useRealTimeAppointments, useRealTimeReviews } from '../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -22,6 +24,11 @@ export default function UserDashboard() {
   const { data: appointments, isLoading } = trpc.user.appointmentHistory.useQuery(userId ? { userId } : skipToken);
   const { data: userReviews } = trpc.review.getByUser.useQuery(userId ? { userId } : skipToken);
   const cancelMutation = trpc.appointment.cancelAppointment.useMutation();
+  
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setAppointmentCallbacks } = useRealTimeAppointments(userId);
+  const { setCallbacks: setReviewCallbacks } = useRealTimeReviews(userId);
   
   // Review modal state
   const [reviewModal, setReviewModal] = useState<{
@@ -73,6 +80,36 @@ export default function UserDashboard() {
     return list;
   }, [appointments, historySearch, historyDate, historyStatus]);
 
+  // WebSocket callback'lerini ayarla
+  useEffect(() => {
+    setAppointmentCallbacks({
+      onAppointmentCreated: () => {
+        console.log('🔄 Randevu oluşturuldu - liste güncelleniyor');
+      },
+      onAppointmentUpdated: () => {
+        console.log('🔄 Randevu güncellendi - liste güncelleniyor');
+      },
+      onAppointmentCancelled: () => {
+        console.log('🔄 Randevu iptal edildi - liste güncelleniyor');
+      },
+      onAppointmentCompleted: () => {
+        console.log('🔄 Randevu tamamlandı - liste güncelleniyor');
+      }
+    });
+
+    setReviewCallbacks({
+      onReviewCreated: () => {
+        console.log('🔄 Yorum oluşturuldu - liste güncelleniyor');
+      },
+      onReviewReplied: () => {
+        console.log('🔄 Yorum yanıtlandı - liste güncelleniyor');
+      },
+      onReviewStatusUpdated: () => {
+        console.log('🔄 Yorum durumu güncellendi - liste güncelleniyor');
+      }
+    });
+  }, [setAppointmentCallbacks, setReviewCallbacks]);
+
   const handleCancel = async (id: string) => {
     if (!userId) return;
     if (!confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) return;
@@ -113,7 +150,21 @@ export default function UserDashboard() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="flex items-center gap-3">
+            <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+            {/* WebSocket Durumu */}
+            <div className="flex items-center gap-1">
+              {isConnecting && (
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" title="Bağlanıyor..."></div>
+              )}
+              {isConnected && (
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+              )}
+              {socketError && (
+                <div className="w-2 h-2 bg-red-400 rounded-full" title={`Hata: ${socketError}`}></div>
+              )}
+            </div>
+          </div>
           <div className="inline-flex items-center gap-2">
             <NotificationsButton userType="user" />
             <button

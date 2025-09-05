@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { trpc } from '../../../../utils/trpcClient';
 import { useState } from 'react';
 import { skipToken } from '@tanstack/react-query';
+import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function BusinessServicesPage() {
   const { data: session } = useSession();

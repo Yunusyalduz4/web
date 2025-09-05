@@ -3,6 +3,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { trpc } from '../../../../utils/trpcClient';
 import { useState, useEffect } from 'react';
+import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
+import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function BusinessAnalyticsPage() {
   const { data: session } = useSession();
