@@ -7,9 +7,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+  // Production'da da test edebilmek için bu kontrolü kaldırıyoruz
+  // if (process.env.NODE_ENV === 'production') {
+  //   return res.status(403).json({ error: 'Forbidden' });
+  // }
 
   try {
     const { businessId } = req.body as { businessId?: string };
