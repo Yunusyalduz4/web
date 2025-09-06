@@ -211,7 +211,25 @@ export default function BusinessDashboard() {
       {/* Business Mini Card */}
       <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-4 shadow mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center">🏢</div>
+          {business.profile_image_url && business.profile_image_approved ? (
+            <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+              <img 
+                src={business.profile_image_url} 
+                alt={business.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Resim yüklenemezse fallback ikon göster
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling!.style.display = 'flex';
+                }}
+              />
+              <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-lg" style={{ display: 'none' }}>
+                🏢
+              </div>
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center">🏢</div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="text-sm font-extrabold text-gray-900 truncate">{business.name}</div>
             <div className="flex items-center gap-2 mt-0.5">
@@ -246,25 +264,25 @@ export default function BusinessDashboard() {
       <div className="grid grid-cols-3 gap-2 mb-4">
         <ActionChip title="Düzenle" onClick={() => router.push('/dashboard/business/edit')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="1.6"/></svg>
-        } />
+        } borderColor="border-l-blue-500" />
         <ActionChip title="Hizmet" onClick={() => router.push('/dashboard/business/services')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
-        } />
+        } borderColor="border-l-green-500" />
         <ActionChip title="Çalışan" onClick={() => router.push('/dashboard/business/employees')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
-        } />
+        } borderColor="border-l-purple-500" />
         <ActionChip title="Randevu" onClick={() => router.push('/dashboard/business/appointments')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-        } />
+        } borderColor="border-l-orange-500" />
         <ActionChip title="Analitik" onClick={() => router.push('/dashboard/business/analytics')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z"/></svg>
-        } />
+        } borderColor="border-l-indigo-500" />
         <ActionChip title="Profil" onClick={() => router.push('/dashboard/business/profile')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
-        } />
+        } borderColor="border-l-pink-500" />
         <ActionChip title="Yorum" onClick={() => router.push('/dashboard/business/reviews')} icon={
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-        } />
+        } borderColor="border-l-yellow-500" />
       </div>
 
       {/* 7 Günlük Slot Görünümü */}
@@ -287,9 +305,9 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
   );
 }
 
-function ActionChip({ title, onClick, icon }: { title: string; onClick: () => void; icon: React.ReactNode }) {
+function ActionChip({ title, onClick, icon, borderColor = "border-l-gray-300" }: { title: string; onClick: () => void; icon: React.ReactNode; borderColor?: string }) {
   return (
-    <button onClick={onClick} className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/70 backdrop-blur-md border border-white/50 text-gray-900 text-[11px] font-semibold shadow hover:shadow-md">
+    <button onClick={onClick} className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/70 backdrop-blur-md border border-white/50 ${borderColor} border-l-4 text-gray-900 text-[11px] font-semibold shadow hover:shadow-md`}>
       {icon}
       <span>{title}</span>
     </button>

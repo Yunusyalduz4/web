@@ -34,6 +34,8 @@ export default function BookAppointmentPage() {
   const [success, setSuccess] = useState('');
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [customDate, setCustomDate] = useState('');
 
   // Tek çalışan varsa otomatik seçim yap
   useEffect(() => {
@@ -97,6 +99,34 @@ export default function BookAppointmentPage() {
   // Hizmet kaldırma fonksiyonu
   const removeService = (index: number) => {
     setSelectedServices(selectedServices.filter((_, i) => i !== index));
+  };
+
+  // Özel tarih seçme fonksiyonu
+  const handleCustomDateSelect = () => {
+    if (!customDate) return;
+    
+    const selectedDate = new Date(customDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Geçmiş tarih kontrolü
+    if (selectedDate < today) {
+      setError('Geçmiş bir tarih seçemezsiniz. Lütfen bugün veya gelecek bir tarih seçin.');
+      return;
+    }
+    
+    // 6 ay sonrası kontrolü
+    const sixMonthsLater = new Date();
+    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+    if (selectedDate > sixMonthsLater) {
+      setError('En fazla 6 ay sonrasına kadar randevu alabilirsiniz.');
+      return;
+    }
+    
+    setDate(customDate);
+    setTime('');
+    setShowCustomDatePicker(false);
+    setError('');
   };
 
   // Çalışan seçimi güncelleme
@@ -332,26 +362,26 @@ export default function BookAppointmentPage() {
           {selectedServices.length > 0 ? (
             <div className="space-y-3">
               {selectedServices.map((selection, index) => (
-                <div key={index} className="group relative p-4 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-md transition-all duration-200">
+                <div key={index} className="group relative p-3 rounded-xl bg-white/80 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-md transition-all duration-200">
                   {/* Hizmet Bilgisi */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white text-sm font-bold grid place-items-center">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white text-xs font-bold grid place-items-center">
                           {index + 1}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 text-lg">{selection.service?.name}</h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <h3 className="font-semibold text-gray-900 text-sm">{selection.service?.name}</h3>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
                             <span className="flex items-center gap-1">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-rose-500">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-rose-500">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
                                 <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                               </svg>
                               {selection.service?.duration_minutes} dk
                             </span>
                             <span className="flex items-center gap-1">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-fuchsia-500">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-fuchsia-500">
                                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                               </svg>
                               ₺{selection.service?.price}
@@ -365,40 +395,41 @@ export default function BookAppointmentPage() {
                     <button
                       type="button"
                       onClick={() => removeService(index)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95"
+                      className="opacity-60 hover:opacity-100 transition-opacity duration-200 p-1.5 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95"
+                      title="Hizmeti kaldır"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                         <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                       </svg>
                     </button>
                   </div>
 
                   {/* Çalışan Seçimi */}
-                  <div className="ml-11">
-                    <label className="flex flex-col gap-2 text-gray-700 font-medium">
-                      <span className="text-sm text-gray-600">Çalışan Seçin</span>
+                  <div className="ml-8">
+                    <label className="flex flex-col gap-1 text-gray-700 font-medium">
+                      <span className="text-xs text-gray-600">Çalışan Seçin</span>
                       <div className="relative">
                         <select
                           value={selection.employeeId}
                           onChange={(e) => updateEmployeeSelection(index, e.target.value)}
                           required
                           disabled={!selection.serviceId || (employees && employees.length === 1)}
-                          className="w-full border border-white/60 bg-white/80 text-gray-900 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition disabled:bg-gray-100 appearance-none cursor-pointer"
+                          className="w-full border border-white/60 bg-white/80 text-gray-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-100 transition disabled:bg-gray-100 appearance-none cursor-pointer"
                         >
                           <option value="">Çalışan seçiniz</option>
                           {selection.serviceId && getEmployeesForService(selection.serviceId).map((e: any) => (
                             <option key={e.id} value={e.id}>{e.name}</option>
                           ))}
                         </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-400">
                             <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                           </svg>
                         </div>
                       </div>
                       {employees && employees.length === 1 && (
                         <span className="text-xs text-blue-600 flex items-center gap-1">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                           </svg>
                           Tek çalışan olduğu için otomatik seçildi
@@ -408,13 +439,13 @@ export default function BookAppointmentPage() {
 
                     {/* Seçili Çalışan Bilgisi */}
                     {selection.employee && (
-                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-fuchsia-50 to-indigo-50 border border-fuchsia-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-white text-sm font-bold grid place-items-center">
+                      <div className="mt-2 p-2 rounded-lg bg-gradient-to-r from-fuchsia-50 to-indigo-50 border border-fuchsia-200">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-white text-xs font-bold grid place-items-center">
                             {selection.employee.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-medium text-fuchsia-900">{selection.employee.name}</p>
+                            <p className="font-medium text-fuchsia-900 text-sm">{selection.employee.name}</p>
                             <p className="text-xs text-fuchsia-700">Seçili çalışan</p>
                           </div>
                         </div>
@@ -522,16 +553,137 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
+        {/* Özel Tarih Seçme Modal */}
+        {showCustomDatePicker && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-900">Özel Tarih Seçin</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomDatePicker(false);
+                      setCustomDate('');
+                      setError('');
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100 transition"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">İstediğiniz tarihi seçin (bugünden 6 ay sonrasına kadar)</p>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tarih Seçin
+                    </label>
+                    <input
+                      type="date"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      max={new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-4 focus:ring-fuchsia-100 focus:border-fuchsia-300 transition"
+                    />
+                  </div>
+                  
+                  {customDate && (
+                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-600">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/>
+                          <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
+                          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                        <span className="text-sm font-medium text-blue-800">
+                          Seçilen Tarih: {new Date(customDate).toLocaleDateString('tr-TR', { 
+                            weekday: 'long', 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-gray-100 bg-gray-50">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomDatePicker(false);
+                      setCustomDate('');
+                      setError('');
+                    }}
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCustomDateSelect}
+                    disabled={!customDate}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                  >
+                    Tarihi Seç
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tarih ve Saat Seçimi */}
         {selectedServices.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800">Tarih ve Saat</h2>
             
+            {/* Seçilen Tarih Bilgisi */}
+            {date && (
+              <div className="p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">📅</span>
+                  <span className="text-sm font-medium text-green-800">
+                    Seçilen Tarih: <strong>{new Date(date).toLocaleDateString('tr-TR', { 
+                      weekday: 'long', 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}</strong>
+                  </span>
+                </div>
+                <div className="text-xs text-green-600 mt-1">
+                  {availableTimes.length > 0 ? (
+                    <>
+                      Bu tarihte <strong>{availableTimes.filter(t => !isSlotBusy(t)).length}</strong> müsait saat bulunuyor.
+                    </>
+                  ) : (
+                    <>
+                      Bu tarihte müsait saat bulunmuyor. Lütfen başka bir tarih seçin.
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Tek çalışan müsaitlik bilgisi */}
             {employees && employees.length === 1 && (
               <div className="p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
                 <div className="flex items-center gap-2">
-                  <span className="text-blue-600">📅</span>
+                  <span className="text-blue-600">👤</span>
                   <span className="text-sm font-medium text-blue-800">
                     Çalışan: <strong>{employees[0].name}</strong>
                   </span>
@@ -539,16 +691,16 @@ export default function BookAppointmentPage() {
                 <div className="text-xs text-blue-600 mt-1">
                   {availableTimes.length > 0 ? (
                     <>
-                      Bu çalışan <strong>{date ? new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'seçilen günde'}</strong> müsait.
+                      Bu çalışan seçilen tarihte müsait.
                       <span className="ml-1">
                         ({availableTimes.filter(t => !isSlotBusy(t)).length} müsait saat)
                       </span>
                     </>
                   ) : (
                     <>
-                      Bu çalışan <strong>{date ? new Date(date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'seçilen günde'}</strong> müsait değil.
+                      Bu çalışan seçilen tarihte müsait değil.
                       <span className="ml-1 text-orange-600">
-                        Lütfen başka bir gün seçin.
+                        Lütfen başka bir tarih seçin.
                       </span>
                     </>
                   )}
@@ -556,6 +708,24 @@ export default function BookAppointmentPage() {
               </div>
             )}
             
+            {/* Tarih Seçimi Header */}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700">Tarih Seçin</h3>
+              <button
+                type="button"
+                onClick={() => setShowCustomDatePicker(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 border border-white/40 text-sm text-gray-700 hover:bg-white/80 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Özel Tarih
+              </button>
+            </div>
+
             {/* Tarih slotları (yatay kaydırmalı) */}
             <div className="-mx-4 px-4">
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -665,7 +835,12 @@ export default function BookAppointmentPage() {
                               }
                               return;
                             }
-                            setTime(t);
+                            // Toggle özelliği: Eğer aynı saat seçiliyse seçimi kaldır
+                            if (selected) {
+                              setTime('');
+                            } else {
+                              setTime(t);
+                            }
                             setError(''); // Hata mesajını temizle
                           }}
                           className={`px-3 py-2 rounded-lg text-sm transition border ${

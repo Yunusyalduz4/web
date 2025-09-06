@@ -184,53 +184,38 @@ export default function UserBusinessesPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-gray-700">Cinsiyet:</span>
           <div className="flex items-center gap-1">
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              genderFilter === 'all' 
-                ? 'border-purple-500 bg-purple-50 text-purple-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="genderFilterQuick"
-                value="all"
-                checked={genderFilter === 'all'}
-                onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                genderFilter === 'all' 
+                  ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setGenderFilter('all')}
+            >
               <span>👥 Tümü</span>
-            </label>
+            </button>
             
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              genderFilter === 'male' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="genderFilterQuick"
-                value="male"
-                checked={genderFilter === 'male'}
-                onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                genderFilter === 'male' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setGenderFilter(genderFilter === 'male' ? 'all' : 'male')}
+            >
               <span>👨 Erkek</span>
-            </label>
+            </button>
             
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              genderFilter === 'female' 
-                ? 'border-pink-500 bg-pink-50 text-pink-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="genderFilterQuick"
-                value="female"
-                checked={genderFilter === 'female'}
-                onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                genderFilter === 'female' 
+                  ? 'border-pink-500 bg-pink-50 text-pink-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setGenderFilter(genderFilter === 'female' ? 'all' : 'female')}
+            >
               <span>👩 Kadın</span>
-            </label>
+            </button>
           </div>
         </div>
 
@@ -238,85 +223,49 @@ export default function UserBusinessesPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-gray-700">Mesafe:</span>
           <div className="flex items-center gap-1">
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              maxDistanceKm === null
-                ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="distanceFilter"
-                value=""
-                checked={maxDistanceKm === null}
-                onChange={() => setMaxDistanceKm(null)}
-                className="hidden"
-              />
-              <span>∞ Sınırsız</span>
-            </label>
-            
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              maxDistanceKm === 2
-                ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="distanceFilter"
-                value="2"
-                checked={maxDistanceKm === 2}
-                onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                maxDistanceKm === 2
+                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setMaxDistanceKm(maxDistanceKm === 2 ? null : 2)}
+            >
               <span>📍 2 km</span>
-            </label>
+            </button>
             
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              maxDistanceKm === 5
-                ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="distanceFilter"
-                value="5"
-                checked={maxDistanceKm === 5}
-                onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                maxDistanceKm === 5
+                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setMaxDistanceKm(maxDistanceKm === 5 ? null : 5)}
+            >
               <span>📍 5 km</span>
-            </label>
+            </button>
             
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              maxDistanceKm === 10
-                ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="distanceFilter"
-                value="10"
-                checked={maxDistanceKm === 10}
-                onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                maxDistanceKm === 10
+                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setMaxDistanceKm(maxDistanceKm === 10 ? null : 10)}
+            >
               <span>📍 10 km</span>
-            </label>
+            </button>
             
-            <label className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
-              maxDistanceKm === 20
-                ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}>
-              <input
-                type="radio"
-                name="distanceFilter"
-                value="20"
-                checked={maxDistanceKm === 20}
-                onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
-                className="hidden"
-              />
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                maxDistanceKm === 20
+                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
+                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+              onClick={() => setMaxDistanceKm(maxDistanceKm === 20 ? null : 20)}
+            >
               <span>📍 20 km</span>
-            </label>
+            </button>
           </div>
         </div>
       </div>
@@ -480,7 +429,7 @@ export default function UserBusinessesPage() {
             <div>
               <label className="text-sm text-gray-600">Maksimum Mesafe</label>
               <select className="w-full border border-white/40 rounded-lg px-3 py-2 text-sm mt-1 bg-white/60 backdrop-blur-md text-gray-900" value={maxDistanceKm ?? ''} onChange={(e) => setMaxDistanceKm(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">Sınırsız</option>
+                <option value="">Filtresiz</option>
                 <option value={2}>2 km</option>
                 <option value={5}>5 km</option>
                 <option value={10}>10 km</option>

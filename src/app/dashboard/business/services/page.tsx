@@ -82,61 +82,150 @@ export default function BusinessServicesPage() {
   };
 
   return (
-    <main className="relative max-w-3xl mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/60 mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-          <button 
-            onClick={() => router.push('/dashboard/business')}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
-          >
-            <span className="text-base">←</span>
-            <span className="hidden sm:inline text-sm font-medium">Geri</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div>
+              <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+              <div className="text-xs text-gray-600">Hizmet Yönetimi</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+            <button 
+              onClick={() => { setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setEditing(false); setError(''); setSuccess(''); setFormOpen(true); }} 
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Yeni Hizmet
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-lg font-semibold text-gray-900">Hizmetler</h1>
-        <button onClick={() => { setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setEditing(false); setError(''); setSuccess(''); setFormOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow hover:shadow-lg">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          Yeni Hizmet
-        </button>
+        
+        {/* Hizmetler Sayısı */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-white/50 text-sm font-semibold text-gray-900">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
+            </div>
+            <div>
+              <div className="text-sm font-bold">Hizmetler</div>
+              <div className="text-xs text-gray-600">{services?.length || 0} hizmet</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Create/Edit Modal */}
       {formOpen && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
-          <div className="relative mx-auto my-8 max-w-lg w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{editing ? 'Hizmeti Güncelle' : 'Yeni Hizmet Ekle'}</h2>
-            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setFormOpen(false);}} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="flex flex-col gap-1 text-gray-800 font-medium">
-                  Adı
-                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
-                </label>
-                <label className="flex flex-col gap-1 text-gray-800 font-medium">
-                  Süre (dk)
-                  <input type="number" min={1} value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
-                </label>
-                <label className="flex flex-col gap-1 text-gray-800 font-medium">
-                  Fiyat (₺)
-                  <input type="number" min={0} value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-fuchsia-100 transition" />
-                </label>
-                <label className="flex flex-col gap-1 text-gray-800 font-medium md:col-span-2">
-                  Açıklama
-                  <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
-                </label>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
+          <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">{editing ? 'Hizmeti Güncelle' : 'Yeni Hizmet Ekle'}</div>
+                  <div className="text-xs text-gray-600">Hizmet bilgilerini doldurun</div>
+                </div>
               </div>
-              {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
-              {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
-              <div className="flex gap-2 mt-2">
-                <button type="submit" className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200">
-                  {editing ? 'Güncelle' : 'Ekle'}
+              <button 
+                onClick={() => setFormOpen(false)} 
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            
+            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setFormOpen(false);}} className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Hizmet Adı</label>
+                  <input 
+                    type="text" 
+                    value={form.name} 
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors" 
+                    placeholder="Hizmet adını girin"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">Süre (dk)</label>
+                    <input 
+                      type="number" 
+                      min={1} 
+                      value={form.duration_minutes} 
+                      onChange={e => setForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))} 
+                      required 
+                      className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors" 
+                      placeholder="30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">Fiyat (₺)</label>
+                    <input 
+                      type="number" 
+                      min={0} 
+                      value={form.price} 
+                      onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} 
+                      required 
+                      className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors" 
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Açıklama</label>
+                  <input 
+                    type="text" 
+                    value={form.description} 
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))} 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors" 
+                    placeholder="Hizmet açıklaması (opsiyonel)"
+                  />
+                </div>
+              </div>
+              
+              {error && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-800 text-sm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{error}</span>
+                </div>
+              )}
+              
+              {success && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 text-green-800 text-sm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{success}</span>
+                </div>
+              )}
+              
+              <div className="flex gap-2 pt-2">
+                <button 
+                  type="submit" 
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{editing ? 'Güncelle' : 'Ekle'}</span>
                 </button>
-                <button type="button" className="w-full py-3 rounded-2xl bg-white/70 border border-white/40 text-gray-800 font-semibold text-base shadow hover:shadow-md transition-all duration-200 focus:outline-none" onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}>
-                  İptal
+                <button 
+                  type="button" 
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-sm font-semibold hover:bg-white/90 transition-colors" 
+                  onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>İptal</span>
                 </button>
               </div>
             </form>
@@ -145,41 +234,121 @@ export default function BusinessServicesPage() {
       )}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 animate-pulse">
-          <span className="text-5xl mb-2">⏳</span>
-          <span className="text-lg">Hizmetler yükleniyor...</span>
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <span className="text-lg font-medium">Hizmetler yükleniyor...</span>
         </div>
       )}
-      <ul className="grid grid-cols-1 gap-3">
+      
+      <div className="space-y-3">
         {services?.map((s: any) => (
-          <li key={s.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3 hover:shadow-md transition">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">{s.name}</div>
-                {s.description && <div className="text-xs text-gray-600 truncate">{s.description}</div>}
+          <div key={s.id} className="bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm p-4 hover:shadow-md transition-all">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold">
+                  {s.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-gray-900 truncate">{s.name}</div>
+                  {s.description && <div className="text-xs text-gray-600 truncate mt-1">{s.description}</div>}
+                </div>
               </div>
-              <span className="shrink-0 px-2 py-0.5 rounded-md text-[11px] bg-white/70 border border-white/50 text-gray-900">₺{s.price}</span>
-            </div>
-            <div className="mt-1.5 flex items-center justify-between">
-              <span className="text-[11px] text-gray-600">Süre: {s.duration_minutes} dk</span>
-              <div className="flex items-center gap-4 text-[13px]">
-                <button className="text-gray-900 font-medium" onClick={() => handleEdit(s)}>Düzenle</button>
-                <button className="text-rose-700 font-medium" onClick={() => handleDelete(s.id)}>Sil</button>
+              <div className="text-right">
+                <div className="text-lg font-bold text-gray-900">₺{s.price}</div>
+                <div className="text-xs text-gray-600">{s.duration_minutes} dk</div>
               </div>
             </div>
-          </li>
+
+            {/* Detaylar */}
+            <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
+              <div className="flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <span>Süre: {s.duration_minutes} dakika</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Fiyat: ₺{s.price}</span>
+              </div>
+            </div>
+
+            {/* Aksiyon Butonları */}
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleEdit(s)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Düzenle</span>
+              </button>
+              <button 
+                onClick={() => handleDelete(s.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Sil</span>
+              </button>
+            </div>
+          </div>
         ))}
-        {(!services || services.length === 0) && !isLoading && <li className="text-gray-400 text-center">Henüz hizmet eklenmedi.</li>}
-      </ul>
-      {/* Silme onay modalı */}
+        
+        {(!services || services.length === 0) && !isLoading && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div className="text-lg font-medium text-gray-500 mb-2">Henüz hizmet eklenmedi</div>
+            <div className="text-sm text-gray-400">Yeni hizmet eklemek için yukarıdaki butona tıklayın</div>
+          </div>
+        )}
+      </div>
+      {/* Silme Onay Modalı */}
       {deleteId && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div className="relative mx-auto my-8 max-w-sm w-[90%] bg-white/70 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl p-6 flex flex-col items-center gap-4">
-            <span className="text-3xl mb-2">⚠️</span>
-            <span className="text-lg font-semibold text-gray-700 text-center">Bu hizmeti silmek istediğinize emin misiniz?</span>
-            <div className="flex gap-4 mt-4">
-              <button className="px-6 py-2 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700 transition" onClick={confirmDelete}>Evet, Sil</button>
-              <button className="px-6 py-2 rounded-xl bg-white/70 border border-white/40 text-gray-800 font-semibold hover:bg-white transition" onClick={() => setDeleteId(null)}>Vazgeç</button>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
+          <div className="relative mx-auto my-6 max-w-sm w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">Hizmeti Sil</div>
+                  <div className="text-xs text-gray-600">Bu işlem geri alınamaz</div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDeleteId(null)} 
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            
+            <div className="text-center py-4">
+              <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-500"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="text-sm font-semibold text-gray-900 mb-2">Bu hizmeti silmek istediğinize emin misiniz?</div>
+              <div className="text-xs text-gray-600">Silinen hizmet geri getirilemez ve mevcut randevular etkilenebilir.</div>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Evet, Sil</span>
+              </button>
+              <button 
+                onClick={() => setDeleteId(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-sm font-semibold hover:bg-white/90 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Vazgeç</span>
+              </button>
             </div>
           </div>
         </div>

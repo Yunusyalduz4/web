@@ -36,6 +36,20 @@ export default function BusinessAppointmentsPage() {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   
+  // Aktif randevular için filtreleme ve sayfalama
+  const [activeServiceFilters, setActiveServiceFilters] = useState<string[]>([]);
+  const [activeEmployeeFilters, setActiveEmployeeFilters] = useState<string[]>([]);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all'|'pending'|'confirmed'>('all');
+  const [activeDateFrom, setActiveDateFrom] = useState<string>('');
+  const [activeDateTo, setActiveDateTo] = useState<string>('');
+  const [activeCurrentPage, setActiveCurrentPage] = useState(1);
+  const [historyCurrentPage, setHistoryCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  
+  // Filtre kartı açık/kapalı durumu
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isHistoryFiltersOpen, setIsHistoryFiltersOpen] = useState(false);
+  
   // Optimistic updates için local state
   const [optimisticAppointments, setOptimisticAppointments] = useState<any[]>([]);
   const [updatingAppointmentId, setUpdatingAppointmentId] = useState<string | null>(null);
@@ -145,15 +159,43 @@ export default function BusinessAppointmentsPage() {
     }
   };
 
-  // Aktif randevuları hesapla (pending + confirmed)
+  // Aktif randevuları hesapla (pending + confirmed) ve filtrele
   const activeAppointments = useMemo(() => {
     const currentAppointments = optimisticAppointments.length > 0 ? optimisticAppointments : appointments;
     if (!currentAppointments) return [];
     
-    return currentAppointments.filter((a: any) => 
-      a.status === 'pending' || a.status === 'confirmed'
-    );
-  }, [optimisticAppointments, appointments]);
+    return currentAppointments.filter((a: any) => {
+      // Sadece pending ve confirmed randevular
+      if (a.status !== 'pending' && a.status !== 'confirmed') return false;
+      
+      // Status filtresi
+      if (activeStatusFilter !== 'all' && a.status !== activeStatusFilter) return false;
+      
+      // Hizmet filtresi
+      if (activeServiceFilters.length > 0) {
+        const names: string[] = Array.isArray(a.service_names) ? a.service_names : [];
+        if (!activeServiceFilters.some((s) => names.includes(s))) return false;
+      }
+      
+      // Çalışan filtresi
+      if (activeEmployeeFilters.length > 0) {
+        const names: string[] = Array.isArray(a.employee_names) ? a.employee_names : [];
+        if (!activeEmployeeFilters.some((e) => names.includes(e))) return false;
+      }
+      
+      // Tarih aralığı filtresi
+      if (activeDateFrom) {
+        const from = new Date(`${activeDateFrom}T00:00:00`).getTime();
+        if (new Date(a.appointment_datetime).getTime() < from) return false;
+      }
+      if (activeDateTo) {
+        const to = new Date(`${activeDateTo}T23:59:59`).getTime();
+        if (new Date(a.appointment_datetime).getTime() > to) return false;
+      }
+      
+      return true;
+    });
+  }, [optimisticAppointments, appointments, activeStatusFilter, activeServiceFilters, activeEmployeeFilters, activeDateFrom, activeDateTo]);
 
   const activeAppointmentsCount = activeAppointments.length;
 
@@ -186,30 +228,200 @@ export default function BusinessAppointmentsPage() {
       return true;
     });
   }, [optimisticAppointments, appointments, statusFilter, serviceFilters, employeeFilters, dateFrom, dateTo]);
+  
+  // Sayfalama hesaplamaları
+  const totalActivePages = Math.ceil(activeAppointments.length / itemsPerPage);
+  const startActiveIndex = (activeCurrentPage - 1) * itemsPerPage;
+  const endActiveIndex = startActiveIndex + itemsPerPage;
+  const paginatedActiveAppointments = activeAppointments.slice(startActiveIndex, endActiveIndex);
+  
+  const totalHistoryPages = Math.ceil(filteredHistory.length / itemsPerPage);
+  const startHistoryIndex = (historyCurrentPage - 1) * itemsPerPage;
+  const endHistoryIndex = startHistoryIndex + itemsPerPage;
+  const paginatedHistory = filteredHistory.slice(startHistoryIndex, endHistoryIndex);
 
   return (
-    <main className="relative max-w-3xl mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/60 mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-          <button 
-            onClick={() => router.push('/dashboard/business')}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
-          >
-            <span className="text-base">←</span>
-            <span className="hidden sm:inline text-sm font-medium">Geri</span>
-          </button>
-        </div>
-        <div className="mt-3 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-white/40 text-[13px] text-gray-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            Aktif randevular ({activeAppointmentsCount})
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div>
+              <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+              <div className="text-xs text-gray-600">Randevu Yönetimi</div>
+            </div>
           </div>
-          <button onClick={() => setShowHistory(true)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[13px] font-semibold shadow-sm hover:shadow-md">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            Geçmiş
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+            <button 
+              onClick={() => setShowHistory(true)} 
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Geçmiş
+            </button>
+          </div>
+        </div>
+        
+        {/* Aktif Randevular Sayısı */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-white/50 text-sm font-semibold text-gray-900">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+            </div>
+            <div>
+              <div className="text-sm font-bold">Aktif Randevular</div>
+              <div className="text-xs text-gray-600">{activeAppointmentsCount} randevu</div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Filtreleme Kartı */}
+        <div className="mt-4 bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/></svg>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">Filtreler</h2>
+            </div>
+            <button 
+              type="button"
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+            >
+              {isFiltersOpen ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
+          </div>
+          
+          {isFiltersOpen && (
+            <div className="space-y-4 mt-4">
+            {/* Hizmet Filtreleri */}
+            <div>
+              <div className="text-sm font-semibold text-gray-900 mb-3">Hizmetler</div>
+              <div className="flex flex-wrap gap-2">
+                {services?.map((s: any) => (
+                  <button 
+                    key={s.id} 
+                    onClick={() => {
+                      setActiveServiceFilters(prev => 
+                        prev.includes(s.name) ? prev.filter(n => n !== s.name) : [...prev, s.name]
+                      );
+                      setActiveCurrentPage(1);
+                    }} 
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                      activeServiceFilters.includes(s.name) 
+                        ? 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent shadow-md' 
+                        : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-rose-200'
+                    }`}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Çalışan Filtreleri */}
+            <div>
+              <div className="text-sm font-semibold text-gray-900 mb-3">Çalışanlar</div>
+              <div className="flex flex-wrap gap-2">
+                {employees?.map((e: any) => (
+                  <button 
+                    key={e.id} 
+                    onClick={() => {
+                      setActiveEmployeeFilters(prev => 
+                        prev.includes(e.name) ? prev.filter(n => n !== e.name) : [...prev, e.name]
+                      );
+                      setActiveCurrentPage(1);
+                    }} 
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                      activeEmployeeFilters.includes(e.name) 
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-md' 
+                        : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-indigo-200'
+                    }`}
+                  >
+                    {e.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Durum Filtresi */}
+            <div>
+              <div className="text-sm font-semibold text-gray-900 mb-3">Durum</div>
+              <select 
+                value={activeStatusFilter} 
+                onChange={(e) => {
+                  setActiveStatusFilter(e.target.value as any);
+                  setActiveCurrentPage(1);
+                }} 
+                className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="all">Tüm Durumlar</option>
+                <option value="pending">Bekliyor</option>
+                <option value="confirmed">Onaylandı</option>
+              </select>
+            </div>
+            
+            {/* Tarih Filtreleri */}
+            <div>
+              <div className="text-sm font-semibold text-gray-900 mb-3">Tarih Aralığı</div>
+              <div className="space-y-3">
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Başlangıç Tarihi</div>
+                  <input 
+                    type="date" 
+                    value={activeDateFrom} 
+                    onChange={(e) => {
+                      setActiveDateFrom(e.target.value);
+                      setActiveCurrentPage(1);
+                    }} 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200" 
+                    placeholder="Başlangıç" 
+                  />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Bitiş Tarihi</div>
+                  <input 
+                    type="date" 
+                    value={activeDateTo} 
+                    onChange={(e) => {
+                      setActiveDateTo(e.target.value);
+                      setActiveCurrentPage(1);
+                    }} 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200" 
+                    placeholder="Bitiş" 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Sıfırla Butonu */}
+            <div className="flex justify-center pt-2">
+              <button 
+                onClick={() => { 
+                  setActiveServiceFilters([]); 
+                  setActiveEmployeeFilters([]); 
+                  setActiveStatusFilter('all'); 
+                  setActiveDateFrom(''); 
+                  setActiveDateTo(''); 
+                  setActiveCurrentPage(1);
+                }} 
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm font-medium text-gray-700 hover:bg-white/90 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Filtreleri Sıfırla
+              </button>
+            </div>
+            </div>
+          )}
         </div>
       </div>
       {isLoading && (
@@ -218,25 +430,31 @@ export default function BusinessAppointmentsPage() {
           <span className="text-lg">Randevular yükleniyor...</span>
         </div>
       )}
-      <div className="grid gap-3">
-        {/* Sadece aktif randevuları göster (pending + confirmed) */}
-        {activeAppointments?.map((a: any) => (
+      <div className="space-y-3">
+        {/* Sayfalanmış aktif randevuları göster */}
+        {paginatedActiveAppointments?.map((a: any) => (
           <div
             key={a.id}
-            className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3"
+            className="bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm p-4 hover:shadow-md transition-all"
           >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
-                <div className="text-[12px] text-gray-600 flex items-center gap-1" suppressHydrationWarning>
-                  <span>📅</span>
-                  <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}</span>
-                  <span className="mx-1 text-gray-400">•</span>
-                  <span>🕐</span>
-                  <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</span>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-sm font-bold">
+                  {a.user_name ? a.user_name.charAt(0).toUpperCase() : 'M'}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
+                  <div className="text-xs text-gray-600 flex items-center gap-1" suppressHydrationWarning>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}</span>
+                    <span className="mx-1 text-gray-400">•</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</span>
+                  </div>
                 </div>
               </div>
-              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] border ${
+              <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border ${
                 a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                 a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-200' :
                 a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
@@ -249,64 +467,147 @@ export default function BusinessAppointmentsPage() {
               </span>
             </div>
 
-            <div className="space-y-1.5 mb-2">
-              <div className="text-[13px] text-gray-800 truncate">Hizmet: {a.service_names && a.service_names.length > 0 ? a.service_names.join(', ') : '—'}</div>
-              <div className="text-[13px] text-gray-800 truncate">Çalışan: {a.employee_names && a.employee_names.length > 0 ? a.employee_names.join(', ') : '—'}</div>
+            {/* Detaylar */}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm text-gray-800">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span className="font-medium">Hizmet:</span>
+                <span>{a.service_names && a.service_names.length > 0 ? a.service_names.join(', ') : '—'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-800">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+                <span className="font-medium">Çalışan:</span>
+                <span>{a.employee_names && a.employee_names.length > 0 ? a.employee_names.join(', ') : '—'}</span>
+              </div>
             </div>
 
-            <div className="flex gap-6">
+            {/* Aksiyon Butonları */}
+            <div className="flex gap-2">
               {a.status === 'pending' && (
                 <>
                   <button 
-                    className={`text-[13px] font-medium transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                       updatingAppointmentId === a.id 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-emerald-700 hover:text-emerald-800'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg'
                     }`} 
                     onClick={() => handleStatus(a.id, 'confirmed')}
                     disabled={updatingAppointmentId === a.id}
                   >
-                    {updatingAppointmentId === a.id ? 'Güncelleniyor...' : 'Onayla'}
+                    {updatingAppointmentId === a.id ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span>Güncelleniyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span>Onayla</span>
+                      </>
+                    )}
                   </button>
                   <button 
-                    className={`text-[13px] font-medium transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                       updatingAppointmentId === a.id 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-rose-700 hover:text-rose-800'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg'
                     }`} 
                     onClick={() => handleStatus(a.id, 'cancelled')}
                     disabled={updatingAppointmentId === a.id}
                   >
-                    {updatingAppointmentId === a.id ? 'Güncelleniyor...' : 'İptal Et'}
+                    {updatingAppointmentId === a.id ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span>Güncelleniyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span>İptal Et</span>
+                      </>
+                    )}
                   </button>
                 </>
               )}
               {a.status === 'confirmed' && (
                 <button 
-                  className={`text-[13px] font-medium transition-all ${
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                     updatingAppointmentId === a.id 
-                      ? 'text-gray-400 cursor-not-allowed' 
-                      : 'text-indigo-700 hover:text-indigo-800'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-md hover:shadow-lg'
                   }`} 
                   onClick={() => handleStatus(a.id, 'completed')}
                   disabled={updatingAppointmentId === a.id}
                 >
-                  {updatingAppointmentId === a.id ? 'Güncelleniyor...' : 'Tamamlandı'}
+                  {updatingAppointmentId === a.id ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                      <span>Güncelleniyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span>Tamamlandı Olarak İşaretle</span>
+                    </>
+                  )}
                 </button>
               )}
               {a.status === 'completed' && (
-                <div className="text-[13px] text-gray-700">Tamamlandı</div>
+                <div className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-100 text-green-800 text-sm font-semibold">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>Tamamlandı</span>
+                </div>
               )}
               {a.status === 'cancelled' && (
-                <div className="text-[13px] text-gray-600">İptal Edildi</div>
+                <div className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-100 text-red-800 text-sm font-semibold">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>İptal Edildi</span>
+                </div>
               )}
             </div>
           </div>
         ))}
-        {(!activeAppointments || activeAppointments.length === 0) && !isLoading && (
+        {(!paginatedActiveAppointments || paginatedActiveAppointments.length === 0) && !isLoading && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500 animate-fade-in">
             <span className="text-5xl mb-2">📭</span>
             <span className="text-lg">Aktif randevu yok</span>
+          </div>
+        )}
+        
+        {/* Aktif Randevular Sayfalama */}
+        {totalActivePages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              onClick={() => setActiveCurrentPage(1)}
+              disabled={activeCurrentPage === 1}
+              className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+            >
+              İlk
+            </button>
+            <button
+              onClick={() => setActiveCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={activeCurrentPage === 1}
+              className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+            >
+              Önceki
+            </button>
+            <span className="px-3 py-2 text-xs text-gray-700 bg-white/60 rounded-xl">
+              {activeCurrentPage} / {totalActivePages}
+            </span>
+            <button
+              onClick={() => setActiveCurrentPage(prev => Math.min(totalActivePages, prev + 1))}
+              disabled={activeCurrentPage === totalActivePages}
+              className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+            >
+              Sonraki
+            </button>
+            <button
+              onClick={() => setActiveCurrentPage(totalActivePages)}
+              disabled={activeCurrentPage === totalActivePages}
+              className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+            >
+              Son
+            </button>
           </div>
         )}
       </div>
@@ -316,65 +617,219 @@ export default function BusinessAppointmentsPage() {
       {/* History Modal */}
       {showHistory && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
-          <div className="relative mx-auto my-6 max-w-2xl w-[94%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-white/50 text-[13px] text-gray-800">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                Geçmiş Randevular
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
+          <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">Geçmiş Randevular</div>
+                  <div className="text-xs text-gray-600">{filteredHistory.length} randevu</div>
+                </div>
               </div>
-              <button onClick={() => setShowHistory(false)} className="px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold shadow hover:shadow-md">Kapat</button>
+              <button 
+                onClick={() => setShowHistory(false)} 
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
             </div>
 
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-              <div className="flex flex-wrap gap-1.5 p-2 bg-white/70 border border-white/40 rounded-lg">
-                <span className="text-[11px] font-semibold text-gray-700">Hizmet:</span>
-                {services?.map((s: any) => (
-                  <button key={s.id} onClick={() => setServiceFilters(prev => prev.includes(s.name) ? prev.filter(n => n !== s.name) : [...prev, s.name])} className={`px-2 py-1 rounded-full text-[11px] font-medium border ${serviceFilters.includes(s.name) ? 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent' : 'bg-white/80 text-gray-700 border-white/50'}`}>{s.name}</button>
-                ))}
+            {/* Filtreler */}
+            <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-gray-900">Filtreler</div>
+                <button 
+                  type="button"
+                  onClick={() => setIsHistoryFiltersOpen(!isHistoryFiltersOpen)}
+                  className="w-6 h-6 rounded-lg bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+                >
+                  {isHistoryFiltersOpen ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )}
+                </button>
               </div>
-              <div className="flex flex-wrap gap-1.5 p-2 bg-white/70 border border-white/40 rounded-lg">
-                <span className="text-[11px] font-semibold text-gray-700">Çalışan:</span>
-                {employees?.map((e: any) => (
-                  <button key={e.id} onClick={() => setEmployeeFilters(prev => prev.includes(e.name) ? prev.filter(n => n !== e.name) : [...prev, e.name])} className={`px-2 py-1 rounded-full text-[11px] font-medium border ${employeeFilters.includes(e.name) ? 'bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white border-transparent' : 'bg-white/80 text-gray-700 border-white/50'}`}>{e.name}</button>
-                ))}
+              
+              {isHistoryFiltersOpen && (
+                <div className="mt-4 space-y-4">
+              {/* Hizmet Filtreleri */}
+              <div>
+                <div className="text-sm font-semibold text-gray-900 mb-3">Hizmetler</div>
+                <div className="flex flex-wrap gap-2">
+                  {services?.map((s: any) => (
+                    <button 
+                      key={s.id} 
+                      onClick={() => {
+                        setServiceFilters(prev => prev.includes(s.name) ? prev.filter(n => n !== s.name) : [...prev, s.name]);
+                        setHistoryCurrentPage(1);
+                      }} 
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                        serviceFilters.includes(s.name) 
+                          ? 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent shadow-md' 
+                          : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-rose-200'
+                      }`}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-              <select value={statusFilter} onChange={(e)=> setStatusFilter(e.target.value as any)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900">
-                <option value="all">Tümü</option>
-                <option value="pending">Bekliyor</option>
-                <option value="confirmed">Onaylandı</option>
-                <option value="completed">Tamamlandı</option>
-                <option value="cancelled">İptal Edildi</option>
-              </select>
-              <input type="date" value={dateFrom} onChange={(e)=> setDateFrom(e.target.value)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900" placeholder="Başlangıç" />
-              <input type="date" value={dateTo} onChange={(e)=> setDateTo(e.target.value)} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900" placeholder="Bitiş" />
-              <button onClick={() => { setServiceFilters([]); setEmployeeFilters([]); setStatusFilter('all'); setDateFrom(''); setDateTo(''); }} className="px-2 py-2 rounded-lg bg-white/80 border border-white/50 text-sm text-gray-900">Sıfırla</button>
+              
+              {/* Çalışan Filtreleri */}
+              <div>
+                <div className="text-sm font-semibold text-gray-900 mb-3">Çalışanlar</div>
+                <div className="flex flex-wrap gap-2">
+                  {employees?.map((e: any) => (
+                    <button 
+                      key={e.id} 
+                      onClick={() => {
+                        setEmployeeFilters(prev => prev.includes(e.name) ? prev.filter(n => n !== e.name) : [...prev, e.name]);
+                        setHistoryCurrentPage(1);
+                      }} 
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                        employeeFilters.includes(e.name) 
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-md' 
+                          : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-indigo-200'
+                      }`}
+                    >
+                      {e.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Durum Filtresi */}
+              <div>
+                <div className="text-sm font-semibold text-gray-900 mb-3">Durum</div>
+                <select 
+                  value={statusFilter} 
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as any);
+                    setHistoryCurrentPage(1);
+                  }} 
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                >
+                  <option value="all">Tüm Durumlar</option>
+                  <option value="pending">Bekliyor</option>
+                  <option value="confirmed">Onaylandı</option>
+                  <option value="completed">Tamamlandı</option>
+                  <option value="cancelled">İptal Edildi</option>
+                </select>
+              </div>
+              
+              {/* Sıfırla Butonu */}
+              <div className="flex justify-center pt-2">
+                <button 
+                  onClick={() => { 
+                    setServiceFilters([]); 
+                    setEmployeeFilters([]); 
+                    setStatusFilter('all'); 
+                    setDateFrom(''); 
+                    setDateTo(''); 
+                    setHistoryCurrentPage(1);
+                  }} 
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm font-medium text-gray-700 hover:bg-white/90 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Filtreleri Sıfırla
+                </button>
+              </div>
+                </div>
+              )}
             </div>
 
-            {/* History List */}
-            <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
-              {filteredHistory.map((a: any) => (
-                <div key={a.id} className="bg-white/60 backdrop-blur-md border border-white/40 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-sm font-semibold text-gray-900" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</div>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : a.status === 'confirmed' ? 'bg-green-100 text-green-800' : a.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+            {/* Geçmiş Randevular Listesi */}
+            <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+              {paginatedHistory.map((a: any) => (
+                <div key={a.id} className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-400 to-gray-500 text-white flex items-center justify-center text-xs font-bold">
+                        {a.user_name ? a.user_name.charAt(0).toUpperCase() : 'M'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-gray-900" suppressHydrationWarning>
+                          {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}
+                        </div>
+                        <div className="text-xs text-gray-600">{a.user_name || 'Müşteri'}</div>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                      a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                      a.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                      a.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                      'bg-blue-100 text-blue-800'
+                    }`}>
                       {a.status === 'pending' ? 'Bekliyor' : 
                        a.status === 'confirmed' ? 'Onaylandı' : 
                        a.status === 'cancelled' ? 'İptal Edildi' : 
                        a.status === 'completed' ? 'Tamamlandı' : a.status}
                     </span>
                   </div>
-                  <div className="text-[12px] text-gray-700">Hizmet: {Array.isArray(a.service_names) ? a.service_names.join(', ') : '—'}</div>
-                  <div className="text-[12px] text-gray-500">Çalışan: {Array.isArray(a.service_names) ? a.employee_names.join(', ') : '—'}</div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-gray-700">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className="font-medium">Hizmet:</span>
+                      <span>{Array.isArray(a.service_names) ? a.service_names.join(', ') : '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+                      <span className="font-medium">Çalışan:</span>
+                      <span>{Array.isArray(a.employee_names) ? a.employee_names.join(', ') : '—'}</span>
+                    </div>
+                  </div>
                 </div>
               ))}
-              {filteredHistory.length === 0 && (
-                <div className="text-center text-sm text-gray-500 py-6">Filtrelere uygun randevu bulunamadı</div>
+              {paginatedHistory.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  </div>
+                  <div className="text-sm text-gray-500">Filtrelere uygun randevu bulunamadı</div>
+                </div>
               )}
             </div>
+            
+            {/* Geçmiş Sayfalama */}
+            {totalHistoryPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-white/30">
+                <button
+                  onClick={() => setHistoryCurrentPage(1)}
+                  disabled={historyCurrentPage === 1}
+                  className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                >
+                  İlk
+                </button>
+                <button
+                  onClick={() => setHistoryCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={historyCurrentPage === 1}
+                  className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                >
+                  Önceki
+                </button>
+                <span className="px-3 py-2 text-xs text-gray-700 bg-white/60 rounded-xl">
+                  {historyCurrentPage} / {totalHistoryPages}
+                </span>
+                <button
+                  onClick={() => setHistoryCurrentPage(prev => Math.min(totalHistoryPages, prev + 1))}
+                  disabled={historyCurrentPage === totalHistoryPages}
+                  className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                >
+                  Sonraki
+                </button>
+                <button
+                  onClick={() => setHistoryCurrentPage(totalHistoryPages)}
+                  disabled={historyCurrentPage === totalHistoryPages}
+                  className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-xs text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                >
+                  Son
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

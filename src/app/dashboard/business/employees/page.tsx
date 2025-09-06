@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
+import { useWebSocket } from '../../../../contexts/WebSocketContext';
 
 export default function BusinessEmployeesPage() {
   const { data: session } = useSession();
@@ -46,6 +47,7 @@ export default function BusinessEmployeesPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -59,12 +61,26 @@ export default function BusinessEmployeesPage() {
       setError('Çalışan adı zorunlu.');
       return;
     }
+    
+    // Email validation - eğer email varsa geçerli olmalı
+    if (form.email && form.email.trim() !== '' && !form.email.includes('@')) {
+      setError('Geçerli bir e-posta adresi girin.');
+      return;
+    }
+    
     try {
+      // Boş string'leri null'a çevir
+      const cleanForm = {
+        ...form,
+        email: form.email?.trim() === '' ? undefined : form.email?.trim(),
+        phone: form.phone?.trim() === '' ? undefined : form.phone?.trim()
+      };
+      
       if (editing) {
-        await updateEmployee.mutateAsync({ ...form, businessId });
+        await updateEmployee.mutateAsync({ ...cleanForm, businessId });
         setSuccess('Çalışan güncellendi!');
       } else {
-        await createEmployee.mutateAsync({ ...form, businessId });
+        await createEmployee.mutateAsync({ ...cleanForm, businessId });
         setSuccess('Çalışan eklendi!');
       }
       setForm({ id: '', name: '', email: '', phone: '' });
@@ -72,7 +88,22 @@ export default function BusinessEmployeesPage() {
       employeesQuery.refetch();
       setTimeout(() => setSuccess(''), 1200);
     } catch (err: any) {
-      setError(err.message || 'Hata oluştu');
+      console.error('Çalışan ekleme hatası:', err);
+      
+      // Daha detaylı hata mesajları
+      if (err.data?.code === 'BAD_REQUEST') {
+        setError(err.data.message || 'Geçersiz veri gönderildi. Lütfen tüm alanları kontrol edin.');
+      } else if (err.data?.code === 'UNAUTHORIZED') {
+        setError('Bu işlemi yapma yetkiniz yok.');
+      } else if (err.data?.code === 'FORBIDDEN') {
+        setError('Bu işletme için çalışan ekleyemezsiniz.');
+      } else if (err.message?.includes('email')) {
+        setError('Geçerli bir e-posta adresi girin.');
+      } else if (err.message?.includes('name')) {
+        setError('Çalışan adı en az 2 karakter olmalıdır.');
+      } else {
+        setError(err.message || 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
+      }
     }
   };
 
@@ -125,7 +156,18 @@ export default function BusinessEmployeesPage() {
   };
 
   const handleEditAvailability = (a: any) => {
-    setAvailabilityForm({ ...a });
+    // Database field'larını frontend field'larına map et
+    // end_time'ı HH:MM formatına çevir (HH:MM:SS'den)
+    const endTime = a.end_time.includes(':') && a.end_time.split(':').length === 3 
+      ? a.end_time.substring(0, 5)  // "22:00:00" -> "22:00"
+      : a.end_time;
+      
+    setAvailabilityForm({ 
+      id: a.id,
+      day_of_week: a.day_of_week,
+      start_time: a.start_time,
+      end_time: endTime
+    });
     setEditingAvailability(true);
     setError('');
     setSuccess('');
@@ -163,8 +205,7 @@ export default function BusinessEmployeesPage() {
         serviceId, 
         businessId 
       });
-      setSuccess('Hizmet çalışana atandı!');
-      setTimeout(() => setSuccess(''), 1200);
+      // Success mesajı modal içinde gösterilecek
     } catch (err: any) {
       setError(err.message || 'Hizmet atama başarısız');
     }
@@ -178,64 +219,140 @@ export default function BusinessEmployeesPage() {
         serviceId, 
         businessId 
       });
-      setSuccess('Hizmet çalışandan kaldırıldı!');
-      setTimeout(() => setSuccess(''), 1200);
+      // Success mesajı modal içinde gösterilecek
     } catch (err: any) {
       setError(err.message || 'Hizmet kaldırma başarısız');
     }
   };
 
   return (
-    <main className="relative max-w-3xl mx-auto p-4 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/60 mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-          <button 
-            onClick={() => router.push('/dashboard/business')}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
-          >
-            <span className="text-base">←</span>
-            <span className="hidden sm:inline text-sm font-medium">Geri</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div>
+              <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+              <div className="text-xs text-gray-600">Çalışan Yönetimi</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+            <button 
+              onClick={() => { setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); setSelectedEmployee(null); setShowServiceModal(false); setAddOpen(true); }} 
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Yeni Çalışan
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-lg font-semibold text-gray-900">Çalışanlar</h1>
-        <button onClick={() => { setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); setSelectedEmployee(null); setShowServiceModal(false); setAddOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow hover:shadow-lg">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          Yeni Çalışan
-        </button>
+        
+        {/* Çalışanlar Sayısı */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-white/50 text-sm font-semibold text-gray-900">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+            </div>
+            <div>
+              <div className="text-sm font-bold">Çalışanlar</div>
+              <div className="text-xs text-gray-600">{employees?.length || 0} çalışan</div>
+            </div>
+          </div>
+        </div>
       </div>
       {/* Create/Edit Modal */}
       {addOpen && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setAddOpen(false)} />
-          <div className="relative mx-auto my-8 max-w-lg w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</h2>
-            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setAddOpen(false);}} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="flex flex-col gap-1 text-gray-800 font-medium">
-                  Adı
-                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
-                </label>
-                <label className="flex flex-col gap-1 text-gray-800 font-medium">
-                  E-posta
-                  <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
-                </label>
-                <label className="flex flex-col gap-1 text-gray-800 font-medium md:col-span-2">
-                  Telefon
-                  <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="border border-white/40 bg-white/60 backdrop-blur-md rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-rose-100 transition" />
-                </label>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAddOpen(false)} />
+          <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</div>
+                  <div className="text-xs text-gray-600">Çalışan bilgilerini doldurun</div>
+                </div>
               </div>
-              {error && <div className="text-red-600 text-sm text-center animate-shake">{error}</div>}
-              {success && <div className="text-green-600 text-sm text-center animate-fade-in">{success}</div>}
-              <div className="flex gap-2 mt-2">
-                <button type="submit" className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200">
-                  {editing ? 'Güncelle' : 'Ekle'}
+              <button 
+                onClick={() => setAddOpen(false)} 
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            
+            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setAddOpen(false);}} className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Çalışan Adı</label>
+                  <input 
+                    type="text" 
+                    value={form.name} 
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors" 
+                    placeholder="Çalışan adını girin"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">E-posta</label>
+                  <input 
+                    type="email" 
+                    value={form.email} 
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))} 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors" 
+                    placeholder="E-posta adresi (opsiyonel)"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Telefon</label>
+                  <input 
+                    type="text" 
+                    value={form.phone} 
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} 
+                    className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors" 
+                    placeholder="Telefon numarası (opsiyonel)"
+                  />
+                </div>
+              </div>
+              
+              {error && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-800 text-sm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{error}</span>
+                </div>
+              )}
+              
+              {success && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 text-green-800 text-sm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{success}</span>
+                </div>
+              )}
+              
+              <div className="flex gap-2 pt-2">
+                <button 
+                  type="submit" 
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{editing ? 'Güncelle' : 'Ekle'}</span>
                 </button>
-                <button type="button" className="w-full py-3 rounded-2xl bg-white/70 border border-white/40 text-gray-800 font-semibold text-base shadow hover:shadow-md transition-all duration-200 focus:outline-none" onClick={() => { setAddOpen(false); setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); }}>
-                  İptal
+                <button 
+                  type="button" 
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-sm font-semibold hover:bg-white/90 transition-colors" 
+                  onClick={() => { setAddOpen(false); setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>İptal</span>
                 </button>
               </div>
             </form>
@@ -244,40 +361,139 @@ export default function BusinessEmployeesPage() {
       )}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 animate-pulse">
-          <span className="text-5xl mb-2">⏳</span>
-          <span className="text-lg">Çalışanlar yükleniyor...</span>
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <span className="text-lg font-medium">Çalışanlar yükleniyor...</span>
         </div>
       )}
-      <ul className="grid grid-cols-1 gap-3">
+      
+      <div className="space-y-3">
         {employees?.map((e: any) => (
-          <li key={e.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">{e.name}</div>
-                <div className="text-[11px] text-gray-600 truncate">{e.email || '—'}</div>
+          <div key={e.id} className="bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm p-4 hover:shadow-md transition-all">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-sm font-bold">
+                  {e.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-gray-900 truncate">{e.name}</div>
+                  <div className="text-xs text-gray-600 truncate mt-1">{e.email || 'E-posta yok'}</div>
+                </div>
               </div>
-              {e.phone && <span className="shrink-0 text-[11px] text-gray-700">{e.phone}</span>}
+              {e.phone && (
+                <div className="text-right">
+                  <div className="text-xs text-gray-600">Telefon</div>
+                  <div className="text-sm font-semibold text-gray-900">{e.phone}</div>
+                </div>
+              )}
             </div>
-            <div className="mt-1 flex items-center gap-4 text-[13px] flex-wrap">
-              <button className="text-gray-900 font-medium" onClick={() => handleEdit(e)}>Düzenle</button>
-              <button className="text-gray-900 font-medium" onClick={() => { setSelectedEmployee(e); setShowAvailabilityModal(true); }}>Uygunluk</button>
-              <button className="text-gray-900 font-medium" onClick={() => handleServiceModal(e)}>Hizmetler</button>
-              <button className="text-rose-700 font-medium" onClick={() => handleDelete(e.id)}>Sil</button>
+
+            {/* Detaylar */}
+            <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
+              <div className="flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>{e.email || 'E-posta yok'}</span>
+              </div>
+              {e.phone && (
+                <div className="flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{e.phone}</span>
+                </div>
+              )}
             </div>
-          </li>
+
+            {/* Aksiyon Butonları */}
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={() => handleEdit(e)}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-500 text-white text-xs font-semibold hover:bg-blue-600 shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Düzenle</span>
+              </button>
+              <button 
+                onClick={() => { setSelectedEmployee(e); setShowAvailabilityModal(true); }}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-semibold hover:bg-green-600 shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <span>Uygunluk</span>
+              </button>
+              <button 
+                onClick={() => handleServiceModal(e)}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-indigo-500 text-white text-xs font-semibold hover:bg-indigo-600 shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Hizmetler</span>
+              </button>
+              <button 
+                onClick={() => handleDelete(e.id)}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-semibold hover:bg-red-600 shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Sil</span>
+              </button>
+            </div>
+          </div>
         ))}
-        {(!employees || employees.length === 0) && !isLoading && <li className="text-gray-400 text-center">Henüz çalışan eklenmedi.</li>}
-      </ul>
-      {/* Silme onay modalı */}
+        
+        {(!employees || employees.length === 0) && !isLoading && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div className="text-lg font-medium text-gray-500 mb-2">Henüz çalışan eklenmedi</div>
+            <div className="text-sm text-gray-400">Yeni çalışan eklemek için yukarıdaki butona tıklayın</div>
+          </div>
+        )}
+      </div>
+      {/* Silme Onay Modalı */}
       {deleteId && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div className="relative mx-auto my-8 max-w-sm w-[90%] bg-white/70 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl p-6 flex flex-col items-center gap-4">
-            <span className="text-3xl mb-2">⚠️</span>
-            <span className="text-lg font-semibold text-gray-700 text-center">Bu çalışanı silmek istediğinize emin misiniz?</span>
-            <div className="flex gap-4 mt-4">
-              <button className="px-6 py-2 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700 transition" onClick={confirmDelete}>Evet, Sil</button>
-              <button className="px-6 py-2 rounded-xl bg-white/70 border border-white/40 text-gray-800 font-semibold hover:bg-white transition" onClick={() => setDeleteId(null)}>Vazgeç</button>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
+          <div className="relative mx-auto my-6 max-w-sm w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">Çalışanı Sil</div>
+                  <div className="text-xs text-gray-600">Bu işlem geri alınamaz</div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDeleteId(null)} 
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            
+            <div className="text-center py-4">
+              <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-500"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="text-sm font-semibold text-gray-900 mb-2">Bu çalışanı silmek istediğinize emin misiniz?</div>
+              <div className="text-xs text-gray-600">Silinen çalışan geri getirilemez ve mevcut randevular etkilenebilir.</div>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Evet, Sil</span>
+              </button>
+              <button 
+                onClick={() => setDeleteId(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-sm font-semibold hover:bg-white/90 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Vazgeç</span>
+              </button>
             </div>
           </div>
         </div>
@@ -297,6 +513,8 @@ export default function BusinessEmployeesPage() {
           handleDeleteAvailability={handleDeleteAvailability}
           deleteAvailabilityId={deleteAvailabilityId}
           confirmDeleteAvailability={confirmDeleteAvailability}
+          showAddForm={showAddForm}
+          setShowAddForm={setShowAddForm}
         />
       )}
 
@@ -333,57 +551,140 @@ export default function BusinessEmployeesPage() {
 }
 
 function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove }: any) {
-  const { data: employeeServices } = trpc.business.getEmployeeServices.useQuery(
+  const { data: employeeServices, refetch: refetchEmployeeServices } = trpc.business.getEmployeeServices.useQuery(
     { employeeId: employee.id },
     { enabled: !!employee.id }
   );
+  
+  const [successMessage, setSuccessMessage] = useState('');
 
   const assignedServiceIds = employeeServices?.map((s: any) => s.id) || [];
   const availableServices = services?.filter((s: any) => !assignedServiceIds.includes(s.id)) || [];
 
+  // Hizmet atama fonksiyonu - modal içinde
+  const handleAssignService = async (serviceId: string) => {
+    try {
+      await onAssign(serviceId);
+      // Başarılı olduktan sonra verileri yenile
+      await refetchEmployeeServices();
+      setSuccessMessage('Hizmet başarıyla atandı!');
+      setTimeout(() => setSuccessMessage(''), 2000);
+    } catch (err) {
+      // Hata zaten onAssign'da handle ediliyor
+    }
+  };
+
+  // Hizmet kaldırma fonksiyonu - modal içinde
+  const handleRemoveService = async (serviceId: string) => {
+    try {
+      await onRemove(serviceId);
+      // Başarılı olduktan sonra verileri yenile
+      await refetchEmployeeServices();
+      setSuccessMessage('Hizmet başarıyla kaldırıldı!');
+      setTimeout(() => setSuccessMessage(''), 2000);
+    } catch (err) {
+      // Hata zaten onRemove'da handle ediliyor
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mx-auto my-8 max-w-lg w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">{employee.name} • Hizmetler</h2>
-          <button onClick={onClose} className="px-2 py-1 rounded-md bg-rose-600 text-white text-xs">Kapat</button>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-gray-900">{employee.name}</div>
+              <div className="text-xs text-gray-600">Hizmet Yönetimi</div>
+            </div>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* Success Message */}
+        {successMessage && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-800 text-xs rounded-xl mb-4">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span className="font-medium">{successMessage}</span>
+          </div>
+        )}
+        
+        <div className="space-y-4">
+          {/* Atanmış Hizmetler */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Atanmış</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <h3 className="text-sm font-semibold text-gray-900">Atanmış Hizmetler</h3>
+            </div>
             {employeeServices && employeeServices.length > 0 ? (
               <div className="space-y-2">
                 {employeeServices!.map((service: any) => (
-                  <div key={service.id} className="flex items-center justify-between p-2 bg-white/80 border border-white/40 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                  <div key={service.id} className="flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{service.name}</p>
                       <p className="text-xs text-gray-600">₺{service.price} • {service.duration_minutes} dk</p>
                     </div>
-                    <button onClick={() => onRemove(service.id)} className="px-2 py-1 bg-rose-600 text-white rounded text-xs">Kaldır</button>
+                    <button 
+                      onClick={() => handleRemoveService(service.id)} 
+                      className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      Kaldır
+                    </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">Henüz hizmet atanmamış</p>
+              <div className="text-center py-6">
+                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <p className="text-xs text-gray-500">Henüz hizmet atanmamış</p>
+              </div>
             )}
           </div>
+          
+          {/* Mevcut Hizmetler */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Mevcut</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              <h3 className="text-sm font-semibold text-gray-900">Mevcut Hizmetler</h3>
+            </div>
             {availableServices.length > 0 ? (
               <div className="space-y-2">
                 {availableServices.map((service: any) => (
-                  <div key={service.id} className="flex items-center justify-between p-2 bg-white/80 border border-white/40 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                  <div key={service.id} className="flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{service.name}</p>
                       <p className="text-xs text-gray-600">₺{service.price} • {service.duration_minutes} dk</p>
                     </div>
-                    <button onClick={() => onAssign(service.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">Ata</button>
+                    <button 
+                      onClick={() => handleAssignService(service.id)} 
+                      className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600 transition-colors"
+                    >
+                      Ata
+                    </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">Tüm hizmetler atanmış</p>
+              <div className="text-center py-6">
+                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <p className="text-xs text-gray-500">Tüm hizmetler atanmış</p>
+              </div>
             )}
           </div>
         </div>
@@ -392,71 +693,353 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
   );
 }
 
-function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availabilityForm, setAvailabilityForm, editingAvailability, setEditingAvailability, handleAvailabilitySubmit, handleEditAvailability, handleDeleteAvailability, deleteAvailabilityId, confirmDeleteAvailability }: any) {
-  const { data: availability, isLoading } = getAvailability({ employeeId: employee.id });
+function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availabilityForm, setAvailabilityForm, editingAvailability, setEditingAvailability, handleAvailabilitySubmit, handleEditAvailability, handleDeleteAvailability, deleteAvailabilityId, confirmDeleteAvailability, showAddForm, setShowAddForm }: any) {
+  const { data: availability, isLoading, refetch } = getAvailability({ employeeId: employee.id });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // WebSocket entegrasyonu
+  const { isConnected, emit } = useWebSocket();
+
+  // Gün isimleri
+  const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+  
+  // Mevcut günleri kontrol et (çakışma önleme)
+  const existingDays = availability?.map((a: any) => a.day_of_week) || [];
+  const isDayAlreadyExists = existingDays.includes(availabilityForm.day_of_week);
+  const isEditingCurrentDay = editingAvailability && existingDays.includes(availabilityForm.day_of_week);
+  
+  // Güncelleme sırasında sadece diğer günleri kontrol et (kendi kaydı hariç)
+  const otherDays = editingAvailability 
+    ? availability?.filter((a: any) => a.id !== availabilityForm.id).map((a: any) => a.day_of_week) || []
+    : existingDays;
+  const isDayConflict = otherDays.includes(availabilityForm.day_of_week);
+
+  // Form validation
+  const isFormValid = availabilityForm.start_time && availabilityForm.end_time && 
+    availabilityForm.start_time < availabilityForm.end_time &&
+    !isDayConflict;
+
+  // Gelişmiş form submit
+  const handleAdvancedSubmit = async (e: any) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsSubmitting(true);
+
+    try {
+      // Çakışma kontrolü
+      if (isDayConflict) {
+        setError(`${dayNames[availabilityForm.day_of_week]} günü için zaten başka bir müsaitlik tanımlanmış.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      await handleAvailabilitySubmit(e);
+      
+      // WebSocket ile güncelleme bildir
+      if (isConnected) {
+        emit('employee:availability_updated', {
+          employeeId: employee.id,
+          employeeName: employee.name,
+          action: editingAvailability ? 'updated' : 'created',
+          dayOfWeek: availabilityForm.day_of_week,
+          dayName: dayNames[availabilityForm.day_of_week],
+          startTime: availabilityForm.start_time,
+          endTime: availabilityForm.end_time
+        });
+      }
+
+      setSuccess(editingAvailability ? 'Müsaitlik güncellendi!' : 'Müsaitlik eklendi!');
+      refetch();
+      
+      // Form'u temizle ve kapat
+      setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' });
+      setEditingAvailability(false);
+      setShowAddForm(false);
+      
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err: any) {
+      setError(err.message || 'Hata oluştu');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Gün seçimi değiştiğinde form'u temizle
+  const handleDayChange = (dayOfWeek: number) => {
+    setAvailabilityForm((f: any) => ({ ...f, day_of_week: dayOfWeek }));
+    setError('');
+    setSuccess('');
+  };
+
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mx-auto my-8 max-w-md w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-900">{employee.name} • Uygunluk</h2>
-          <button onClick={onClose} className="px-2 py-1 rounded-md bg-rose-600 text-white text-xs">Kapat</button>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4 max-h-[90vh] overflow-y-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-gray-900">{employee.name}</div>
+              <div className="text-xs text-gray-600">Müsaitlik Yönetimi</div>
+            </div>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
         </div>
-        <form onSubmit={handleAvailabilitySubmit} className="flex flex-col gap-2 mb-2">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-gray-700 font-medium">
-              Gün
-              <select value={availabilityForm.day_of_week} onChange={e => setAvailabilityForm((f: any) => ({ ...f, day_of_week: Number(e.target.value) }))} className="border border-gray-300 rounded-lg px-3 py-2">
-                <option value={1}>Pazartesi</option>
-                <option value={2}>Salı</option>
-                <option value={3}>Çarşamba</option>
-                <option value={4}>Perşembe</option>
-                <option value={5}>Cuma</option>
-                <option value={6}>Cumartesi</option>
-                <option value={0}>Pazar</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-gray-700 font-medium">
-              Başlangıç
-              <input type="time" value={availabilityForm.start_time} onChange={e => setAvailabilityForm((f: any) => ({ ...f, start_time: e.target.value }))} className="border border-gray-300 rounded-lg px-3 py-2" />
-            </label>
-            <label className="flex flex-col gap-1 text-gray-700 font-medium">
-              Bitiş
-              <input type="time" value={availabilityForm.end_time} onChange={e => setAvailabilityForm((f: any) => ({ ...f, end_time: e.target.value }))} className="border border-gray-300 rounded-lg px-3 py-2" />
-            </label>
+
+        {/* Action Buttons */}
+        <div className="mb-4">
+          <button 
+            onClick={() => {
+              setShowAddForm(true);
+              setEditingAvailability(false);
+              setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' });
+              setError('');
+              setSuccess('');
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <span>Yeni Müsaitlik Ekle</span>
+          </button>
+        </div>
+
+        {/* Form Section - Sadece form açıkken göster */}
+        {(showAddForm || editingAvailability) && (
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 mb-4 border border-green-100">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center text-white text-xs">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              {editingAvailability ? 'Müsaitliği Güncelle' : 'Yeni Müsaitlik Ekle'}
+            </h3>
+            
+            <form onSubmit={handleAdvancedSubmit} className="space-y-3">
+              <div className="space-y-3">
+                {/* Gün Seçimi */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">Gün</label>
+                  <select 
+                    value={availabilityForm.day_of_week} 
+                    onChange={(e) => handleDayChange(Number(e.target.value))}
+                    className={`w-full px-3 py-2 rounded-xl border-2 text-sm transition-all ${
+                      isDayConflict 
+                        ? 'border-red-300 bg-red-50' 
+                        : 'border-green-200 bg-white focus:border-green-400'
+                    }`}
+                  >
+                    {dayNames.map((day, index) => {
+                      const isOtherDayConflict = editingAvailability 
+                        ? otherDays.includes(index)
+                        : existingDays.includes(index);
+                      return (
+                        <option key={index} value={index} disabled={isOtherDayConflict}>
+                          {day} {isOtherDayConflict ? '(Mevcut)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {isDayConflict && (
+                    <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Bu gün için zaten müsaitlik var
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Başlangıç Saati */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-2">Başlangıç</label>
+                    <input 
+                      type="time" 
+                      value={availabilityForm.start_time} 
+                      onChange={(e) => setAvailabilityForm((f: any) => ({ ...f, start_time: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border-2 border-green-200 bg-white focus:border-green-400 transition-all text-sm"
+                    />
+                  </div>
+
+                  {/* Bitiş Saati */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-2">Bitiş</label>
+                    <input 
+                      type="time" 
+                      value={availabilityForm.end_time} 
+                      onChange={(e) => setAvailabilityForm((f: any) => ({ ...f, end_time: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border-2 border-green-200 bg-white focus:border-green-400 transition-all text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
+              {success && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-xl text-green-600 text-xs">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="font-medium">{success}</span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button 
+                  type="submit" 
+                  disabled={!isFormValid || isSubmitting}
+                  className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>İşleniyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{editingAvailability ? 'Güncelle' : 'Ekle'}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </>
+                  )}
+                </button>
+                
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setShowAddForm(false);
+                    setEditingAvailability(false); 
+                    setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' }); 
+                    setError('');
+                    setSuccess('');
+                  }}
+                  className="px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 transition-all"
+                >
+                  İptal
+                </button>
+              </div>
+            </form>
           </div>
-          <div className="flex gap-2 mt-2">
-            <button type="submit" className="w-full py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition">{editingAvailability ? 'Güncelle' : 'Ekle'}</button>
-            {editingAvailability && <button type="button" className="w-full py-2 rounded-lg bg-white/80 border border-white/50 text-gray-800 text-sm font-semibold hover:bg-white transition" onClick={() => { setEditingAvailability(false); setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' }); }}>İptal</button>}
-          </div>
-        </form>
-        <ul className="space-y-2">
-          {isLoading && <li className="text-gray-400">Yükleniyor...</li>}
-          {availability?.map((a: any) => (
-            <li key={a.id} className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
-              <span className="font-semibold text-blue-700">{['Pazar','Pzt','Salı','Çrş','Prş','Cuma','Cmt'][a.day_of_week]}</span>
-              <span className="text-gray-600 text-sm">{a.start_time} - {a.end_time}</span>
-              <button className="ml-auto px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold hover:bg-green-200 transition" onClick={() => handleEditAvailability(a)}>Düzenle</button>
-              <button className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold hover:bg-red-200 transition" onClick={() => handleDeleteAvailability(a.id)}>Sil</button>
-            </li>
-          ))}
-          {(!availability || availability.length === 0) && !isLoading && <li className="text-gray-400 text-center">Henüz uygunluk eklenmedi.</li>}
-        </ul>
-        {/* Uygunluk silme onay modalı */}
+        )}
+
+        {/* Müsaitlik Listesi */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center text-white text-xs">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            Mevcut Müsaitlikler
+          </h3>
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-2 text-gray-600 text-sm">Yükleniyor...</span>
+            </div>
+          ) : availability && availability.length > 0 ? (
+            <div className="space-y-2">
+              {availability.map((a: any) => (
+                <div key={a.id} className="flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">
+                      {dayNames[a.day_of_week].charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">{dayNames[a.day_of_week]}</h4>
+                      <p className="text-xs text-gray-600">{a.start_time} - {a.end_time}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => handleEditAvailability(a)}
+                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                    >
+                      Düzenle
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteAvailability(a.id)}
+                      className="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              <p className="text-sm font-medium">Henüz müsaitlik eklenmemiş</p>
+              <p className="text-xs">Yukarıdaki formu kullanarak müsaitlik ekleyebilirsiniz</p>
+            </div>
+          )}
+        </div>
+
+        {/* Silme Onay Modalı */}
         {deleteAvailabilityId && (
           <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" />
-            <div className="relative mx-auto my-8 max-w-xs w-[92%] bg-white/70 backdrop-blur-md border border-white/40 rounded-2xl shadow-2xl p-4 flex flex-col items-center gap-3">
-              <span className="text-2xl mb-2">⚠️</span>
-              <span className="text-sm font-semibold text-gray-700 text-center">Bu uygunluğu silmek istediğinize emin misiniz?</span>
-              <div className="flex gap-2 mt-2">
-                <button className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition" onClick={confirmDeleteAvailability}>Evet, Sil</button>
-                <button className="px-3 py-1.5 rounded-lg bg-white/80 border border-white/50 text-gray-800 text-xs font-semibold hover:bg-white transition" onClick={() => handleDeleteAvailability(null)}>Vazgeç</button>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            <div className="relative mx-auto my-6 max-w-sm w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-gray-900">Müsaitliği Sil</div>
+                    <div className="text-xs text-gray-600">Bu işlem geri alınamaz</div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleDeleteAvailability(null)} 
+                  className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+              </div>
+              
+              <div className="text-center py-4">
+                <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-500"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </div>
+                <div className="text-sm font-semibold text-gray-900 mb-2">Bu müsaitliği silmek istediğinize emin misiniz?</div>
+                <div className="text-xs text-gray-600">Silinen müsaitlik geri getirilemez ve mevcut randevular etkilenebilir.</div>
+              </div>
+              
+              <div className="flex gap-2 pt-2">
+                <button 
+                  onClick={confirmDeleteAvailability}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>Evet, Sil</span>
+                </button>
+                <button 
+                  onClick={() => handleDeleteAvailability(null)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-sm font-semibold hover:bg-white/90 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>Vazgeç</span>
+                </button>
               </div>
             </div>
           </div>
         )}
-       
       </div>
     </div>
   );

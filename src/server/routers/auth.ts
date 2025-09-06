@@ -82,12 +82,16 @@ export const authRouter = t.router({
         
         // Kullanıcıyı ekle
         const result = await pool.query(
-          `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role`,
+          `INSERT INTO users (name, email, password_hash, role, phone, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, email, role`,
           [
             input.name,
             input.email, 
             password_hash, 
-            input.role
+            input.role,
+            input.customerPhone || '',
+            input.customerAddress || '',
+            input.customerLocation?.latitude || null,
+            input.customerLocation?.longitude || null
           ]
         );
         

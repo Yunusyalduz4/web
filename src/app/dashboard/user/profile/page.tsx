@@ -10,6 +10,12 @@ import { useUserPushNotifications } from '../../../../hooks/useUserPushNotificat
 import NotificationsButton from '../../../../components/NotificationsButton';
 import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, EffectFade } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import 'swiper/css/effect-fade';
 
 export default function UserProfilePage() {
   const { data: session } = useSession();
@@ -29,6 +35,10 @@ export default function UserProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [photoSwiper, setPhotoSwiper] = useState<any>(null);
   
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -223,106 +233,290 @@ export default function UserProfilePage() {
 
       {/* Değerlendirmelerim Tab */}
       {activeTab === 'reviews' && (
-        <section className="mt-3 space-y-3">
+        <section className="mt-3 space-y-4">
+          {/* Header Stats */}
+          {userReviews?.reviews && userReviews.reviews.length > 0 && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-amber-900">Değerlendirme Geçmişiniz</h3>
+                    <p className="text-xs text-amber-700">
+                      {userReviews.reviews.length} değerlendirme • 
+                      Ortalama {((userReviews.reviews.reduce((acc: number, r: any) => acc + (r.service_rating + r.employee_rating) / 2, 0) / userReviews.reviews.length)).toFixed(1)}/5
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-amber-900">
+                    {userReviews.reviews.filter((r: any) => r.is_approved).length}
+                  </div>
+                  <div className="text-xs text-amber-700">Onaylı</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {reviewsLoading ? (
-            <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-6 text-center">
-              <div className="text-2xl mb-2">⏳</div>
-              <div className="text-sm text-gray-600">Değerlendirmeleriniz yükleniyor...</div>
+            <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-amber-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div className="text-sm font-medium text-gray-700 mb-1">Değerlendirmeleriniz yükleniyor...</div>
+              <div className="text-xs text-gray-500">Lütfen bekleyin</div>
             </div>
           ) : !userReviews?.reviews || userReviews.reviews.length === 0 ? (
-            <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-6 text-center">
-              <div className="text-4xl mb-3">💬</div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Henüz Değerlendirme Yapmadınız</h3>
-              <p className="text-xs text-gray-600 mb-3">
-                Tamamlanan randevularınız için değerlendirme yaparak deneyimlerinizi paylaşın.
+            <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Henüz Değerlendirme Yapmadınız</h3>
+              <p className="text-sm text-gray-600 mb-6 max-w-sm mx-auto leading-relaxed">
+                Tamamlanan randevularınız için değerlendirme yaparak deneyimlerinizi paylaşın ve diğer kullanıcılara yardımcı olun.
               </p>
               <button
                 onClick={() => router.push('/dashboard/user/reviews')}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-medium"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
               >
-                Değerlendirme Yap
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                İlk Değerlendirmemi Yap
               </button>
             </div>
           ) : (
             <div className="space-y-3">
-              {userReviews.reviews.map((review: any) => (
-                <div key={review.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl p-4 hover:bg-white/70 transition-all duration-200">
-                  {/* Üst Kısım */}
+              {userReviews.reviews.map((review: any, index: number) => (
+                <div key={review.id} className="group bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 hover:bg-white/80 hover:shadow-md transition-all duration-200 hover:border-white/70">
+                  {/* Header */}
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 grid place-items-center">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm3 2a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                        </svg>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                        {review.business_name?.charAt(0)?.toUpperCase() || 'İ'}
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900">{review.business_name}</h3>
-                        <div className="text-xs text-gray-500">
-                          {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
+                        <h3 className="text-sm font-bold text-gray-900 mb-0.5">{review.business_name}</h3>
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/>
+                            <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
+                            <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                          <span>{new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric'
-                          })}
+                          })}</span>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Sağ Kısım */}
-                    <div className="flex items-center gap-2">
-                      {/* Durum */}
+                    {/* Rating & Status */}
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-amber-500">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                        </svg>
+                        <span className="text-sm font-bold text-gray-900">
+                          {((review.service_rating + review.employee_rating) / 2).toFixed(1)}
+                        </span>
+                      </div>
                       {review.is_approved ? (
-                        <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                          ✓ Onaylı
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Onaylı
                         </div>
                       ) : (
-                        <div className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
-                          ⏳ Bekliyor
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Bekliyor
                         </div>
                       )}
-                      
-                      {/* Puan */}
-                      <div className="text-sm font-semibold text-gray-700">
-                        {((review.service_rating + review.employee_rating) / 2).toFixed(1)}
-                      </div>
                     </div>
                   </div>
                   
-                  {/* Hizmet ve Çalışan */}
-                  <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
-                    <span>Hizmet: {Array.isArray(review.service_names) ? review.service_names.join(', ') : '—'}</span>
+                  {/* Service & Employee Info */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-blue-50 border border-blue-100">
+                      <div className="w-5 h-5 rounded bg-blue-500 text-white flex items-center justify-center">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-blue-600 font-medium truncate">
+                          {Array.isArray(review.service_names) ? review.service_names.join(', ') : '—'}
+                        </div>
+                      </div>
+                    </div>
+                    
                     {review.employee_names && review.employee_names.length > 0 && (
-                      <span>Çalışan: {review.employee_names.join(', ')}</span>
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-purple-50 border border-purple-100">
+                        <div className="w-5 h-5 rounded bg-purple-500 text-white flex items-center justify-center">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs text-purple-600 font-medium truncate">
+                            {review.employee_names.join(', ')}
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Yorum */}
+                  {/* Comment */}
                   {review.comment && (
-                    <div className="text-xs text-gray-700 bg-gray-50 rounded-lg p-3 mb-3">
-                      "{review.comment}"
+                    <div className="mb-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                      <div className="flex items-start gap-2">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-400 mt-0.5">
+                          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <div className="flex-1">
+                          <div className="text-xs text-gray-500 font-medium mb-1">Yorumunuz</div>
+                          <div className="text-xs text-gray-700 leading-relaxed mb-2">"{review.comment}"</div>
+                          
+                          {/* Review Photos - Minimal */}
+                          {review.photos && review.photos.length > 0 && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                                  <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2"/>
+                                  <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                <span className="text-xs text-gray-500 font-medium">{review.photos.length} görsel</span>
+                              </div>
+                              <div className="flex gap-1 overflow-x-auto">
+                                {review.photos.slice(0, 4).map((photo: string, photoIndex: number) => (
+                                  <div
+                                    key={photoIndex}
+                                    className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer group"
+                                    onClick={() => {
+                                      setCurrentPhotos(review.photos);
+                                      setCurrentPhotoIndex(photoIndex);
+                                      setPhotoModalOpen(true);
+                                    }}
+                                  >
+                                    <img
+                                      src={photo}
+                                      alt={`Review photo ${photoIndex + 1}`}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                    </div>
+                                    {/* Fallback for failed images */}
+                                    <div className="absolute inset-0 bg-gray-200 flex items-center justify-center hidden">
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2"/>
+                                        <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                ))}
+                                {review.photos.length > 4 && (
+                                  <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium">
+                                    +{review.photos.length - 4}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {/* Alt Kısım */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span>Hizmet: {review.service_rating}/5</span>
-                      <span>Çalışan: {review.employee_rating}/5</span>
+                  {/* Rating Details */}
+                  <div className="flex items-center justify-between mb-3 p-2 rounded-md bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-amber-700 font-medium">Hizmet:</span>
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg key={star} width="10" height="10" viewBox="0 0 24 24" fill="none" className={star <= review.service_rating ? 'text-amber-500' : 'text-gray-300'}>
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                            </svg>
+                          ))}
+                        </div>
+                        <span className="text-xs font-semibold text-amber-900 ml-1">{review.service_rating}/5</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-amber-700 font-medium">Çalışan:</span>
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg key={star} width="10" height="10" viewBox="0 0 24 24" fill="none" className={star <= review.employee_rating ? 'text-amber-500' : 'text-gray-300'}>
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                            </svg>
+                          ))}
+                        </div>
+                        <span className="text-xs font-semibold text-amber-900 ml-1">{review.employee_rating}/5</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      <span>{new Date(review.created_at).toLocaleDateString('tr-TR', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">
-                        {new Date(review.created_at).toLocaleDateString('tr-TR')}
-                      </span>
-                      
-                      <button
-                        onClick={() => handleDeleteReview(review.id)}
-                        disabled={deleteReviewMutation.isPending}
-                        className="px-2 py-1 rounded-md bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium transition-colors disabled:opacity-50"
-                        title="Bu değerlendirmeyi sil"
-                      >
-                        {deleteReviewMutation.isPending ? 'Siliniyor...' : '🗑️'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteReview(review.id)}
+                      disabled={deleteReviewMutation.isPending}
+                      className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium transition-all duration-200 disabled:opacity-50"
+                      title="Bu değerlendirmeyi sil"
+                    >
+                      {deleteReviewMutation.isPending ? (
+                        <>
+                          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Siliniyor...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Sil
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -369,15 +563,131 @@ export default function UserProfilePage() {
       <section className="mt-3">
         <button
           onClick={handleUserLogout}
-          className="w-full py-2.5 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm"
+          className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
         >
           Çıkış Yap
         </button>
       </section>
 
+      {/* Photo Modal - Swiper */}
+      {photoModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-4">
+          <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
+            {/* Close Button */}
+            <button
+              onClick={() => setPhotoModalOpen(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+            >
+              <span className="text-xl">×</span>
+            </button>
+
+            {/* Photo Counter */}
+            <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
+              {currentPhotoIndex + 1} / {currentPhotos.length}
+            </div>
+
+            {/* Swiper Container */}
+            <div className="flex-1 w-full">
+              <Swiper
+                modules={[Navigation, Pagination, EffectFade]}
+                spaceBetween={0}
+                slidesPerView={1}
+                initialSlide={currentPhotoIndex}
+                onSwiper={setPhotoSwiper}
+                onSlideChange={(swiper) => setCurrentPhotoIndex(swiper.activeIndex)}
+                effect="fade"
+                fadeEffect={{ crossFade: true }}
+                navigation={{
+                  nextEl: '.swiper-button-next-custom',
+                  prevEl: '.swiper-button-prev-custom',
+                }}
+                pagination={{
+                  clickable: true,
+                  bulletClass: 'swiper-pagination-bullet-custom',
+                  bulletActiveClass: 'swiper-pagination-bullet-active-custom',
+                }}
+                className="w-full h-full"
+              >
+                {currentPhotos.map((photo, index) => (
+                  <SwiperSlide key={index}>
+                    <div className="flex items-center justify-center w-full h-full">
+                      <img
+                        src={photo}
+                        alt={`Photo ${index + 1}`}
+                        className="max-w-full max-h-full object-contain rounded-lg"
+                      />
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+
+            {/* Custom Navigation Buttons */}
+            {currentPhotos.length > 1 && (
+              <>
+                <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
+                  <span className="text-2xl">‹</span>
+                </button>
+                <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
+                  <span className="text-2xl">›</span>
+                </button>
+              </>
+            )}
+
+            {/* Thumbnail Strip */}
+            {currentPhotos.length > 1 && (
+              <div className="flex justify-center gap-2 p-4 overflow-x-auto">
+                {currentPhotos.map((photo, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setCurrentPhotoIndex(index);
+                      photoSwiper?.slideTo(index);
+                    }}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      index === currentPhotoIndex
+                        ? 'border-white'
+                        : 'border-white/30 hover:border-white/60'
+                    }`}
+                  >
+                    <img
+                      src={photo}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+        
+        /* Custom Swiper Styles */
+        .swiper-pagination-bullet-custom {
+          width: 8px !important;
+          height: 8px !important;
+          background: rgba(255, 255, 255, 0.3) !important;
+          opacity: 1 !important;
+          margin: 0 4px !important;
+        }
+        
+        .swiper-pagination-bullet-active-custom {
+          background: white !important;
+        }
+        
+        .swiper-button-next-custom:after,
+        .swiper-button-prev-custom:after {
+          display: none !important;
+        }
+        
+        .swiper-pagination {
+          bottom: 20px !important;
+        }
       `}</style>
     </main>
   );

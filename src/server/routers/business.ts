@@ -42,6 +42,7 @@ const businessProfileUpdateSchema = z.object({
   businessId: z.string().uuid(),
   name: z.string().min(2),
   email: z.string().email(),
+  phone: z.string().optional(),
   password: z.string().min(6).optional(),
 });
 
@@ -118,8 +119,8 @@ export const businessRouter = t.router({
 
       // Business'i güncelle
       const result = await pool.query(
-        `UPDATE businesses SET name = $1, email = $2, password = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
-        [input.name, input.email, passwordHash, input.businessId]
+        `UPDATE businesses SET name = $1, email = $2, phone = $3, password = $4, updated_at = NOW() WHERE id = $5 RETURNING *`,
+        [input.name, input.email, input.phone || '', passwordHash, input.businessId]
       );
       
       return result.rows[0];
@@ -260,9 +261,35 @@ export const businessRouter = t.router({
       const result = await pool.query(`SELECT * FROM employee_availability WHERE employee_id = $1`, [input.employeeId]);
       return result.rows;
     }),
+  getAllEmployeeAvailability: t.procedure
+    .input(z.object({ businessId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const result = await pool.query(
+        `SELECT ea.*, e.name as employee_name 
+         FROM employee_availability ea
+         JOIN employees e ON ea.employee_id = e.id
+         WHERE e.business_id = $1
+         ORDER BY e.id, ea.day_of_week`,
+        [input.businessId]
+      );
+      return result.rows;
+    }),
   createEmployeeAvailability: t.procedure.use(isBusiness)
     .input(availabilitySchema)
     .mutation(async ({ input }) => {
+      // Önce aynı gün için müsaitlik var mı kontrol et
+      const existingAvailability = await pool.query(
+        `SELECT id FROM employee_availability WHERE employee_id = $1 AND day_of_week = $2`,
+        [input.employeeId, input.day_of_week]
+      );
+
+      if (existingAvailability.rows.length > 0) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Bu gün için zaten müsaitlik tanımlanmış. Mevcut kaydı güncellemek için update işlemini kullanın.'
+        });
+      }
+
       const result = await pool.query(
         `INSERT INTO employee_availability (employee_id, day_of_week, start_time, end_time) VALUES ($1, $2, $3, $4) RETURNING *`,
         [input.employeeId, input.day_of_week, input.start_time, input.end_time]
@@ -270,13 +297,41 @@ export const businessRouter = t.router({
       return result.rows[0];
     }),
   updateEmployeeAvailability: t.procedure.use(isBusiness)
-    .input(availabilitySchema.extend({ id: z.string().uuid() }))
+    .input(z.object({
+      id: z.string().uuid(),
+      employeeId: z.string().uuid(),
+      day_of_week: z.number().min(0).max(6),
+      start_time: z.string().regex(/^\d{2}:\d{2}$/),
+      end_time: z.string().regex(/^\d{2}:\d{2}$/),
+    }))
     .mutation(async ({ input }) => {
-      const result = await pool.query(
-        `UPDATE employee_availability SET day_of_week = $1, start_time = $2, end_time = $3 WHERE id = $4 AND employee_id = $5 RETURNING *`,
-        [input.day_of_week, input.start_time, input.end_time, input.id, input.employeeId]
-      );
-      return result.rows[0];
+      try {
+        console.log('🔄 Update availability input:', JSON.stringify(input, null, 2));
+        
+        // Aynı gün için başka bir müsaitlik var mı kontrol et (kendi kaydı hariç)
+        const existingAvailability = await pool.query(
+          `SELECT id FROM employee_availability WHERE employee_id = $1 AND day_of_week = $2 AND id != $3`,
+          [input.employeeId, input.day_of_week, input.id]
+        );
+
+        if (existingAvailability.rows.length > 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Bu gün için zaten başka bir müsaitlik tanımlanmış.'
+          });
+        }
+
+        const result = await pool.query(
+          `UPDATE employee_availability SET day_of_week = $1, start_time = $2, end_time = $3 WHERE id = $4 AND employee_id = $5 RETURNING *`,
+          [input.day_of_week, input.start_time, input.end_time, input.id, input.employeeId]
+        );
+        
+        console.log('✅ Update successful:', result.rows[0]);
+        return result.rows[0];
+      } catch (error) {
+        console.error('❌ Update error:', error);
+        throw error;
+      }
     }),
   deleteEmployeeAvailability: t.procedure.use(isBusiness)
     .input(z.object({ id: z.string().uuid(), employeeId: z.string().uuid() }))
