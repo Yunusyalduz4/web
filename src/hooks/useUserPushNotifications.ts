@@ -78,7 +78,7 @@ export function useUserPushNotifications() {
       console.log('Service worker registered successfully:', registration);
 
       // Convert VAPID public key to Uint8Array
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BG1LYEA21rncGSSNwQGDVz2XJf55gexHy0BIeoUhpXrMwcucDVYI6eBVPqVUvT29I__O7crCYqaXEp4ghNirZeY';
       if (!vapidPublicKey) {
         throw new Error('VAPID public key not found in environment variables');
       }

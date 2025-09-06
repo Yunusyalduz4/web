@@ -24,7 +24,19 @@ export class SocketServer {
   constructor(server: HTTPServer) {
     this.io = new SocketIOServer(server, {
       cors: {
-        origin: [process.env.NEXTAUTH_URL || "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+        origin: [
+          process.env.NEXTAUTH_URL || "http://localhost:3000", 
+          "http://localhost:3001", 
+          "http://localhost:3002",
+          // VPS için ek origin'ler
+          ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
+          ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+          // Randevuo.com domain'i
+          "https://randevuo.com",
+          "http://randevuo.com",
+          "https://www.randevuo.com",
+          "http://www.randevuo.com"
+        ],
         methods: ["GET", "POST"],
         credentials: true,
         allowedHeaders: ["Content-Type", "Authorization"]
