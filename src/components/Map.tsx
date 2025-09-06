@@ -314,6 +314,18 @@ export default function Map(props: MapProps) {
           streetViewControl: false,
           fullscreenControl: true,
           zoomControl: true,
+          // Tek parmakla kullanım için gesture ayarları
+          gestureHandling: 'greedy', // Tek parmakla zoom ve pan
+          scrollwheel: true, // Mouse wheel ile zoom
+          disableDoubleClickZoom: false, // Çift tıklama ile zoom
+          draggable: true, // Sürükleme ile pan
+          // Touch optimizasyonları
+          clickableIcons: false, // POI'ları tıklanamaz yap
+          keyboardShortcuts: false, // Klavye kısayollarını kapat
+          // Zoom kontrolü ayarları
+          zoomControlOptions: {
+            position: window.google.maps.ControlPosition.RIGHT_CENTER
+          },
           // Konum butonu ekle
           mapTypeControlOptions: {
             style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
@@ -509,6 +521,40 @@ export default function Map(props: MapProps) {
           zIndex: 1
         }}
       />
+      
+      {/* Custom Zoom Butonları - Mobil için */}
+      {map && (
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+          <button
+            onClick={() => {
+              if (map) {
+                const currentZoom = map.getZoom();
+                map.setZoom(currentZoom + 1);
+              }
+            }}
+            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition-colors"
+            title="Yakınlaştır"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              if (map) {
+                const currentZoom = map.getZoom();
+                map.setZoom(currentZoom - 1);
+              }
+            }}
+            className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition-colors"
+            title="Uzaklaştır"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+      )}
       
       {/* Loading overlay */}
       {isLoading && (

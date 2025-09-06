@@ -266,11 +266,7 @@ export default function ReviewModal({
                 placeholder="Deneyiminizi paylaşın (en az 20 karakter)"
                 className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all duration-300 resize-none"
                 rows={4}
-                maxLength={500}
               />
-              <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                {comment.length}/500
-              </div>
             </div>
             {comment.length > 0 && comment.length < 20 && (
               <p className="text-xs text-red-500">

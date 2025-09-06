@@ -31,6 +31,15 @@ export default function BusinessEditPage() {
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  // Card açık/kapalı durumları
+  const [cardStates, setCardStates] = useState({
+    basicInfo: true,
+    contact: false,
+    gender: false,
+    location: false,
+    images: false,
+  });
 
   const updateBusinessMutation = trpc.business.updateBusiness.useMutation();
   const getBusinessImagesQuery = trpc.business.getBusinessImagesForOwner.useQuery(
@@ -371,6 +380,14 @@ export default function BusinessEditPage() {
     if (img) handleReorderImages(img.id, images.length - 1);
   };
 
+  // Card toggle fonksiyonu
+  const toggleCard = (cardName: keyof typeof cardStates) => {
+    setCardStates(prev => ({
+      ...prev,
+      [cardName]: !prev[cardName]
+    }));
+  };
+
   if (isLoading) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -392,70 +409,219 @@ export default function BusinessEditPage() {
   return (
     <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/60 mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-          <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs shadow-sm">
-            <span>←</span>
-            <span className="hidden sm:inline">Geri</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div>
+              <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+              <div className="text-xs text-gray-600">İşletme Düzenle</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+          </div>
         </div>
       </div>
 
-      {/* Minimal Form */}
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <details open className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
-          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Temel Bilgiler</summary>
-          <div className="mt-3 grid grid-cols-1 gap-3">
-            {/* Profile Image */}
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/50 bg-white/70 flex items-center justify-center">
+      {/* Modern Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Temel Bilgiler Card */}
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">Temel Bilgiler</h2>
+            </div>
+            <button 
+              type="button"
+              onClick={() => toggleCard('basicInfo')}
+              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+            >
+              {cardStates.basicInfo ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
+          </div>
+          
+          {cardStates.basicInfo && (
+            <div className="space-y-4">
+              {/* Profile Image Section */}
+            <div className="flex items-center gap-4 p-3 bg-white/50 rounded-xl border border-white/40">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/60 bg-white/80 flex items-center justify-center shadow-sm">
                 {formData.profileImageUrl ? (
                   <img src={formData.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-xs text-gray-500">Profil</span>
+                  <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-xl">🏢</div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
-                  {uploading ? 'Yükleniyor…' : 'Profil Fotoğrafı Yükle'}
-                </label>
-                {formData.profileImageUrl && (
-                  <button type="button" className="px-3 py-2 rounded-lg bg-white/80 border border-white/50 text-gray-900 text-xs" onClick={() => setFormData(prev => ({ ...prev, profileImageUrl: null }))}>Kaldır</button>
-                )}
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-gray-900 mb-1">Profil Fotoğrafı</div>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all cursor-pointer">
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
+                    {uploading ? (
+                      <>
+                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span>Yükleniyor</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <span>Fotoğraf Yükle</span>
+                      </>
+                    )}
+                  </label>
+                  {formData.profileImageUrl && (
+                    <button type="button" className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-gray-900 text-xs font-medium hover:bg-white transition-colors" onClick={() => setFormData(prev => ({ ...prev, profileImageUrl: null }))}>
+                      Kaldır
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             
-            {/* Profil fotoğrafı hata mesajı */}
+            {/* Hata mesajı */}
             {uploadError && (
-              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">
+              <div className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs text-red-700 text-center">
                 ⚠️ {uploadError}
               </div>
             )}
-            <input name="name" value={formData.name} onChange={handleInputChange} required placeholder="İşletme adı" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
-            <textarea name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Açıklama (opsiyonel)" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
-          </div>
-        </details>
+            
+            {/* İşletme Adı */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">İşletme Adı *</label>
+              <input 
+                name="name" 
+                value={formData.name} 
+                onChange={handleInputChange} 
+                required 
+                placeholder="İşletme adınızı girin" 
+                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all" 
+                style={{ fontSize: '16px' }} 
+              />
+            </div>
+            
+            {/* Açıklama */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Açıklama</label>
+              <textarea 
+                name="description" 
+                value={formData.description} 
+                onChange={handleInputChange} 
+                rows={3} 
+                placeholder="İşletmeniz hakkında kısa bir açıklama yazın..." 
+                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all resize-none" 
+                style={{ fontSize: '16px' }} 
+              />
+            </div>
+            </div>
+          )}
+        </div>
 
-        <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
-          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">İletişim</summary>
-          <div className="mt-3 grid grid-cols-1 gap-3">
-            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Telefon" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="E-posta" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
-            <input name="address" value={formData.address} onChange={handleInputChange} required placeholder="Adres" className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200" style={{ fontSize: '16px' }} />
+        {/* İletişim Card */}
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">İletişim Bilgileri</h2>
+            </div>
+            <button 
+              type="button"
+              onClick={() => toggleCard('contact')}
+              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+            >
+              {cardStates.contact ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
           </div>
-        </details>
+          
+          {cardStates.contact && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Telefon</label>
+              <input 
+                type="tel" 
+                name="phone" 
+                value={formData.phone} 
+                onChange={handleInputChange} 
+                placeholder="Telefon numaranızı girin" 
+                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all" 
+                style={{ fontSize: '16px' }} 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">E-posta</label>
+              <input 
+                type="email" 
+                name="email" 
+                value={formData.email} 
+                onChange={handleInputChange} 
+                placeholder="E-posta adresinizi girin" 
+                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all" 
+                style={{ fontSize: '16px' }} 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Adres *</label>
+              <input 
+                name="address" 
+                value={formData.address} 
+                onChange={handleInputChange} 
+                required 
+                placeholder="İşletme adresinizi girin" 
+                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all" 
+                style={{ fontSize: '16px' }} 
+              />
+            </div>
+            </div>
+          )}
+        </div>
 
-        <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
-          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Hizmet Cinsiyeti</summary>
-          <div className="mt-3">
-            <div className="text-xs text-gray-600 mb-2">Hangi cinsiyete hizmet veriyorsunuz?</div>
-            <div className="grid grid-cols-3 gap-2">
-              <label className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+        {/* Hizmet Cinsiyeti Card */}
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">Hizmet Cinsiyeti</h2>
+            </div>
+            <button 
+              type="button"
+              onClick={() => toggleCard('gender')}
+              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+            >
+              {cardStates.gender ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
+          </div>
+          
+          {cardStates.gender && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-700 mb-3">Hangi cinsiyete hizmet veriyorsunuz?</div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                 formData.genderService === 'male' 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md' 
+                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90 hover:border-blue-200'
               }`}>
                 <input
                   type="radio"
@@ -465,16 +631,14 @@ export default function BusinessEditPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, genderService: e.target.value as 'male' | 'female' | 'unisex' }))}
                   className="hidden"
                 />
-                <div className="text-center">
-                  <div className="text-lg mb-1">👨</div>
-                  <div className="text-xs font-medium">Erkek</div>
-                </div>
+                <div className="text-2xl mb-2">👨</div>
+                <div className="text-sm font-semibold">Erkek</div>
               </label>
               
-              <label className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+              <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                 formData.genderService === 'female' 
-                  ? 'border-pink-500 bg-pink-50 text-pink-700' 
-                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90'
+                  ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-md' 
+                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90 hover:border-pink-200'
               }`}>
                 <input
                   type="radio"
@@ -484,16 +648,14 @@ export default function BusinessEditPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, genderService: e.target.value as 'male' | 'female' | 'unisex' }))}
                   className="hidden"
                 />
-                <div className="text-center">
-                  <div className="text-lg mb-1">👩</div>
-                  <div className="text-xs font-medium">Kadın</div>
-                </div>
+                <div className="text-2xl mb-2">👩</div>
+                <div className="text-sm font-semibold">Kadın</div>
               </label>
               
-              <label className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+              <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                 formData.genderService === 'unisex' 
-                  ? 'border-purple-500 bg-purple-50 text-purple-700' 
-                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90'
+                  ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-md' 
+                  : 'border-white/50 bg-white/80 text-gray-700 hover:bg-white/90 hover:border-purple-200'
               }`}>
                 <input
                   type="radio"
@@ -503,120 +665,197 @@ export default function BusinessEditPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, genderService: e.target.value as 'male' | 'female' | 'unisex' }))}
                   className="hidden"
                 />
-                <div className="text-center">
-                  <div className="text-lg mb-1">👥</div>
-                  <div className="text-xs font-medium">Unisex</div>
-                </div>
+                <div className="text-2xl mb-2">👥</div>
+                <div className="text-sm font-semibold">Unisex</div>
               </label>
             </div>
-            <div className="text-[11px] text-gray-500 mt-2 text-center">
-              {formData.genderService === 'male' && 'Sadece erkek müşterilere hizmet veriyorsunuz'}
-              {formData.genderService === 'female' && 'Sadece kadın müşterilere hizmet veriyorsunuz'}
-              {formData.genderService === 'unisex' && 'Tüm müşterilere hizmet veriyorsunuz'}
+            
+            <div className="p-3 bg-white/50 rounded-xl border border-white/40">
+              <div className="text-sm text-gray-700 text-center">
+                {formData.genderService === 'male' && 'Sadece erkek müşterilere hizmet veriyorsunuz'}
+                {formData.genderService === 'female' && 'Sadece kadın müşterilere hizmet veriyorsunuz'}
+                {formData.genderService === 'unisex' && 'Tüm müşterilere hizmet veriyorsunuz'}
+              </div>
             </div>
+            </div>
+          )}
+        </div>
+
+        {/* Konum Card */}
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">Konum</h2>
+            </div>
+            <button 
+              type="button"
+              onClick={() => toggleCard('location')}
+              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+            >
+              {cardStates.location ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
           </div>
-        </details>
+          
+          {cardStates.location && (
+            <div className="space-y-3">
+              <div className="text-sm text-gray-700 mb-2">İşletmenizin konumunu haritadan seçin</div>
+              <LocationPicker onLocationSelect={handleLocationChange} defaultLocation={formData.latitude && formData.longitude ? { lat: formData.latitude, lng: formData.longitude } : undefined} />
+            </div>
+          )}
+        </div>
 
-        <details className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
-          <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Konum</summary>
-          <div className="mt-3">
-            <LocationPicker onLocationSelect={handleLocationChange} defaultLocation={formData.latitude && formData.longitude ? { lat: formData.latitude, lng: formData.longitude } : undefined} />
-          </div>
-        </details>
-
-        <button type="submit" disabled={isSubmitting} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-60 disabled:hover:scale-100">
-          {isSubmitting ? 'Güncelleniyor...' : 'Kaydet'}
-        </button>
-      </form>
-
-      {/* Images */}
-      <details className="mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl px-3 py-3">
-        <summary className="text-sm font-semibold text-gray-900 cursor-pointer list-none">Görseller</summary>
-                  <div className="mt-3 space-y-3">
-            {/* Hata mesajı gösterimi */}
-            {uploadError && (
-              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700 text-center">
-                ⚠️ {uploadError}
+        {/* Kaydet Butonu */}
+        <div className="sticky bottom-4 z-20">
+          <button 
+            type="submit" 
+            disabled={isSubmitting} 
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-base font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                <span>Güncelleniyor...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M17 21v-8H7v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span>Değişiklikleri Kaydet</span>
               </div>
             )}
-            
-            <div
-              className="relative rounded-2xl border border-white/50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/70 backdrop-blur-md p-3 flex items-center justify-between shadow-sm"
-              onDragOver={(e) => { e.preventDefault(); }}
-              onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
-            >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center shadow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              </div>
-              <div className="text-[13px] text-gray-900">
-                <div className="font-semibold">Görsel ekle</div>
-                <div className="text-[11px] text-gray-700">Sürükle-bırak yap veya butona tıkla</div>
-              </div>
+          </button>
+        </div>
+      </form>
+
+      {/* Görsel Yönetimi Card */}
+      <div className="mt-4 bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
-            <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 cursor-pointer">
+            <h2 className="text-lg font-bold text-gray-900">Görsel Galerisi</h2>
+          </div>
+          <button 
+            type="button"
+            onClick={() => toggleCard('images')}
+            className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+          >
+            {cardStates.images ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            )}
+          </button>
+        </div>
+        
+        {cardStates.images && (
+          <div className="space-y-4">
+            {/* Hata mesajı gösterimi */}
+          {uploadError && (
+            <div className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs text-red-700 text-center">
+              ⚠️ {uploadError}
+            </div>
+          )}
+          
+          {/* Yükleme Alanı */}
+          <div
+            className="relative rounded-2xl border-2 border-dashed border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-purple-50/70 backdrop-blur-md p-6 flex flex-col items-center justify-center shadow-sm hover:border-indigo-300 transition-colors"
+            onDragOver={(e) => { e.preventDefault(); }}
+            onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white flex items-center justify-center shadow-md mb-3">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+            <div className="text-center mb-4">
+              <div className="text-sm font-semibold text-gray-900 mb-1">Görsel Ekle</div>
+              <div className="text-xs text-gray-600">Sürükle-bırak yap veya butona tıkla</div>
+            </div>
+            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-200 cursor-pointer">
               <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} />
               {uploading ? (
                 <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                  <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
                   <span>Yükleniyor</span>
                 </>
               ) : (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
                   <span>Resim Yükle</span>
                 </>
               )}
             </label>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {images
-              .slice()
-              .sort((a, b) => a.image_order - b.image_order)
-              .map((image, index, arr) => (
-                <div key={image.id} className="relative group">
-                  <img src={image.image_url} alt={`Resim ${index + 1}`} className="w-full h-24 object-cover rounded-md border border-white/50" />
-                  
-                  {/* Onay Durumu Badge */}
-                  <div className="absolute top-1 left-1">
-                    {image.is_approved ? (
-                      <div className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-[10px] font-semibold shadow">
-                        ✅ Onaylı
+          {/* Görsel Galerisi */}
+          {images.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {images
+                .slice()
+                .sort((a, b) => a.image_order - b.image_order)
+                .map((image, index, arr) => (
+                  <div key={image.id} className="relative group bg-white/50 rounded-2xl p-3 border border-white/40 shadow-sm hover:shadow-md transition-all">
+                    <div className="relative">
+                      <img src={image.image_url} alt={`Resim ${index + 1}`} className="w-full h-28 object-cover rounded-xl border border-white/50" />
+                      
+                      {/* Onay Durumu Badge */}
+                      <div className="absolute top-2 left-2">
+                        {image.is_approved ? (
+                          <div className="px-2 py-1 rounded-full bg-green-100 border border-green-200 text-green-800 text-xs font-semibold shadow-md">
+                            ✅ Onaylı
+                          </div>
+                        ) : (
+                          <div className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-xs font-semibold shadow-md">
+                            ⏳ Onay Bekliyor
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="px-2 py-1 rounded-full bg-yellow-100 border border-yellow-200 text-yellow-800 text-[10px] font-semibold shadow">
-                        ⏳ Onay Bekliyor
+                      
+                      {/* Sıra Numarası */}
+                      <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg bg-white/90 border border-white/60 text-xs font-semibold text-gray-900 shadow-md">
+                        {index + 1} / {arr.length}
                       </div>
-                    )}
+                      
+                      {/* Kontrol Butonları */}
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => moveImageFirst(index)} disabled={index === 0} className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 border border-white/60 text-gray-900 shadow-md hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Başa al">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 4v16M10 8l-4 4 4 4M14 8l-4 4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button onClick={() => moveImageUp(index)} disabled={index === 0} className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 border border-white/60 text-gray-900 shadow-md hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Yukarı">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8l-5 5h10l-5-5z" fill="currentColor"/></svg>
+                        </button>
+                        <button onClick={() => moveImageDown(index)} disabled={index === arr.length - 1} className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 border border-white/60 text-gray-900 shadow-md hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Aşağı">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 16l5-5H7l5 5z" fill="currentColor"/></svg>
+                        </button>
+                        <button onClick={() => moveImageLast(index)} disabled={index === arr.length - 1} className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 border border-white/60 text-gray-900 shadow-md hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Sona al">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 4v16M10 8l4 4-4 4M6 8l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button onClick={() => handleDeleteImage(image.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 transition" title="Sil">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z" fill="currentColor"/></svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-white/90 border border-white/60 text-[10px] font-semibold text-gray-900 shadow">{index + 1} / {arr.length}</div>
-                  <div className="absolute top-1 right-1 flex gap-1 opacity-100 group-hover:opacity-100">
-                    <button onClick={() => moveImageFirst(index)} disabled={index === 0} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Başa al">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 4v16M10 8l-4 4 4 4M14 8l-4 4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
-                    <button onClick={() => moveImageUp(index)} disabled={index === 0} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Yukarı">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 8l-5 5h10l-5-5z" fill="currentColor"/></svg>
-                    </button>
-                    <button onClick={() => moveImageDown(index)} disabled={index === arr.length - 1} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Aşağı">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 16l5-5H7l5 5z" fill="currentColor"/></svg>
-                    </button>
-                    <button onClick={() => moveImageLast(index)} disabled={index === arr.length - 1} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white/80 border border-white/60 text-gray-900 shadow hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed" title="Sona al">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 4v16M10 8l4 4-4 4M6 8l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
-                    <button onClick={() => handleDeleteImage(image.id)} className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-rose-600 text-white shadow hover:bg-rose-700 transition" title="Sil">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z" fill="currentColor"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-          </div>
-          {images.length === 0 && (
-            <div className="text-xs text-gray-500">Henüz görsel yok.</div>
+                ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <div className="text-sm text-gray-500">Henüz görsel yok</div>
+              <div className="text-xs text-gray-400 mt-1">Yukarıdaki butona tıklayarak görsel ekleyebilirsiniz</div>
+            </div>
           )}
-        </div>
-      </details>
+          </div>
+        )}
+      </div>
     </main>
   );
-} 
+}

@@ -14,17 +14,17 @@ export default function BusinessAnalyticsPage() {
   const business = businesses?.find((b: any) => b.owner_user_id === userId);
   
   const { data: analytics, isLoading } = trpc.analytics.getBusinessAnalytics.useQuery(
-    { businessId: business?.id || '' },
+    undefined,
     { enabled: !!business?.id }
   );
 
   const { data: serviceAnalytics } = trpc.analytics.getServiceAnalytics.useQuery(
-    { businessId: business?.id || '' },
+    undefined,
     { enabled: !!business?.id }
   );
 
   const { data: employeeAnalytics } = trpc.analytics.getEmployeeAnalytics.useQuery(
-    { businessId: business?.id || '' },
+    undefined,
     { enabled: !!business?.id }
   );
 
@@ -52,32 +52,42 @@ export default function BusinessAnalyticsPage() {
   const weekDaysShort = ['Paz', 'Pzt', 'Sal', 'Çrş', 'Prş', 'Cum', 'Cmt'];
 
   return (
-    <main className="relative max-w-7xl mx-auto p-4 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-7xl mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-6">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/60 mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-          <button 
-            onClick={() => router.push('/dashboard/business')}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
-          >
-            <span className="text-base">←</span>
-            <span className="hidden sm:inline text-sm font-medium">Geri</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => router.push('/dashboard/business')}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div>
+              <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+              <div className="text-xs text-gray-600">İşletme Analitikleri</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
+            <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+              {business.name}
+            </div>
+          </div>
         </div>
-        <div className="mt-3 text-sm font-semibold text-gray-800">{business.name} • Analitikler</div>
       </div>
 
       {analytics && (
         <>
           {/* Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <StatCard 
               label="Toplam Randevu" 
               value={analytics.overview.totalAppointments} 
               color="from-blue-500 to-blue-600" 
               icon="📅"
               subtitle={`${analytics.overview.completionRate}% tamamlanma`}
+              trend="+12%"
             />
             <StatCard 
               label="Toplam Gelir" 
@@ -85,6 +95,7 @@ export default function BusinessAnalyticsPage() {
               color="from-green-500 to-green-600" 
               icon="💸"
               subtitle={`₺${analytics.revenue.completedRevenue.toFixed(2)} gerçekleşen`}
+              trend="+8%"
             />
             <StatCard 
               label="Ortalama Randevu" 
@@ -92,6 +103,7 @@ export default function BusinessAnalyticsPage() {
               color="from-purple-500 to-purple-600" 
               icon="📈"
               subtitle={`Min: ₺${analytics.revenue.minAppointmentValue} - Max: ₺${analytics.revenue.maxAppointmentValue}`}
+              trend="+5%"
             />
             <StatCard 
               label="Son 30 Gün" 
@@ -99,13 +111,19 @@ export default function BusinessAnalyticsPage() {
               color="from-orange-500 to-orange-600" 
               icon="🔥"
               subtitle={`₺${analytics.recentActivity.revenue.toFixed(2)} gelir`}
+              trend="+15%"
             />
           </div>
 
           {/* Status Breakdown */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8 mb-8 border border-white/20">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Randevu Durumu Dağılımı</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 shadow-sm mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-r from-indigo-500 to-indigo-600 text-white flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <h2 className="text-xs font-semibold text-gray-900">Randevu Durumu Dağılımı</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <StatusCard 
                 label="Tamamlanan" 
                 count={analytics.overview.completedAppointments} 
@@ -138,21 +156,27 @@ export default function BusinessAnalyticsPage() {
           </div>
 
           {/* Weekly Chart */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8 mb-8 border border-white/20">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Bu Ay Haftalık Randevu Grafiği</h2>
-            <div className="w-full h-64 flex items-end justify-center gap-4">
+          <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 shadow-sm mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg>
+              </div>
+              <h2 className="text-xs font-semibold text-gray-900">Bu Ay Haftalık Randevu Grafiği</h2>
+            </div>
+            <div className="w-full h-48 flex items-end justify-center gap-2">
               {weekDaysShort.map((day, index) => {
                 const dayData = analytics.weeklyAppointments.find(w => w.dayOfWeek === index) || { appointmentCount: 0 };
                 const maxCount = Math.max(...analytics.weeklyAppointments.map(w => w.appointmentCount), 1);
-                const height = (dayData.appointmentCount / maxCount) * 200;
+                const height = (dayData.appointmentCount / maxCount) * 150;
                 
                 return (
                   <div key={index} className="flex flex-col items-center">
-                    <div className="text-sm text-gray-600 mb-2">{day}</div>
+                    <div className="text-xs text-gray-600 mb-2">{day}</div>
                     <div className="relative">
                       <div
-                        className="w-12 rounded-t bg-gradient-to-b from-blue-400 to-blue-600 flex items-end justify-center min-h-[20px] transition-all duration-500"
-                        style={{ height: `${Math.max(height, 20)}px` }}
+                        className="w-8 rounded-t bg-gradient-to-b from-blue-400 to-blue-600 flex items-end justify-center min-h-[16px] transition-all duration-500 hover:from-blue-500 hover:to-blue-700 cursor-pointer"
+                        style={{ height: `${Math.max(height, 16)}px` }}
+                        title={`${day}: ${dayData.appointmentCount} randevu`}
                       >
                         <span className="text-xs text-white font-bold mb-1">{dayData.appointmentCount}</span>
                       </div>
@@ -164,24 +188,29 @@ export default function BusinessAnalyticsPage() {
           </div>
 
           {/* Top Services & Employees */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
             {/* Top Services */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8 border border-white/20">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">En Popüler Hizmetler</h2>
-              <div className="space-y-4">
+            <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-5 h-5 rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
+                </div>
+                <h2 className="text-xs font-semibold text-gray-900">En Popüler Hizmetler</h2>
+              </div>
+              <div className="space-y-2">
                 {analytics.topServices.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-2xl border border-blue-100/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold">
+                  <div key={index} className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-md flex items-center justify-center text-white text-xs font-bold">
                         {index + 1}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-800">{service.name}</h3>
-                        <p className="text-sm text-gray-600">₺{service.price} • {service.appointmentCount} randevu</p>
+                        <h3 className="text-xs font-semibold text-gray-800 truncate">{service.name}</h3>
+                        <p className="text-xs text-gray-600">₺{service.price} • {service.appointmentCount} randevu</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-blue-600">₺{service.totalRevenue.toFixed(2)}</p>
+                      <p className="text-xs font-bold text-blue-600">₺{service.totalRevenue.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
@@ -189,25 +218,30 @@ export default function BusinessAnalyticsPage() {
             </div>
 
             {/* Top Employees */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8 border border-white/20">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">En Aktif Çalışanlar</h2>
-              <div className="space-y-4">
+            <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-5 h-5 rounded-md bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+                </div>
+                <h2 className="text-xs font-semibold text-gray-900">En Aktif Çalışanlar</h2>
+              </div>
+              <div className="space-y-2">
                 {analytics.topEmployees.map((employee, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-2xl border border-purple-100/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
+                  <div key={index} className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-md flex items-center justify-center text-white text-xs font-bold">
                         {index + 1}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-800">{employee.name}</h3>
-                        <p className="text-sm text-gray-600">{employee.appointmentCount} randevu • {employee.completionRate}% tamamlanma</p>
+                        <h3 className="text-xs font-semibold text-gray-800 truncate">{employee.name}</h3>
+                        <p className="text-xs text-gray-600">{employee.appointmentCount} randevu • {employee.completionRate}% tamamlanma</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-purple-600">₺{employee.totalRevenue.toFixed(2)}</p>
+                      <p className="text-xs font-bold text-purple-600">₺{employee.totalRevenue.toFixed(2)}</p>
                     </div>
-                </div>
-              ))}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -322,24 +356,31 @@ export default function BusinessAnalyticsPage() {
   );
 }
 
-function StatCard({ label, value, color, icon, subtitle }: { 
+function StatCard({ label, value, color, icon, subtitle, trend }: { 
   label: string; 
   value: any; 
   color: string; 
   icon: string;
   subtitle?: string;
+  trend?: string;
 }) {
   return (
-    <div className={`bg-gradient-to-br ${color} rounded-3xl shadow-xl p-6 text-white animate-fade-in`}>
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-3xl">{icon}</span>
+    <div className={`bg-gradient-to-br ${color} rounded-xl shadow-md p-3 text-white`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-lg">{icon}</span>
         <div className="text-right">
-          <div className="text-2xl font-bold">{value}</div>
-          <div className="text-sm opacity-90">{label}</div>
+          <div className="text-lg font-bold">{value}</div>
+          <div className="text-xs opacity-90">{label}</div>
         </div>
       </div>
       {subtitle && (
-        <div className="text-xs opacity-75">{subtitle}</div>
+        <div className="text-xs opacity-75 mb-1">{subtitle}</div>
+      )}
+      {trend && (
+        <div className="flex items-center gap-1 text-xs opacity-90">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 14l3-3 3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <span>{trend}</span>
+        </div>
       )}
     </div>
   );
@@ -355,12 +396,12 @@ function StatusCard({ label, count, total, color, icon }: {
   const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
   
   return (
-    <div className={`bg-gradient-to-br ${color} rounded-2xl shadow-lg p-4 text-white`}>
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-2xl">{icon}</span>
+    <div className={`bg-gradient-to-br ${color} rounded-lg shadow-md p-2 text-white`}>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-sm">{icon}</span>
         <div>
-          <div className="text-lg font-bold">{count}</div>
-          <div className="text-sm opacity-90">{label}</div>
+          <div className="text-sm font-bold">{count}</div>
+          <div className="text-xs opacity-90">{label}</div>
         </div>
       </div>
       <div className="text-xs opacity-75">{percentage}%</div>

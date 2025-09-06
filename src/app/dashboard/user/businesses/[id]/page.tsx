@@ -2,7 +2,11 @@
 import { trpc } from '@utils/trpcClient';
 import { useRouter, useParams } from 'next/navigation';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, EffectFade } from 'swiper/modules';
 import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -108,6 +112,7 @@ export default function BusinessDetailPage() {
   const [photoSliderOpen, setPhotoSliderOpen] = useState(false);
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [photoSwiper, setPhotoSwiper] = useState<any>(null);
 
   const minServicePrice = useMemo(() => {
     if (!services || services.length === 0) return null as number | null;
@@ -662,6 +667,28 @@ export default function BusinessDetailPage() {
         /* Ensure button is always visible */
         body { overflow-x: hidden; }
         .fixed-button { position: fixed !important; bottom: 24px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999 !important; }
+        
+        /* Custom Swiper Styles */
+        .swiper-pagination-bullet-custom {
+          width: 8px !important;
+          height: 8px !important;
+          background: rgba(255, 255, 255, 0.3) !important;
+          opacity: 1 !important;
+          margin: 0 4px !important;
+        }
+        
+        .swiper-pagination-bullet-active-custom {
+          background: white !important;
+        }
+        
+        .swiper-button-next-custom:after,
+        .swiper-button-prev-custom:after {
+          display: none !important;
+        }
+        
+        .swiper-pagination {
+          bottom: 20px !important;
+        }
       `}</style>
     </main>
     
@@ -852,59 +879,78 @@ export default function BusinessDetailPage() {
             {currentPhotoIndex + 1} / {currentPhotos.length}
           </div>
 
-          {/* Main Photo */}
-          <div className="flex-1 flex items-center justify-center">
-            <img
-              src={currentPhotos[currentPhotoIndex]}
-              alt={`Review photo ${currentPhotoIndex + 1}`}
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
-          </div>
-
-          {/* Navigation */}
-          {currentPhotos.length > 1 && (
-            <>
-              {/* Previous Button */}
-              {currentPhotoIndex > 0 && (
-                <button
-                  onClick={() => setCurrentPhotoIndex(prev => prev - 1)}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                >
-                  <span className="text-2xl">‹</span>
-                </button>
-              )}
-
-              {/* Next Button */}
-              {currentPhotoIndex < currentPhotos.length - 1 && (
-                <button
-                  onClick={() => setCurrentPhotoIndex(prev => prev + 1)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                >
-                  <span className="text-2xl">›</span>
-                </button>
-              )}
-
-              {/* Thumbnail Strip */}
-              <div className="flex justify-center gap-2 p-4 overflow-x-auto">
-                {currentPhotos.map((photo, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentPhotoIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      index === currentPhotoIndex
-                        ? 'border-white'
-                        : 'border-white/30 hover:border-white/60'
-                    }`}
-                  >
+          {/* Swiper Container */}
+          <div className="flex-1 w-full">
+            <Swiper
+              modules={[Navigation, Pagination, EffectFade]}
+              spaceBetween={0}
+              slidesPerView={1}
+              initialSlide={currentPhotoIndex}
+              onSwiper={setPhotoSwiper}
+              onSlideChange={(swiper) => setCurrentPhotoIndex(swiper.activeIndex)}
+              effect="fade"
+              fadeEffect={{ crossFade: true }}
+              navigation={{
+                nextEl: '.swiper-button-next-custom',
+                prevEl: '.swiper-button-prev-custom',
+              }}
+              pagination={{
+                clickable: true,
+                bulletClass: 'swiper-pagination-bullet-custom',
+                bulletActiveClass: 'swiper-pagination-bullet-active-custom',
+              }}
+              className="w-full h-full"
+            >
+              {currentPhotos.map((photo, index) => (
+                <SwiperSlide key={index}>
+                  <div className="flex items-center justify-center w-full h-full">
                     <img
                       src={photo}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      alt={`Photo ${index + 1}`}
+                      className="max-w-full max-h-full object-contain rounded-lg"
                     />
-                  </button>
-                ))}
-              </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {/* Custom Navigation Buttons */}
+          {currentPhotos.length > 1 && (
+            <>
+              <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
+                <span className="text-2xl">‹</span>
+              </button>
+              <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
+                <span className="text-2xl">›</span>
+              </button>
             </>
+          )}
+
+          {/* Thumbnail Strip */}
+          {currentPhotos.length > 1 && (
+            <div className="flex justify-center gap-2 p-4 overflow-x-auto">
+              {currentPhotos.map((photo, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setCurrentPhotoIndex(index);
+                    photoSwiper?.slideTo(index);
+                  }}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    index === currentPhotoIndex
+                      ? 'border-white'
+                      : 'border-white/30 hover:border-white/60'
+                  }`}
+                >
+                  <img
+                    src={photo}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
