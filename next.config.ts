@@ -7,10 +7,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // VPS için production optimizasyonları
+  output: 'standalone', // VPS deployment için
   // Environment değişkenlerini debug et
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
     VERCEL: process.env.VERCEL,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
   // PWA ve Push Notification için gerekli headers
   async headers() {

@@ -45,8 +45,10 @@ export function useSocket(): UseSocketReturn {
         throw new Error('Socket.io server başlatılamadı');
       }
 
-      // Client socket'i oluştur
-      const socketUrl = process.env.NEXTAUTH_URL || `http://localhost:${window.location.port || '3000'}`;
+      // Client socket'i oluştur - VPS için dinamik URL
+      const socketUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                       process.env.NEXTAUTH_URL || 
+                       (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:3000');
       
       const newSocket = io(socketUrl, {
         transports: ['websocket', 'polling'], // Önce websocket, sonra polling
