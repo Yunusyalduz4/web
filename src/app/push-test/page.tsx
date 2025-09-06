@@ -6,6 +6,7 @@ import { usePushNotifications } from '../../hooks/usePushNotifications';
 export default function PushTestPage() {
   const [testResult, setTestResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
   // User push notifications
   const {
@@ -49,6 +50,11 @@ export default function PushTestPage() {
     }
   };
 
+  // Client-side check
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const testUserPush = async () => {
     try {
       const success = await userSubscribe();
@@ -88,8 +94,8 @@ export default function PushTestPage() {
           <div className="space-y-2">
             <p><strong>Public Key:</strong> {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BG1LYEA21rncGSSNwQGDVz2XJf55gexHy0BIeoUhpXrMwcucDVYI6eBVPqVUvT29I__O7crCYqaXEp4ghNirZeY'}</p>
             <p><strong>Email:</strong> yalduzbey@gmail.com</p>
-            <p><strong>HTTPS:</strong> {window.location.protocol === 'https:' ? '✅ Aktif' : '❌ Gerekli'}</p>
-            <p><strong>Secure Context:</strong> {window.isSecureContext ? '✅ Aktif' : '❌ Gerekli'}</p>
+            <p><strong>HTTPS:</strong> {isClient && window.location.protocol === 'https:' ? '✅ Aktif' : '❌ Gerekli'}</p>
+            <p><strong>Secure Context:</strong> {isClient && window.isSecureContext ? '✅ Aktif' : '❌ Gerekli'}</p>
           </div>
         </div>
 
