@@ -26,7 +26,7 @@ export default function PushTestPage() {
     error: businessError,
     subscribe: businessSubscribe,
     unsubscribe: businessUnsubscribe
-  } = usePushNotifications('test-business-id');
+  } = usePushNotifications('a0875152-3d2e-4d3e-b685-a7d2f480ab00');
 
   const testPushNotification = async () => {
     setIsLoading(true);
@@ -37,7 +37,7 @@ export default function PushTestPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          businessId: 'test-business-id'
+          businessId: 'a0875152-3d2e-4d3e-b685-a7d2f480ab00'
         })
       });
       
