@@ -9,6 +9,7 @@ import { usePushNotifications } from '../../../../hooks/usePushNotifications';
 import { handleLogout } from '../../../../utils/authUtils';
 import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
+import SupportButton from '../../../../components/SupportButton';
 
 export default function BusinessProfilePage() {
   const { data: session } = useSession();
@@ -94,6 +95,7 @@ export default function BusinessProfilePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <SupportButton userType="business" />
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
           </div>
         </div>
