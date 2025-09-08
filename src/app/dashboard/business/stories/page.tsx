@@ -352,10 +352,69 @@ export default function BusinessStoriesPage() {
         </div>
 
         {filteredStories.length > 0 ? (
-          <StoryGrid
-            stories={filteredStories}
-            onStoryClick={handleStoryClick}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredStories.map((story, index) => (
+              <div key={story.id} className="relative group">
+                {/* Hikaye Kartı */}
+                <div 
+                  className="relative cursor-pointer"
+                  onClick={() => handleStoryClick(story, index)}
+                >
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 p-0.5">
+                    <div className="w-full h-full rounded-lg overflow-hidden bg-white">
+                      {story.media_type === 'image' ? (
+                        <img
+                          src={story.media_url}
+                          alt="Story"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={story.media_url}
+                          className="w-full h-full object-cover"
+                          muted
+                        />
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Hikaye İstatistikleri */}
+                  <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-3 h-3" />
+                        <span>{story.view_count}</span>
+                        <Heart className="w-3 h-3" />
+                        <span>{story.like_count}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Silme Butonu */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteStory(story.id);
+                  }}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  title="Hikayeyi Sil"
+                >
+                  ×
+                </button>
+
+                {/* Hikaye Bilgileri */}
+                <div className="mt-2 text-center">
+                  <p className="text-xs text-gray-600 truncate">
+                    {story.caption || 'Hikaye'}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(story.created_at).toLocaleDateString('tr-TR')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="text-center py-12">
             <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">

@@ -13,7 +13,7 @@ interface StoryViewerProps {
   onPrevious: () => void;
   onLike: (storyId: string) => void;
   onComment: (storyId: string, comment: string) => void;
-  onShare: (storyId: string, shareType: string) => void;
+  onShare: (storyId: string, shareType: 'internal' | 'external' | 'copy_link') => void;
   className?: string;
 }
 
@@ -135,7 +135,7 @@ export default function StoryViewer({
     }
   };
 
-  const handleShare = (shareType: string) => {
+  const handleShare = (shareType: 'internal' | 'external' | 'copy_link') => {
     onShare(currentStory.id, shareType);
   };
 

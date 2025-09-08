@@ -158,16 +158,15 @@ export default function StoryCreator({
     setUploadError('');
 
     try {
-      // Önce medyayı yükle
-      const uploadResponse = await fetch('/api/story/upload', {
+      // Önce medyayı yükle (yorumlara fotoğraf ekleme sistemi gibi)
+      const uploadResponse = await fetch('/api/upload_base64', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          file: form.mediaUrl,
-          fileName: `story_${Date.now()}.${form.mediaType === 'image' ? 'jpg' : 'mp4'}`,
-          fileType: form.mediaType === 'image' ? 'image/jpeg' : 'video/mp4'
+          dataUrl: form.mediaUrl,
+          filename: `story_${Date.now()}.${form.mediaType === 'image' ? 'jpg' : 'mp4'}`
         }),
       });
 
@@ -176,7 +175,7 @@ export default function StoryCreator({
         throw new Error(errorData.error || 'Medya yükleme hatası');
       }
 
-      const uploadResult = await uploadResponse.json();
+      const uploadData = await uploadResponse.json();
 
       // Hikaye oluştur
       const createResponse = await fetch('/api/story/create', {
@@ -186,9 +185,9 @@ export default function StoryCreator({
         },
         body: JSON.stringify({
           ...form,
-          mediaUrl: uploadResult.url,
-          mediaSize: uploadResult.size,
-          mediaDuration: uploadResult.duration
+          mediaUrl: uploadData.url,
+          mediaSize: uploadData.size || 0,
+          mediaDuration: uploadData.duration || null
         }),
       });
 

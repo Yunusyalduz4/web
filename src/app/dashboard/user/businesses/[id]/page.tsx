@@ -9,9 +9,9 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-// import StoryCard, { StoryGrid } from '../../../components/story/StoryCard';
-// import StoryViewer from '../../../components/story/StoryViewer';
-// import { Story } from '../../../types/story';
+import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
+import StoryViewer from '@/components/story/StoryViewer';
+import { Story } from '@/types/story';
 
 // Inline StarRating Component
 interface StarRatingProps {
@@ -388,12 +388,11 @@ export default function BusinessDetailPage() {
                   <span className="text-white text-sm">📱</span>
                 </div>
               </div>
-              {/* <StoryGrid 
+              <StoryGrid 
                 stories={businessStories} 
                 onStoryClick={handleStoryClick}
                 className="justify-center"
-              /> */}
-              <div className="text-gray-500 text-sm text-center py-4">Hikayeler yakında eklenecek...</div>
+              />
             </div>
           )}
           
@@ -1059,7 +1058,7 @@ export default function BusinessDetailPage() {
     )}
 
     {/* Hikaye Viewer */}
-    {/* {storiesOpen && (
+    {storiesOpen && (
       <StoryViewer
         stories={viewingStories}
         currentIndex={currentStoryIndex}
@@ -1070,7 +1069,7 @@ export default function BusinessDetailPage() {
         onComment={handleStoryComment}
         onShare={handleStoryShare}
       />
-    )} */}
+    )}
     </>
   );
 } 
