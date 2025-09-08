@@ -421,6 +421,16 @@ export const businessRouter = t.router({
       return result.rows[0];
     }),
 
+  // İşletme sahibi için kendi işletmesini getir
+  getMyBusiness: t.procedure.use(isBusiness)
+    .query(async ({ ctx }) => {
+      const result = await pool.query(
+        `SELECT * FROM businesses WHERE owner_user_id = $1`,
+        [ctx.user.id]
+      );
+      return result.rows[0];
+    }),
+
   // Business görseli ekleme (onay bekliyor)
   addBusinessImage: t.procedure.use(isBusiness)
     .input(z.object({ 

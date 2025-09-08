@@ -8,6 +8,7 @@ import { analyticsRouter } from './analytics';
 import { favoritesRouter } from './favorites';
 import { adminRouter } from './admin';
 import { slotsRouter } from './slots';
+import { storyRouter } from './story';
 
 export const appRouter = t.router({
   auth: authRouter,
@@ -19,6 +20,7 @@ export const appRouter = t.router({
   favorites: favoritesRouter,
   admin: adminRouter,
   slots: slotsRouter,
+  story: storyRouter,
 });
 
 export type AppRouter = typeof appRouter; 

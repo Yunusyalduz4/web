@@ -9,6 +9,9 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+// import StoryCard, { StoryGrid } from '../../../components/story/StoryCard';
+// import StoryViewer from '../../../components/story/StoryViewer';
+// import { Story } from '../../../types/story';
 
 // Inline StarRating Component
 interface StarRatingProps {
@@ -96,6 +99,7 @@ export default function BusinessDetailPage() {
   const { data: businessImages } = trpc.business.getBusinessImages.useQuery({ businessId }, { enabled: !!businessId });
   const { data: businessRating } = trpc.review.getBusinessRating.useQuery({ businessId }, { enabled: !!businessId });
   const { data: reviewsData } = trpc.review.getByBusiness.useQuery({ businessId, page: 1, limit: 5 }, { enabled: !!businessId });
+  const { data: businessStories, refetch: refetchStories } = trpc.story.getByBusiness.useQuery({ businessId }, { enabled: !!businessId });
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [minRating, setMinRating] = useState(0);
@@ -113,6 +117,11 @@ export default function BusinessDetailPage() {
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [photoSwiper, setPhotoSwiper] = useState<any>(null);
+  
+  // Hikaye state'leri
+  const [storiesOpen, setStoriesOpen] = useState(false);
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+  const [viewingStories, setViewingStories] = useState<any[]>([]);
 
   const minServicePrice = useMemo(() => {
     if (!services || services.length === 0) return null as number | null;
@@ -120,6 +129,81 @@ export default function BusinessDetailPage() {
     if (nums.length === 0) return null;
     return Math.min(...nums);
   }, [services]);
+
+  // tRPC mutations
+  const likeStoryMutation = trpc.story.toggleLike.useMutation();
+  const viewStoryMutation = trpc.story.view.useMutation();
+  const commentStoryMutation = trpc.story.comment.useMutation();
+  const shareStoryMutation = trpc.story.share.useMutation();
+
+  // Hikaye etkileşim fonksiyonları
+  const handleStoryClick = (story: any, index: number) => {
+    setViewingStories(businessStories || []);
+    setCurrentStoryIndex(index);
+    setStoriesOpen(true);
+    // Hikaye görüntüleme kaydı
+    handleStoryView(story.id);
+  };
+
+  const handleStoryClose = () => {
+    setStoriesOpen(false);
+    setViewingStories([]);
+    setCurrentStoryIndex(0);
+  };
+
+  const handleStoryNext = () => {
+    if (currentStoryIndex < viewingStories.length - 1) {
+      setCurrentStoryIndex(prev => prev + 1);
+    }
+  };
+
+  const handleStoryPrevious = () => {
+    if (currentStoryIndex > 0) {
+      setCurrentStoryIndex(prev => prev - 1);
+    }
+  };
+
+  const handleStoryLike = async (storyId: string) => {
+    // Hikaye beğeni işlemi
+    try {
+      await likeStoryMutation.mutateAsync({ storyId });
+      refetchStories(); // Hikayeleri yenile
+    } catch (error) {
+      console.error('Hikaye beğeni hatası:', error);
+    }
+  };
+
+  const handleStoryView = async (storyId: string) => {
+    // Hikaye görüntüleme kaydı
+    try {
+      await viewStoryMutation.mutateAsync({ 
+        storyId,
+        deviceType: 'mobile' // veya cihaz tespiti yapılabilir
+      });
+    } catch (error) {
+      console.error('Hikaye görüntüleme hatası:', error);
+    }
+  };
+
+  const handleStoryComment = async (storyId: string, comment: string) => {
+    // Hikaye yorum işlemi
+    try {
+      await commentStoryMutation.mutateAsync({ storyId, comment });
+      refetchStories(); // Hikayeleri yenile
+    } catch (error) {
+      console.error('Hikaye yorum hatası:', error);
+    }
+  };
+
+  const handleStoryShare = async (storyId: string, shareType: 'internal' | 'external' | 'copy_link') => {
+    // Hikaye paylaşım işlemi
+    try {
+      await shareStoryMutation.mutateAsync({ storyId, shareType });
+      refetchStories(); // Hikayeleri yenile
+    } catch (error) {
+      console.error('Hikaye paylaşım hatası:', error);
+    }
+  };
 
   // Filtrelenmiş ve sıralanmış yorumlar
   const filteredAndSortedReviews = useMemo(() => {
@@ -293,6 +377,24 @@ export default function BusinessDetailPage() {
             <p className="text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto px-2 mb-4">
               {business.description}
             </p>
+          )}
+
+          {/* Hikayeler Bölümü */}
+          {businessStories && businessStories.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-700 mr-3">Hikayeler</h3>
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">📱</span>
+                </div>
+              </div>
+              {/* <StoryGrid 
+                stories={businessStories} 
+                onStoryClick={handleStoryClick}
+                className="justify-center"
+              /> */}
+              <div className="text-gray-500 text-sm text-center py-4">Hikayeler yakında eklenecek...</div>
+            </div>
           )}
           
           {/* Business Rating - Tıklanabilir */}
@@ -955,6 +1057,20 @@ export default function BusinessDetailPage() {
         </div>
       </div>
     )}
+
+    {/* Hikaye Viewer */}
+    {/* {storiesOpen && (
+      <StoryViewer
+        stories={viewingStories}
+        currentIndex={currentStoryIndex}
+        onClose={handleStoryClose}
+        onNext={handleStoryNext}
+        onPrevious={handleStoryPrevious}
+        onLike={handleStoryLike}
+        onComment={handleStoryComment}
+        onShare={handleStoryShare}
+      />
+    )} */}
     </>
   );
 } 

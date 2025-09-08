@@ -11,55 +11,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
-  const [isClient, setIsClient] = useState(false);
-  
   const { credentials, saveCredentials, clearCredentials } = useUserCredentials();
 
-  // Client-side hydration'ı bekle
+  // Sayfa yüklendiğinde kayıtlı bilgileri yükle
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Sayfa yüklendiğinde kayıtlı bilgileri yükle (sadece client-side'da)
-  useEffect(() => {
-    if (isClient && credentials.rememberMe && credentials.email && credentials.password) {
+    if (credentials.rememberMe && credentials.email && credentials.password) {
       setEmail(credentials.email);
       setPassword(credentials.password);
       setRememberMe(true);
     }
-  }, [credentials, isClient]);
-
-  // Hydration hatasını önlemek için client-side render'ı bekle
-  if (!isClient) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-white/60">
-          <div className="max-w-md mx-auto p-4">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="text-sm font-bold text-gray-800">RANDEVUO</Link>
-              <div className="flex items-center gap-2">
-                <div className="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md">
-                  Giriş
-                </div>
-                <Link
-                  href="/register"
-                  className="px-3 py-2 rounded-xl bg-white/70 border border-white/50 text-gray-900 text-sm font-semibold"
-                >
-                  Kayıt
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-md mx-auto px-4 py-8">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Giriş Yap</h1>
-            <p className="text-gray-600 text-sm mt-2">Hesabınıza giriş yapın</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  }, [credentials]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,7 +218,7 @@ export default function LoginPage() {
             </div>
 
             {/* Clear Credentials */}
-            {isClient && credentials.rememberMe && credentials.email && (
+            {credentials.rememberMe && credentials.email && (
               <div className="text-center pt-4 border-t border-gray-100">
                 <button
                   type="button"
