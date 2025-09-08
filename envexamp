@@ -1,0 +1,20 @@
+VERCEL=false
+
+# Database Configuration (Neon PostgreSQL)
+DATABASE_URL=postgresql://postgres:Test123.@127.0.0.1:5432/kuafor
+
+# NextAuth Configuration
+NEXTAUTH_URL="https://randevuo.com"
+NEXTAUTH_SECRET="Z2qVHeqZoE4+eove5oCOG1rlYerYcvCTKWP0yzoRqws="
+
+# Google Maps API (Optional - for LocationPicker)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="AIzaSyDCnMRoUVB1yIVIrk9iubGDzI0cMVAaQ58"
+
+# App Configuration
+NODE_ENV="production"
+
+
+# Push Notification VAPID Keys
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="BHSWMbWfdKDVzUW2S_52s2epJodh3Iev_whYxTHGLwwVZcv5h>
+VAPID_PRIVATE_KEY="7XmntWPCQjIUsOyNOdmAnVoVCY7w6KYKc7dj7AxkeS0"
+VAPID_EMAIL="mailto:yalduzbey@gmail.com"

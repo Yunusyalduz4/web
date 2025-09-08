@@ -2,8 +2,8 @@ import webpush from 'web-push';
 
 // VAPID keys - production'da environment variables'dan alınmalı
 const vapidKeys = {
-  publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BG1LYEA21rncGSSNwQGDVz2XJf55gexHy0BIeoUhpXrMwcucDVYI6eBVPqVUvT29I__O7crCYqaXEp4ghNirZeY',
-  privateKey: process.env.VAPID_PRIVATE_KEY || 'gUPRvAKL7-fluM6wBElhnfp9tmj_sEUomCCXamdwlEE'
+  publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BDGdOcqgLlT-eIVLrha5j__3puuZVYxiVmZFIeZJ54K7Q_IfvAZL4hVOwwwos3L8LOHKkjfCwLcpCGGWFUkwBp0',
+  privateKey: process.env.VAPID_PRIVATE_KEY || '42Tz8e44LLU30qnu8fw6xUSzVhjD-V0qPTmeJjN_FnA'
 };
 
 // VAPID details'i güvenli şekilde set et
