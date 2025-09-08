@@ -2,7 +2,7 @@
   "name": "RANDEVUO",
   "short_name": "RANDEVUO",
   "description": "RANDEVUO - Kuaför randevu ve yönetim uygulaması",
-  "start_url": "/",
+  "start_url": "/login",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
