@@ -8,6 +8,7 @@ import React from 'react';
 import { handleLogout } from '../../../../utils/authUtils';
 import { useUserPushNotifications } from '../../../../hooks/useUserPushNotifications';
 import NotificationsButton from '../../../../components/NotificationsButton';
+import SupportButton from '../../../../components/SupportButton';
 import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -109,7 +110,10 @@ export default function UserProfilePage() {
             <span className="hidden sm:inline">Geri</span>
           </button>
           <div className="text-sm font-bold tracking-tight text-gray-800">Profil</div>
-          <NotificationsButton userType="user" />
+          <div className="flex items-center gap-2">
+            <SupportButton userType="user" />
+            <NotificationsButton userType="user" />
+          </div>
         </div>
       </div>
 
