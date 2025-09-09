@@ -13,8 +13,6 @@ import {
   BarChart3, 
   Eye, 
   Heart, 
-  MessageCircle, 
-  Share, 
   Clock, 
   Filter,
   Search,
@@ -55,8 +53,6 @@ export default function BusinessStoriesPage() {
   });
 
   const likeStoryMutation = trpc.story.toggleLike.useMutation();
-  const commentStoryMutation = trpc.story.comment.useMutation();
-  const shareStoryMutation = trpc.story.share.useMutation();
   const viewStoryMutation = trpc.story.view.useMutation();
 
   // Filtrelenmiş ve sıralanmış hikayeler
@@ -159,23 +155,6 @@ export default function BusinessStoriesPage() {
     }
   };
 
-  const handleStoryComment = async (storyId: string, comment: string) => {
-    try {
-      await commentStoryMutation.mutateAsync({ storyId, comment });
-      refetchStories();
-    } catch (error) {
-      console.error('Hikaye yorum hatası:', error);
-    }
-  };
-
-  const handleStoryShare = async (storyId: string, shareType: string) => {
-    try {
-      await shareStoryMutation.mutateAsync({ storyId, shareType: shareType as 'internal' | 'external' | 'copy_link' });
-      refetchStories();
-    } catch (error) {
-      console.error('Hikaye paylaşım hatası:', error);
-    }
-  };
 
   const handleDeleteStory = async (storyId: string) => {
     if (confirm('Bu hikayeyi silmek istediğinizden emin misiniz?')) {
@@ -235,7 +214,7 @@ export default function BusinessStoriesPage() {
 
       {/* İstatistikler */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
@@ -268,18 +247,6 @@ export default function BusinessStoriesPage() {
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.overview.total_likes || 0}</p>
                 <p className="text-sm text-gray-600">Toplam Beğeni</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.overview.total_comments || 0}</p>
-                <p className="text-sm text-gray-600">Toplam Yorum</p>
               </div>
             </div>
           </div>
@@ -378,26 +345,26 @@ export default function BusinessStoriesPage() {
                     </div>
                   </div>
                   
-                  {/* Hikaye İstatistikleri */}
-                  <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* Hikaye İstatistikleri - Mobil Uyumlu */}
+                  <div className="absolute bottom-2 left-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded-full opacity-100 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Eye className="w-3 h-3" />
-                        <span>{story.view_count}</span>
+                        <span className="font-bold">{story.view_count}</span>
                         <Heart className="w-3 h-3" />
-                        <span>{story.like_count}</span>
+                        <span className="font-bold">{story.like_count}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Silme Butonu */}
+                {/* Silme Butonu - Mobil Uyumlu */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteStory(story.id);
                   }}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full flex items-center justify-center text-sm font-bold opacity-100 group-hover:opacity-100 transition-all duration-200 shadow-lg border-2 border-white active:scale-95 touch-manipulation"
                   title="Hikayeyi Sil"
                 >
                   ×
@@ -452,8 +419,6 @@ export default function BusinessStoriesPage() {
           onNext={handleStoryNext}
           onPrevious={handleStoryPrevious}
           onLike={handleStoryLike}
-          onComment={handleStoryComment}
-          onShare={handleStoryShare}
         />
       )}
     </main>

@@ -28,8 +28,6 @@ export default function FavoritesPage() {
   // tRPC mutations
   const likeStoryMutation = trpc.story.toggleLike.useMutation();
   const viewStoryMutation = trpc.story.view.useMutation();
-  const commentStoryMutation = trpc.story.comment.useMutation();
-  const shareStoryMutation = trpc.story.share.useMutation();
 
   // Hikaye etkileşim fonksiyonları
   const handleStoryClick = (story: Story, index: number) => {
@@ -81,23 +79,6 @@ export default function FavoritesPage() {
     }
   };
 
-  const handleStoryComment = async (storyId: string, comment: string) => {
-    try {
-      await commentStoryMutation.mutateAsync({ storyId, comment });
-      refetchStories(); // Hikayeleri yenile
-    } catch (error) {
-      console.error('Hikaye yorum hatası:', error);
-    }
-  };
-
-  const handleStoryShare = async (storyId: string, shareType: string) => {
-    try {
-      await shareStoryMutation.mutateAsync({ storyId, shareType: shareType as 'internal' | 'external' | 'copy_link' });
-      refetchStories(); // Hikayeleri yenile
-    } catch (error) {
-      console.error('Hikaye paylaşım hatası:', error);
-    }
-  };
 
   const list = useMemo(() => {
     let l = (favorites || []).map((b: any) => ({
@@ -251,8 +232,6 @@ export default function FavoritesPage() {
           onNext={handleStoryNext}
           onPrevious={handleStoryPrevious}
           onLike={handleStoryLike}
-          onComment={handleStoryComment}
-          onShare={handleStoryShare}
         />
       )}
     </main>

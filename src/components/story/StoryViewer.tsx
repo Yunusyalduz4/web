@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Story } from '../../types/story';
 import { getStoryStatus, formatTimeRemaining, calculateViewDuration, getDeviceType } from '../../utils/storyUtils';
-import { X, ChevronLeft, ChevronRight, Heart, MessageCircle, Share, MoreHorizontal, Play, Pause } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MoreHorizontal, Play, Pause } from 'lucide-react';
 
 interface StoryViewerProps {
   stories: Story[];
@@ -12,8 +12,6 @@ interface StoryViewerProps {
   onNext: () => void;
   onPrevious: () => void;
   onLike: (storyId: string) => void;
-  onComment: (storyId: string, comment: string) => void;
-  onShare: (storyId: string, shareType: 'internal' | 'external' | 'copy_link') => void;
   className?: string;
 }
 
@@ -24,15 +22,11 @@ export default function StoryViewer({
   onNext,
   onPrevious,
   onLike,
-  onComment,
-  onShare,
   className = ''
 }: StoryViewerProps) {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(currentIndex);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [isCheckingLike, setIsCheckingLike] = useState(false);
   const [viewStartTime, setViewStartTime] = useState<number>(0);
@@ -127,17 +121,6 @@ export default function StoryViewer({
     }
   };
 
-  const handleComment = () => {
-    if (commentText.trim()) {
-      onComment(currentStory.id, commentText.trim());
-      setCommentText('');
-      setShowComments(false);
-    }
-  };
-
-  const handleShare = (shareType: 'internal' | 'external' | 'copy_link') => {
-    onShare(currentStory.id, shareType);
-  };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -310,48 +293,9 @@ export default function StoryViewer({
             >
               <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
             </button>
-
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className="text-white hover:text-blue-400 transition-colors"
-            >
-              <MessageCircle className="w-6 h-6" />
-            </button>
-
-            <button
-              onClick={() => handleShare('internal')}
-              className="text-white hover:text-green-400 transition-colors"
-            >
-              <Share className="w-6 h-6" />
-            </button>
-
-            <button className="text-white hover:text-gray-300 transition-colors">
-              <MoreHorizontal className="w-6 h-6" />
-            </button>
           </div>
         </div>
 
-        {/* Yorum Bölümü */}
-        {showComments && (
-          <div className="mt-4 bg-black bg-opacity-50 rounded-lg p-4">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Yorum yazın..."
-                className="flex-1 bg-white bg-opacity-20 text-white placeholder-gray-300 rounded-lg px-3 py-2 text-sm"
-                onKeyPress={(e) => e.key === 'Enter' && handleComment()}
-              />
-              <button
-                onClick={handleComment}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-              >
-                Gönder
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

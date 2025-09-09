@@ -45,13 +45,13 @@ export function StoryCard({ story, onClick, className = '' }: StoryCardProps) {
         </div>
       </div>
 
-      {/* Hikaye İstatistikleri */}
-      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      {/* Hikaye İstatistikleri - Mobil Uyumlu */}
+      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded-full opacity-100 group-hover:opacity-100 transition-opacity duration-200">
         <div className="flex items-center gap-2">
           <Eye className="w-3 h-3" />
-          <span>{story.view_count}</span>
+          <span className="font-bold">{story.view_count}</span>
           <Heart className="w-3 h-3" />
-          <span>{story.like_count}</span>
+          <span className="font-bold">{story.like_count}</span>
         </div>
       </div>
 
