@@ -15,11 +15,26 @@ export default function BusinessEmployeesPage() {
   const { data: businesses, isLoading: loadingBusiness } = trpc.business.getBusinesses.useQuery();
   const business = businesses?.find((b: any) => b.owner_user_id === userId);
   const businessId = business?.id;
+
+  // Employee ise yetki kontrolü
+  if (session?.user?.role === 'employee' && !session?.user?.permissions?.can_manage_employees) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+        <span className="text-5xl mb-2">🔒</span>
+        <span className="text-lg text-gray-500">Bu sayfaya erişim yetkiniz yok.</span>
+      </main>
+    );
+  }
+  
+  console.log('🔍 Businesses data:', businesses);
+  console.log('🔍 Selected business:', business);
+  console.log('🔍 BusinessId:', businessId, 'Type:', typeof businessId);
   const employeesQuery = trpc.business.getEmployees.useQuery(businessId ? { businessId } : skipToken);
   const { data: employees, isLoading } = employeesQuery;
   const createEmployee = trpc.business.createEmployee.useMutation();
   const updateEmployee = trpc.business.updateEmployee.useMutation();
   const deleteEmployee = trpc.business.deleteEmployee.useMutation();
+  const createEmployeeAccount = trpc.auth.createEmployeeAccount.useMutation();
   const getAvailability = trpc.business.getEmployeeAvailability.useQuery;
   const createAvailability = trpc.business.createEmployeeAvailability.useMutation();
   const updateAvailability = trpc.business.updateEmployeeAvailability.useMutation();
@@ -32,7 +47,23 @@ export default function BusinessEmployeesPage() {
   const assignService = trpc.business.assignServiceToEmployee.useMutation();
   const removeService = trpc.business.removeServiceFromEmployee.useMutation();
 
-  const [form, setForm] = useState({ id: '', name: '', email: '', phone: '' });
+  const [form, setForm] = useState({ 
+    id: '', 
+    name: '', 
+    email: '', 
+    phone: '',
+    // Hesap oluşturma için yeni alanlar
+    createAccount: false,
+    password: '',
+    confirmPassword: '',
+    permissions: {
+      can_manage_appointments: true,
+      can_view_analytics: true,
+      can_manage_services: false,
+      can_manage_employees: false,
+      can_manage_business_settings: false
+    }
+  });
   const [editing, setEditing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState('');
@@ -67,6 +98,22 @@ export default function BusinessEmployeesPage() {
       setError('Geçerli bir e-posta adresi girin.');
       return;
     }
+
+    // Hesap oluşturma validasyonu
+    if (form.createAccount) {
+      if (!form.email || !form.email.includes('@')) {
+        setError('E-posta adresi geçerli olmalı.');
+        return;
+      }
+      if (!form.password || form.password.length < 6) {
+        setError('Şifre en az 6 karakter olmalı.');
+        return;
+      }
+      if (form.password !== form.confirmPassword) {
+        setError('Şifreler eşleşmiyor.');
+        return;
+      }
+    }
     
     try {
       // Boş string'leri null'a çevir
@@ -77,13 +124,58 @@ export default function BusinessEmployeesPage() {
       };
       
       if (editing) {
-        await updateEmployee.mutateAsync({ ...cleanForm, businessId });
+        console.log('🔍 Update employee data:', { ...cleanForm, id: form.id, businessId: businessId! });
+        await updateEmployee.mutateAsync({ 
+          ...cleanForm, 
+          id: form.id,
+          businessId: businessId! 
+        });
         setSuccess('Çalışan güncellendi!');
       } else {
-        await createEmployee.mutateAsync({ ...cleanForm, businessId });
-        setSuccess('Çalışan eklendi!');
+        console.log('🔍 Create employee data:', { ...cleanForm, businessId: businessId! });
+        // Önce çalışanı oluştur
+        const employeeResult = await createEmployee.mutateAsync({ ...cleanForm, businessId: businessId! });
+        console.log('🔍 Employee created:', employeeResult);
+        
+        // Eğer hesap oluşturma seçildiyse, hesap oluştur
+        if (form.createAccount && employeeResult.id) {
+          console.log('🔍 Create employee account data:', {
+            businessId: businessId!,
+            employeeId: employeeResult.id,
+            email: form.email,
+            password: form.password,
+            permissions: form.permissions
+          });
+          await createEmployeeAccount.mutateAsync({
+            businessId: businessId!,
+            employeeId: employeeResult.id,
+            email: form.email,
+            password: form.password,
+            permissions: form.permissions
+          });
+          setSuccess('Çalışan ve hesabı başarıyla oluşturuldu!');
+        } else {
+          setSuccess('Çalışan eklendi!');
+        }
       }
-      setForm({ id: '', name: '', email: '', phone: '' });
+      
+      // Formu sıfırla
+      setForm({ 
+        id: '', 
+        name: '', 
+        email: '', 
+        phone: '',
+        createAccount: false,
+        password: '',
+        confirmPassword: '',
+        permissions: {
+          can_manage_appointments: true,
+          can_view_analytics: true,
+          can_manage_services: false,
+          can_manage_employees: false,
+          can_manage_business_settings: false
+        }
+      });
       setEditing(false);
       employeesQuery.refetch();
       setTimeout(() => setSuccess(''), 1200);
@@ -108,7 +200,22 @@ export default function BusinessEmployeesPage() {
   };
 
   const handleEdit = (e: any) => {
-    setForm({ ...e });
+    setForm({ 
+      id: e.id, // Employee ID'yi olduğu gibi kullan
+      name: e.name || '',
+      email: e.email || '',
+      phone: e.phone || '',
+      createAccount: false, // Edit modunda hesap oluşturma kapalı
+      password: '',
+      confirmPassword: '',
+      permissions: e.permissions || {
+        can_manage_appointments: true,
+        can_view_analytics: true,
+        can_manage_services: false,
+        can_manage_employees: false,
+        can_manage_business_settings: false
+      }
+    });
     setEditing(true);
     setError('');
     setSuccess('');
@@ -122,7 +229,7 @@ export default function BusinessEmployeesPage() {
   const confirmDelete = async () => {
     if (!deleteId || !businessId) return;
     try {
-      await deleteEmployee.mutateAsync({ id: deleteId, businessId });
+      await deleteEmployee.mutateAsync({ id: deleteId, businessId: businessId! });
       setDeleteId(null);
       setSuccess('Çalışan silindi!');
       employeesQuery.refetch();
@@ -242,7 +349,30 @@ export default function BusinessEmployeesPage() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
             <button 
-              onClick={() => { setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); setSelectedEmployee(null); setShowServiceModal(false); setAddOpen(true); }} 
+              onClick={() => { 
+                setEditing(false); 
+                setForm({ 
+                  id: '', 
+                  name: '', 
+                  email: '', 
+                  phone: '',
+                  createAccount: false,
+                  password: '',
+                  confirmPassword: '',
+                  permissions: {
+                    can_manage_appointments: true,
+                    can_view_analytics: true,
+                    can_manage_services: false,
+                    can_manage_employees: false,
+                    can_manage_business_settings: false
+                  }
+                }); 
+                setError(''); 
+                setSuccess(''); 
+                setSelectedEmployee(null); 
+                setShowServiceModal(false); 
+                setAddOpen(true); 
+              }} 
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -322,6 +452,115 @@ export default function BusinessEmployeesPage() {
                     placeholder="Telefon numarası (opsiyonel)"
                   />
                 </div>
+
+                {/* Hesap Oluşturma Bölümü */}
+                {!editing && (
+                  <>
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <input
+                          type="checkbox"
+                          id="createAccount"
+                          checked={form.createAccount}
+                          onChange={e => setForm(f => ({ 
+                            ...f, 
+                            createAccount: e.target.checked,
+                            permissions: f.permissions || {
+                              can_manage_appointments: true,
+                              can_view_analytics: true,
+                              can_manage_services: false,
+                              can_manage_employees: false,
+                              can_manage_business_settings: false
+                            }
+                          }))}
+                          className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                        />
+                        <label htmlFor="createAccount" className="text-sm font-semibold text-gray-900">
+                          Çalışan için hesap oluştur
+                        </label>
+                      </div>
+                    </div>
+
+                    {form.createAccount && (
+                      <div className="space-y-4 bg-purple-50 rounded-xl p-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-600">ℹ️</span>
+                            <span className="text-sm font-medium text-blue-800">Hesap Bilgileri</span>
+                          </div>
+                          <p className="text-xs text-blue-700">
+                            Çalışan hesabı için yukarıdaki e-posta adresi kullanılacak. Aşağıdan şifre belirleyin.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                              Şifre
+                            </label>
+                            <input 
+                              type="password" 
+                              value={form.password || ''} 
+                              onChange={e => setForm(f => ({ ...f, password: e.target.value }))} 
+                              required={form.createAccount}
+                              className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors" 
+                              placeholder="En az 6 karakter"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                              Şifre Tekrar
+                            </label>
+                            <input 
+                              type="password" 
+                              value={form.confirmPassword || ''} 
+                              onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} 
+                              required={form.createAccount}
+                              className="w-full px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors" 
+                              placeholder="Şifreyi tekrar girin"
+                            />
+                          </div>
+                        </div>
+
+                        {/* İzinler */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-900 mb-3">
+                            Yetkiler
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {[
+                              { key: 'can_manage_appointments', label: 'Randevu Yönetimi', icon: '📅' },
+                              { key: 'can_view_analytics', label: 'İstatistik Görüntüleme', icon: '📊' },
+                              { key: 'can_manage_services', label: 'Hizmet Yönetimi', icon: '🔧' },
+                              { key: 'can_manage_employees', label: 'Çalışan Yönetimi', icon: '👥' },
+                              { key: 'can_manage_business_settings', label: 'İşletme Ayarları', icon: '⚙️' }
+                            ].map((permission) => (
+                              <div key={permission.key} className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  id={permission.key}
+                                  checked={form.permissions?.[permission.key as keyof typeof form.permissions] || false}
+                                  onChange={e => setForm(f => ({
+                                    ...f,
+                                    permissions: {
+                                      ...(f.permissions || {}),
+                                      [permission.key]: e.target.checked
+                                    }
+                                  }))}
+                                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                                />
+                                <label htmlFor={permission.key} className="text-sm text-gray-700 flex items-center gap-2">
+                                  <span>{permission.icon}</span>
+                                  {permission.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
               
               {error && (
@@ -349,7 +588,28 @@ export default function BusinessEmployeesPage() {
                 <button 
                   type="button" 
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-sm font-semibold hover:bg-white/90 transition-colors" 
-                  onClick={() => { setAddOpen(false); setEditing(false); setForm({ id: '', name: '', email: '', phone: '' }); setError(''); setSuccess(''); }}
+                  onClick={() => { 
+                    setAddOpen(false); 
+                    setEditing(false); 
+                    setForm({ 
+                      id: '', 
+                      name: '', 
+                      email: '', 
+                      phone: '',
+                      createAccount: false,
+                      password: '',
+                      confirmPassword: '',
+                      permissions: {
+                        can_manage_appointments: true,
+                        can_view_analytics: true,
+                        can_manage_services: false,
+                        can_manage_employees: false,
+                        can_manage_business_settings: false
+                      }
+                    }); 
+                    setError(''); 
+                    setSuccess(''); 
+                  }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>İptal</span>
@@ -380,6 +640,26 @@ export default function BusinessEmployeesPage() {
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-gray-900 truncate">{e.name}</div>
                   <div className="text-xs text-gray-600 truncate mt-1">{e.email || 'E-posta yok'}</div>
+                  {/* Hesap Durumu */}
+                  <div className="flex items-center gap-2 mt-1">
+                    {e.user_id ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        Hesap Var
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        Hesap Yok
+                      </span>
+                    )}
+                    {e.is_active === false && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        Deaktif
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               {e.phone && (

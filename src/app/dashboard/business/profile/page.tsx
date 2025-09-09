@@ -15,8 +15,18 @@ export default function BusinessProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const userId = session?.user.id;
-  const { data: business, isLoading: businessLoading } = trpc.business.getBusinessByUserId.useQuery(userId ? { userId } : skipToken);
+  
+  // Employee ise çalışan profilini getir, business ise işletme profilini getir
+  const { data: business, isLoading: businessLoading } = trpc.business.getBusinessByUserId.useQuery(
+    userId && session?.user?.role === 'business' ? { userId } : skipToken
+  );
+  
+  const { data: employee, isLoading: employeeLoading } = trpc.business.getEmployeeById.useQuery(
+    session?.user?.employeeId && session?.user?.role === 'employee' ? { employeeId: session.user.employeeId } : skipToken
+  );
+  
   const updateMutation = trpc.business.updateBusinessProfile.useMutation();
+  const updateEmployeeMutation = trpc.business.updateEmployeeProfile.useMutation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');

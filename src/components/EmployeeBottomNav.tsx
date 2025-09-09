@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 
 const navItems = [
   { 
-    href: "/dashboard/business", 
+    href: "/dashboard/employee", 
     label: "Panel", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13,10 +13,10 @@ const navItems = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5v4m8-4v4" />
       </svg>
     ),
-    permission: null // Her zaman erişilebilir
+    permission: "can_manage_appointments"
   },
   { 
-    href: "/dashboard/business/appointments", 
+    href: "/dashboard/employee/appointments", 
     label: "Randevular", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,7 +26,7 @@ const navItems = [
     permission: "can_manage_appointments"
   },
   { 
-    href: "/dashboard/business/analytics", 
+    href: "/dashboard/employee/analytics", 
     label: "İstatistikler", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@ const navItems = [
     permission: "can_view_analytics"
   },
   { 
-    href: "/dashboard/business/services", 
+    href: "/dashboard/employee/services", 
     label: "Hizmetler", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ const navItems = [
     permission: "can_manage_services"
   },
   { 
-    href: "/dashboard/business/employees", 
+    href: "/dashboard/employee/employees", 
     label: "Çalışanlar", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@ const navItems = [
     permission: "can_manage_employees"
   },
   { 
-    href: "/dashboard/business/reviews", 
+    href: "/dashboard/employee/reviews", 
     label: "Yorumlar", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +66,7 @@ const navItems = [
     permission: "can_manage_appointments"
   },
   { 
-    href: "/dashboard/business/stories", 
+    href: "/dashboard/employee/stories", 
     label: "Hikayeler", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,18 +76,18 @@ const navItems = [
     permission: "can_manage_appointments"
   },
   { 
-    href: "/dashboard/business/profile", 
+    href: "/dashboard/employee/profile", 
     label: "Profil", 
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
     ),
-    permission: null // Her zaman erişilebilir
+    permission: null // Profil her zaman erişilebilir
   },
 ];
 
-export default function BusinessBottomNav() {
+export default function EmployeeBottomNav() {
   const { data: session } = useSession();
   const [currentPath, setCurrentPath] = useState("");
   
@@ -108,21 +108,10 @@ export default function BusinessBottomNav() {
     };
   }, []);
 
-  // Filter nav items based on user role and permissions
+  // Filter nav items based on employee permissions
   const filteredNavItems = navItems.filter(item => {
-    // Business users can see all items
-    if (session?.user?.role === 'business') {
-      return true;
-    }
-    
-    // Employee users can only see items they have permission for
-    if (session?.user?.role === 'employee') {
-      if (!item.permission) return true; // Always show items without permission requirement
-      return session?.user?.permissions?.[item.permission] === true;
-    }
-    
-    // Default: show all items
-    return true;
+    if (!item.permission) return true; // Always show items without permission requirement
+    return session?.user?.permissions?.[item.permission] === true;
   });
   
   return (
@@ -177,4 +166,4 @@ export default function BusinessBottomNav() {
       <div className="h-[env(safe-area-inset-bottom)] bg-white/80 backdrop-blur-md" />
     </nav>
   );
-} 
+}

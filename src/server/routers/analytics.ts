@@ -1,7 +1,7 @@
 import { t } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
-import { isBusiness } from '../trpc/trpc';
+import { isBusiness, isEmployee } from '../trpc/trpc';
 
 export const analyticsRouter = t.router({
   // Get business analytics overview
@@ -321,6 +321,91 @@ export const analyticsRouter = t.router({
           ? ((parseInt(row.completed_appointments || 0) / parseInt(row.total_appointments || 0)) * 100).toFixed(1)
           : '0.0'
       }));
+      } catch (error) {
+        console.error('Analytics getEmployeeAnalytics error:', error);
+        throw new Error(`Çalışan analitikleri alınamadı: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+      }
+    }),
+
+  // Çalışan analitikleri (çalışan kendi verilerini görür)
+  getEmployeeAnalytics: t.procedure.use(isEmployee)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional()
+    }))
+    .query(async ({ input, ctx }) => {
+      try {
+        const startDate = input.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const endDate = input.endDate || new Date().toISOString().split('T')[0];
+
+        // Çalışanın kendi randevularını al
+        const appointmentsResult = await pool.query(
+          `SELECT 
+            a.*,
+            u.name as customer_name,
+            u.phone as customer_phone,
+            array_agg(
+              json_build_object(
+                'service_id', s.id,
+                'service_name', s.name,
+                'duration_minutes', s.duration_minutes,
+                'price', s.price
+              )
+            ) as services
+          FROM appointments a
+          LEFT JOIN users u ON a.user_id = u.id
+          LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+          LEFT JOIN services s ON aps.service_id = s.id
+          WHERE aps.employee_id = $1 
+            AND DATE(a.appointment_datetime) BETWEEN $2 AND $3
+          GROUP BY a.id, u.name, u.phone
+          ORDER BY a.appointment_datetime DESC`,
+          [input.employeeId, startDate, endDate]
+        );
+
+        // Çalışanın yorumlarını al
+        const reviewsResult = await pool.query(
+          `SELECT 
+            r.*,
+            u.name as customer_name,
+            a.appointment_datetime
+          FROM reviews r
+          JOIN appointments a ON r.appointment_id = a.id
+          JOIN appointment_services aps ON a.id = aps.appointment_id
+          JOIN users u ON a.user_id = u.id
+          WHERE aps.employee_id = $1
+            AND DATE(a.appointment_datetime) BETWEEN $2 AND $3
+          ORDER BY a.appointment_datetime DESC`,
+          [input.employeeId, startDate, endDate]
+        );
+
+        const appointments = appointmentsResult.rows;
+        const reviews = reviewsResult.rows;
+
+        // İstatistikleri hesapla
+        const totalAppointments = appointments.length;
+        const completedAppointments = appointments.filter(apt => apt.status === 'completed').length;
+        const pendingAppointments = appointments.filter(apt => apt.status === 'pending').length;
+        const confirmedAppointments = appointments.filter(apt => apt.status === 'confirmed').length;
+        const cancelledAppointments = appointments.filter(apt => apt.status === 'cancelled').length;
+
+        const completionRate = totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0;
+        const averageRating = reviews.length > 0 
+          ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
+          : 0;
+
+        return {
+          totalAppointments,
+          completedAppointments,
+          pendingAppointments,
+          confirmedAppointments,
+          cancelledAppointments,
+          completionRate: Math.round(completionRate * 100) / 100,
+          averageRating: Math.round(averageRating * 10) / 10,
+          reviews,
+          appointments: appointments.slice(0, 10) // Son 10 randevu
+        };
       } catch (error) {
         console.error('Analytics getEmployeeAnalytics error:', error);
         throw new Error(`Çalışan analitikleri alınamadı: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);

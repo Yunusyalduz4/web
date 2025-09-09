@@ -15,6 +15,7 @@ export default function BusinessDashboard() {
   const router = useRouter();
   const userId = session?.user.id;
   const businessId = session?.user?.businessId;
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -23,12 +24,27 @@ export default function BusinessDashboard() {
 
   // İşletme bilgilerini getir
   const { data: businesses } = trpc.business.getBusinesses.useQuery();
-  const business = businesses?.find((b: any) => b.owner_user_id === session?.user?.id);
+  const business = businesses?.find((b: any) => {
+    if (session?.user?.role === 'business') {
+      return b.owner_user_id === session?.user?.id;
+    } else if (session?.user?.role === 'employee') {
+      return b.id === session?.user?.businessId;
+    }
+    return false;
+  });
 
   // Randevuları getir
-  const { data: appointments, refetch: refetchAppointments } = trpc.appointment.getByBusiness.useQuery(
+  const { data: allAppointments, refetch: refetchAppointments } = trpc.appointment.getByBusiness.useQuery(
     businessId ? { businessId } : skipToken
   );
+
+  // Employee ise sadece kendi randevularını filtrele
+  const appointments = useMemo(() => {
+    if (session?.user?.role === 'employee' && session?.user?.employeeId) {
+      return allAppointments?.filter((a: any) => a.employee_id === session.user.employeeId) || [];
+    }
+    return allAppointments || [];
+  }, [allAppointments, session?.user?.role, session?.user?.employeeId]);
 
   // Hizmetleri ve çalışanları getir
   const { data: services } = trpc.business.getServices.useQuery(
@@ -288,7 +304,10 @@ export default function BusinessDashboard() {
       {/* 7 Günlük Slot Görünümü */}
       <WeeklySlotView 
         businessId={businessId} 
-        appointments={appointments || []} 
+        appointments={appointments || []}
+        selectedEmployeeId={session?.user?.role === 'employee' ? session?.user?.employeeId : selectedEmployeeId}
+        onEmployeeChange={session?.user?.role === 'employee' ? undefined : setSelectedEmployeeId}
+        isReadOnly={session?.user?.role === 'employee'}
       />
     </main>
     </>

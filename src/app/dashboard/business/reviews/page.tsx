@@ -2,7 +2,7 @@
 import { trpc } from '../../../../utils/trpcClient';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { skipToken } from '@tanstack/react-query';
 import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
@@ -109,9 +109,20 @@ export default function BusinessReviewsPage() {
   const utils = trpc.useUtils();
 
   // İşletme yorumlarını getir - hook'ları her zaman çağır
-  const { data: reviewsData, error: reviewsError, isLoading: reviewsLoading } = trpc.review.getByBusiness.useQuery(
+  const { data: allReviewsData, error: reviewsError, isLoading: reviewsLoading } = trpc.review.getByBusiness.useQuery(
     businessId ? { businessId, page: currentPage, limit: 10 } : skipToken
   );
+
+  // Employee ise sadece kendi yorumlarını filtrele
+  const reviewsData = useMemo(() => {
+    if (session?.user?.role === 'employee' && session?.user?.employeeId && allReviewsData) {
+      return {
+        ...allReviewsData,
+        reviews: allReviewsData.reviews?.filter((r: any) => r.employee_id === session.user.employeeId) || []
+      };
+    }
+    return allReviewsData;
+  }, [allReviewsData, session?.user?.role, session?.user?.employeeId]);
 
   // İşletme puan özetini getir - hook'ları her zaman çağır
   const { data: ratingSummary, error: ratingError, isLoading: ratingLoading } = trpc.review.getBusinessRating.useQuery(

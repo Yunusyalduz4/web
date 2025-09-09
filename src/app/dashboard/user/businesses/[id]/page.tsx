@@ -93,6 +93,7 @@ export default function BusinessDetailPage() {
   const businessId = params?.id as string;
   const { data: session } = useSession();
 
+  const businessIdNum = businessId ? parseInt(businessId, 10) : 0;
   const { data: business, isLoading } = trpc.business.getBusinessById.useQuery({ businessId }, { enabled: !!businessId });
   const { data: services } = trpc.business.getServices.useQuery({ businessId }, { enabled: !!businessId });
   const { data: employees } = trpc.business.getEmployees.useQuery({ businessId }, { enabled: !!businessId });

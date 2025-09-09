@@ -13,6 +13,16 @@ export default function BusinessAnalyticsPage() {
   const { data: businesses } = trpc.business.getBusinesses.useQuery();
   const business = businesses?.find((b: any) => b.owner_user_id === userId);
   
+  // Employee ise yetki kontrolü
+  if (session?.user?.role === 'employee' && !session?.user?.permissions?.can_view_analytics) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+        <span className="text-5xl mb-2">🔒</span>
+        <span className="text-lg text-gray-500">Bu sayfaya erişim yetkiniz yok.</span>
+      </main>
+    );
+  }
+
   const { data: analytics, isLoading } = trpc.analytics.getBusinessAnalytics.useQuery(
     undefined,
     { enabled: !!business?.id }

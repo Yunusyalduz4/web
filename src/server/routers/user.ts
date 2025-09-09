@@ -1,4 +1,4 @@
-import { t, isUser } from '../trpc/trpc';
+import { t, isUser, isEmployee } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 import bcrypt from 'bcrypt';
@@ -129,6 +129,47 @@ export const userRouter = t.router({
       const result = await pool.query(
         `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${param} RETURNING id, name, email, role, phone, address, created_at`,
         [...values, input.userId]
+      );
+      return result.rows[0];
+    }),
+
+  // Profil güncelleme (çalışanlar için)
+  updateProfile: t.procedure.use(isEmployee)
+    .input(z.object({
+      name: z.string().min(2),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      address: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const updates = [];
+      const values = [];
+      let param = 1;
+
+      if (input.name) {
+        updates.push(`name = $${param++}`);
+        values.push(input.name);
+      }
+      if (input.email) {
+        updates.push(`email = $${param++}`);
+        values.push(input.email);
+      }
+      if (input.phone !== undefined) {
+        updates.push(`phone = $${param++}`);
+        values.push(input.phone);
+      }
+      if (input.address !== undefined) {
+        updates.push(`address = $${param++}`);
+        values.push(input.address);
+      }
+
+      if (updates.length === 0) {
+        throw new Error('Güncellenecek alan bulunamadı');
+      }
+
+      const result = await pool.query(
+        `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${param} RETURNING id, name, email, role, phone, address, created_at`,
+        [...values, ctx.user.id]
       );
       return result.rows[0];
     }),

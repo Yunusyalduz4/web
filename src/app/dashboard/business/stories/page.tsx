@@ -28,6 +28,16 @@ export default function BusinessStoriesPage() {
   const { data: session } = useSession();
   const [showCreator, setShowCreator] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
+
+  // Employee ise yetki kontrolü
+  if (session?.user?.role === 'employee' && !session?.user?.permissions?.can_manage_appointments) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+        <span className="text-5xl mb-2">🔒</span>
+        <span className="text-lg text-gray-500">Bu sayfaya erişim yetkiniz yok.</span>
+      </main>
+    );
+  }
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [viewingStories, setViewingStories] = useState<Story[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
