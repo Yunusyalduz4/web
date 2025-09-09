@@ -1,4 +1,4 @@
-import { t, isUser, isBusiness, isApprovedBusiness } from '../trpc/trpc';
+import { t, isUser, isBusiness, isApprovedBusiness, isEmployee, isEmployeeOrBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 import { TRPCError } from '@trpc/server';
@@ -224,9 +224,9 @@ export const appointmentRouter = t.router({
       
       return rows;
     }),
-  getByBusiness: t.procedure.use(isApprovedBusiness)
+  getByBusiness: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({ businessId: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const result = await pool.query(
         `SELECT 
           a.*,
@@ -618,6 +618,90 @@ export const appointmentRouter = t.router({
       } catch (error) {
         console.error('Socket.io event error:', error);
         // Socket.io hatası randevu güncellemeyi etkilemesin
+      }
+
+      return result.rows[0];
+    }),
+
+  // Çalışan endpoint'leri
+  getEmployeeAppointments: t.procedure.use(isEmployee)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      date: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional()
+    }))
+    .query(async ({ input, ctx }) => {
+      // Çalışanın kendi randevularını al
+      let query = `
+        SELECT 
+          a.*,
+          u.name as customer_name,
+          u.phone as customer_phone,
+          b.name as business_name,
+          array_agg(
+            json_build_object(
+              'service_id', s.id,
+              'service_name', s.name,
+              'duration_minutes', s.duration_minutes,
+              'price', s.price,
+              'employee_id', aps.employee_id
+            )
+          ) as services
+        FROM appointments a
+        LEFT JOIN users u ON a.user_id = u.id
+        LEFT JOIN businesses b ON a.business_id = b.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN services s ON aps.service_id = s.id
+        WHERE aps.employee_id = $1
+      `;
+      
+      const params = [input.employeeId];
+      let paramCount = 1;
+
+      if (input.date) {
+        paramCount++;
+        query += ` AND DATE(a.appointment_datetime) = $${paramCount}`;
+        params.push(input.date);
+      } else if (input.startDate && input.endDate) {
+        paramCount++;
+        query += ` AND DATE(a.appointment_datetime) BETWEEN $${paramCount}`;
+        params.push(input.startDate);
+        paramCount++;
+        query += ` AND $${paramCount}`;
+        params.push(input.endDate);
+      }
+
+      query += `
+        GROUP BY a.id, u.name, u.phone, b.name
+        ORDER BY a.appointment_datetime DESC
+      `;
+
+      const result = await pool.query(query, params);
+      return result.rows;
+    }),
+
+  updateEmployeeAppointmentStatus: t.procedure.use(isEmployee)
+    .input(z.object({
+      appointmentId: z.string().uuid(),
+      status: z.enum(['pending', 'confirmed', 'cancelled', 'completed'])
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Çalışanın kendi randevusunu güncelle
+      const result = await pool.query(
+        `UPDATE appointments 
+         SET status = $1, updated_at = NOW()
+         WHERE id = $2 AND id IN (
+           SELECT a.id FROM appointments a
+           JOIN appointment_services aps ON a.id = aps.appointment_id
+           WHERE aps.employee_id = $3
+         )
+         RETURNING *`,
+        [input.status, input.appointmentId, ctx.employee.id]
+      );
+
+      if (result.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı veya yetkiniz yok' });
       }
 
       return result.rows[0];

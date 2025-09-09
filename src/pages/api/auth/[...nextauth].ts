@@ -15,6 +15,8 @@ declare module 'next-auth' {
       role?: string;
       id?: string;
       businessId?: string; // İşletme ID'si eklendi
+      employeeId?: string; // Çalışan ID'si eklendi
+      permissions?: any; // Çalışan izinleri eklendi
     };
   }
 }
@@ -23,6 +25,8 @@ declare module 'next-auth/jwt' {
     role?: string;
     id?: string;
     businessId?: string; // İşletme ID'si eklendi
+    employeeId?: string; // Çalışan ID'si eklendi
+    permissions?: any; // Çalışan izinleri eklendi
   }
 }
 
@@ -38,35 +42,104 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
         
         try {
+          console.log('🔍 Auth attempt for email:', credentials.email);
+          
+          // Önce normal users tablosundan kontrol et
           const result = await pool.query(
             'SELECT * FROM users WHERE email = $1',
             [credentials.email]
           );
           const user = result.rows[0];
-          if (!user) return null;
           
-          const valid = await bcrypt.compare(credentials.password, user.password_hash);
-          if (!valid) return null;
-
-          // İşletme sahibi ise business ID'sini al
-          let businessId = null;
-          if (user.role === 'business') {
-            const businessResult = await pool.query(
-              'SELECT id FROM businesses WHERE owner_user_id = $1',
-              [user.id]
-            );
-            if (businessResult.rows.length > 0) {
-              businessId = businessResult.rows[0].id;
+          if (user) {
+            console.log('🔍 User found in users table:', { id: user.id, role: user.role, email: user.email });
+            const valid = await bcrypt.compare(credentials.password, user.password_hash);
+            if (!valid) {
+              console.log('❌ Password invalid for user');
+              return null;
             }
+
+            // İşletme sahibi ise business ID'sini al
+            let businessId = null;
+            if (user.role === 'business') {
+              const businessResult = await pool.query(
+                'SELECT id FROM businesses WHERE owner_user_id = $1',
+                [user.id]
+              );
+              if (businessResult.rows.length > 0) {
+                businessId = businessResult.rows[0].id;
+              }
+            }
+
+            // Çalışan ise ek bilgileri al
+            let employeeId = null;
+            let permissions = null;
+            if (user.role === 'employee') {
+              employeeId = user.employee_id;
+              businessId = user.business_id;
+              
+              // Çalışan izinlerini al
+              const employeeResult = await pool.query(
+                'SELECT permissions FROM employees WHERE id = $1',
+                [employeeId]
+              );
+              if (employeeResult.rows.length > 0) {
+                permissions = employeeResult.rows[0].permissions;
+              }
+            }
+
+            console.log('✅ User authenticated successfully:', { id: user.id, role: user.role, businessId, employeeId });
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              businessId: businessId?.toString(),
+              employeeId: employeeId?.toString(),
+              permissions: permissions,
+            } as User & { role: string; businessId?: string; employeeId?: string; permissions?: any };
           }
 
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            businessId: businessId, // İşletme ID'si eklendi
-          } as User & { role: string; businessId?: string };
+          // Eğer users tablosunda yoksa, çalışan tablosundan kontrol et
+          console.log('🔍 Checking employee table for email:', credentials.email);
+          const employeeResult = await pool.query(
+            `SELECT e.*, u.id as user_id, u.name, u.email, u.role, u.business_id, u.is_employee_active
+             FROM employees e
+             LEFT JOIN users u ON e.user_id = u.id
+             WHERE (e.login_email = $1 OR u.email = $1) AND e.is_active = true`,
+            [credentials.email]
+          );
+          const employee = employeeResult.rows[0];
+          
+          if (employee) {
+            console.log('🔍 Employee found:', { id: employee.id, name: employee.name, login_email: employee.login_email, user_email: employee.email, is_active: employee.is_active, is_employee_active: employee.is_employee_active });
+            const valid = await bcrypt.compare(credentials.password, employee.password_hash);
+            if (!valid) {
+              console.log('❌ Password invalid for employee');
+              return null;
+            }
+
+            // Çalışan hesabı aktif mi kontrol et
+            if (!employee.is_employee_active) {
+              console.log('❌ Employee account is not active');
+              return null;
+            }
+
+            console.log('✅ Employee authenticated successfully:', { id: employee.user_id || employee.id, name: employee.name, role: 'employee' });
+            return {
+              id: employee.user_id || employee.id,
+              name: employee.name,
+              email: employee.login_email || employee.email,
+              role: 'employee',
+              businessId: employee.business_id?.toString(),
+              employeeId: employee.id?.toString(),
+              permissions: employee.permissions,
+            } as User & { role: string; businessId?: string; employeeId?: string; permissions?: any };
+          }
+          
+          console.log('❌ No user or employee found for email:', credentials.email);
+
+          return null;
         } catch (error) {
           console.error('Auth error:', error);
           return null;
@@ -81,17 +154,25 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log('🔍 JWT callback - User data:', user);
         token.role = (user as any).role;
         token.id = user.id;
         token.businessId = (user as any).businessId; // İşletme ID'si eklendi
+        token.employeeId = (user as any).employeeId; // Çalışan ID'si eklendi
+        token.permissions = (user as any).permissions; // Çalışan izinleri eklendi
+        console.log('🔍 JWT callback - Token after update:', { role: token.role, id: token.id, businessId: token.businessId, employeeId: token.employeeId });
       }
       return token;
     },
     async session({ session, token }) {
+      console.log('🔍 Session callback - Token:', { role: token.role, id: token.id, businessId: token.businessId, employeeId: token.employeeId, permissions: token.permissions });
       if (token && session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
         session.user.businessId = token.businessId as string; // İşletme ID'si eklendi
+        session.user.employeeId = token.employeeId as string; // Çalışan ID'si eklendi
+        session.user.permissions = token.permissions as any; // Çalışan izinleri eklendi
+        console.log('🔍 Session callback - Session after update:', { role: session.user.role, id: session.user.id, businessId: session.user.businessId, employeeId: session.user.employeeId, permissions: session.user.permissions });
       }
       return session;
     },

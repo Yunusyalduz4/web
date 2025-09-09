@@ -8,7 +8,7 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(['user', 'business']),
+  role: z.enum(['user', 'business', 'employee']),
   // İşletme bilgileri (sadece business rolü için)
   businessName: z.string().optional(),
   businessDescription: z.string().optional(),
@@ -25,6 +25,9 @@ const registerSchema = z.object({
     longitude: z.number(),
     address: z.string()
   }).optional(),
+  // Çalışan bilgileri (sadece employee rolü için)
+  businessId: z.string().uuid().optional(),
+  employeeId: z.string().uuid().optional(),
 });
 
 const loginSchema = z.object({
@@ -82,7 +85,7 @@ export const authRouter = t.router({
         
         // Kullanıcıyı ekle
         const result = await pool.query(
-          `INSERT INTO users (name, email, password_hash, role, phone, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, email, role`,
+          `INSERT INTO users (name, email, password_hash, role, phone, address, latitude, longitude, business_id, employee_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, name, email, role`,
           [
             input.name,
             input.email, 
@@ -91,7 +94,9 @@ export const authRouter = t.router({
             input.customerPhone || '',
             input.customerAddress || '',
             input.customerLocation?.latitude || null,
-            input.customerLocation?.longitude || null
+            input.customerLocation?.longitude || null,
+            input.businessId || null,
+            input.employeeId || null
           ]
         );
         
@@ -152,6 +157,158 @@ export const authRouter = t.router({
       if (!valid) throw new Error('Geçersiz e-posta veya şifre');
       // TODO: Session/token yönetimi eklenecek
       return { id: user.id, name: user.name, email: user.email, role: user.role };
+    }),
+
+  // Çalışan giriş sistemi
+  employeeLogin: t.procedure
+    .input(loginSchema)
+    .mutation(async ({ input }) => {
+      // Çalışan hesabını bul (employee tablosundan)
+      const result = await pool.query(
+        `SELECT e.*, u.id as user_id, u.name, u.email, u.role, u.business_id, u.is_employee_active
+         FROM employees e
+         LEFT JOIN users u ON e.user_id = u.id
+         WHERE e.login_email = $1 AND e.is_active = true`,
+        [input.email]
+      );
+      const employee = result.rows[0];
+      if (!employee) throw new Error('Geçersiz e-posta veya şifre');
+      
+      // Şifreyi kontrol et
+      const valid = await bcrypt.compare(input.password, employee.password_hash);
+      if (!valid) throw new Error('Geçersiz e-posta veya şifre');
+      
+      // Çalışan hesabı aktif mi kontrol et
+      if (!employee.is_employee_active) {
+        throw new Error('Hesabınız deaktif edilmiş. Lütfen işletme sahibi ile iletişime geçin.');
+      }
+
+      // Giriş logunu kaydet
+      try {
+        await pool.query(
+          `INSERT INTO employee_login_logs (employee_id, login_at, login_successful) VALUES ($1, NOW(), true)`,
+          [employee.id]
+        );
+      } catch (logError) {
+        console.error('Login log error:', logError);
+        // Log hatası girişi engellemez
+      }
+
+      return { 
+        id: employee.user_id || employee.id, 
+        name: employee.name, 
+        email: employee.login_email, 
+        role: 'employee',
+        businessId: employee.business_id,
+        employeeId: employee.id,
+        permissions: employee.permissions
+      };
+    }),
+
+  // Çalışan hesabı oluşturma (işletme sahibi tarafından)
+  createEmployeeAccount: t.procedure
+    .input(z.object({
+      businessId: z.string().uuid(),
+      employeeId: z.string().uuid(),
+      email: z.string().email(),
+      password: z.string().min(6),
+      permissions: z.object({
+        can_manage_appointments: z.boolean(),
+        can_view_analytics: z.boolean(),
+        can_manage_services: z.boolean(),
+        can_manage_employees: z.boolean(),
+        can_manage_business_settings: z.boolean()
+      }).optional()
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // İşletme sahibi kontrolü (bu endpoint sadece işletme sahipleri tarafından kullanılacak)
+        const businessCheck = await pool.query(
+          `SELECT owner_user_id FROM businesses WHERE id = $1`,
+          [input.businessId]
+        );
+        if (businessCheck.rows.length === 0) {
+          throw new Error('İşletme bulunamadı');
+        }
+
+        // Çalışan var mı kontrol et
+        const employeeCheck = await pool.query(
+          `SELECT id, name FROM employees WHERE id = $1 AND business_id = $2`,
+          [input.employeeId, input.businessId]
+        );
+        if (employeeCheck.rows.length === 0) {
+          throw new Error('Çalışan bulunamadı');
+        }
+
+        const employee = employeeCheck.rows[0];
+
+        // Email zaten kullanılıyor mu kontrol et
+        const emailCheck = await pool.query(
+          `SELECT id FROM users WHERE email = $1 OR id IN (SELECT user_id FROM employees WHERE login_email = $1)`,
+          [input.email]
+        );
+        if (emailCheck.rows.length > 0) {
+          throw new Error('Bu e-posta adresi zaten kullanılıyor');
+        }
+
+        // Şifre hashle
+        const password_hash = await bcrypt.hash(input.password, 10);
+
+        // Varsayılan izinler
+        const defaultPermissions = {
+          can_manage_appointments: true,
+          can_view_analytics: true,
+          can_manage_services: false,
+          can_manage_employees: false,
+          can_manage_business_settings: false,
+          ...input.permissions
+        };
+
+        // User hesabı oluştur
+        const userResult = await pool.query(
+          `INSERT INTO users (name, email, password_hash, role, business_id, employee_id, is_employee_active) 
+           VALUES ($1, $2, $3, 'employee', $4, $5, true) 
+           RETURNING id`,
+          [employee.name, input.email, password_hash, input.businessId, input.employeeId]
+        );
+        const userId = userResult.rows[0].id;
+
+        // Employee kaydını güncelle
+        await pool.query(
+          `UPDATE employees 
+           SET user_id = $1, login_email = $2, password_hash = $3, is_active = true, 
+               permissions = $4, created_by_user_id = $5
+           WHERE id = $6`,
+          [userId, input.email, password_hash, JSON.stringify(defaultPermissions), businessCheck.rows[0].owner_user_id, input.employeeId]
+        );
+
+        // User'ın employee_id'sini güncelle
+        await pool.query(
+          `UPDATE users SET employee_id = $1 WHERE id = $2`,
+          [input.employeeId, userId]
+        );
+
+        // İzinleri ayrı tabloya kaydet
+        for (const [permission, granted] of Object.entries(defaultPermissions)) {
+          await pool.query(
+            `INSERT INTO employee_permissions (employee_id, permission_name, is_granted) 
+             VALUES ($1, $2, $3) 
+             ON CONFLICT (employee_id, permission_name) 
+             DO UPDATE SET is_granted = $3, updated_at = NOW()`,
+            [input.employeeId, permission, granted]
+          );
+        }
+
+        return { 
+          success: true, 
+          userId, 
+          employeeId: input.employeeId,
+          message: 'Çalışan hesabı başarıyla oluşturuldu' 
+        };
+      } catch (error) {
+        console.error('Employee account creation error:', error);
+        throw new Error(error instanceof Error ? error.message : 'Çalışan hesabı oluşturulamadı');
+      }
     }),
   // Request email verification (on register or change email)
   requestEmailVerification: t.procedure

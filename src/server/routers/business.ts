@@ -1,4 +1,4 @@
-import { t, isBusiness, isApprovedBusiness } from '../trpc/trpc';
+import { t, isBusiness, isApprovedBusiness, isEmployee } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { pool } from '../db';
@@ -16,6 +16,13 @@ const employeeSchema = z.object({
   name: z.string().min(2),
   email: z.string().email().optional(),
   phone: z.string().optional(),
+  permissions: z.object({
+    can_manage_appointments: z.boolean(),
+    can_view_analytics: z.boolean(),
+    can_manage_services: z.boolean(),
+    can_manage_employees: z.boolean(),
+    can_manage_business_settings: z.boolean(),
+  }).optional(),
 });
 
 const availabilitySchema = z.object({
@@ -234,19 +241,43 @@ export const businessRouter = t.router({
   createEmployee: t.procedure.use(isApprovedBusiness)
     .input(employeeSchema)
     .mutation(async ({ input }) => {
+      console.log('🔍 createEmployee input:', input);
+      console.log('🔍 businessId type:', typeof input.businessId, 'value:', input.businessId);
+      
+      // Default permissions if not provided
+      const defaultPermissions = {
+        can_manage_appointments: true,
+        can_view_analytics: true,
+        can_manage_services: false,
+        can_manage_employees: false,
+        can_manage_business_settings: false,
+      };
+      
+      const permissions = input.permissions || defaultPermissions;
+      
       const result = await pool.query(
-        `INSERT INTO employees (business_id, name, email, phone) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [input.businessId, input.name, input.email || '', input.phone || '']
+        `INSERT INTO employees (business_id, name, email, phone, permissions) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [input.businessId, input.name, input.email || '', input.phone || '', JSON.stringify(permissions)]
       );
       return result.rows[0];
     }),
   updateEmployee: t.procedure.use(isBusiness)
     .input(employeeSchema.extend({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const result = await pool.query(
-        `UPDATE employees SET name = $1, email = $2, phone = $3 WHERE id = $4 AND business_id = $5 RETURNING *`,
-        [input.name, input.email || '', input.phone || '', input.id, input.businessId]
-      );
+      const permissions = input.permissions ? JSON.stringify(input.permissions) : null;
+      
+      let query = `UPDATE employees SET name = $1, email = $2, phone = $3`;
+      let params = [input.name, input.email || '', input.phone || ''];
+      
+      if (permissions) {
+        query += `, permissions = $4 WHERE id = $5 AND business_id = $6 RETURNING *`;
+        params.push(permissions, input.id, input.businessId);
+      } else {
+        query += ` WHERE id = $4 AND business_id = $5 RETURNING *`;
+        params.push(input.id, input.businessId);
+      }
+      
+      const result = await pool.query(query, params);
       return result.rows[0];
     }),
   deleteEmployee: t.procedure.use(isBusiness)
@@ -454,4 +485,35 @@ export const businessRouter = t.router({
 
       return result.rows[0];
     }),
-}); 
+
+  // Çalışan bilgileri
+  getEmployeeInfo: t.procedure.use(isEmployee)
+    .input(z.object({
+      employeeId: z.string().uuid()
+    }))
+    .query(async ({ input, ctx }) => {
+      const result = await pool.query(
+        `SELECT 
+          e.*,
+          b.name as business_name,
+          COUNT(DISTINCT a.id) as total_appointments,
+          AVG(r.rating) as rating,
+          COUNT(DISTINCT CASE WHEN a.status = 'completed' THEN a.id END) as completed_appointments,
+          COUNT(DISTINCT CASE WHEN a.appointment_datetime >= CURRENT_DATE THEN a.id END) as today_appointments
+        FROM employees e
+        LEFT JOIN businesses b ON e.business_id = b.id
+        LEFT JOIN appointment_services aps ON e.id = aps.employee_id
+        LEFT JOIN appointments a ON aps.appointment_id = a.id
+        LEFT JOIN reviews r ON a.id = r.appointment_id
+        WHERE e.id = $1 AND e.business_id = $2
+        GROUP BY e.id, b.name`,
+        [input.employeeId, ctx.employee.businessId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Çalışan bulunamadı' });
+      }
+
+      return result.rows[0];
+    }),
+});

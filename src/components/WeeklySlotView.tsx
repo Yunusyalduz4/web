@@ -8,15 +8,18 @@ import { useSocket } from '../hooks/useSocket';
 interface WeeklySlotViewProps {
   businessId: string;
   appointments: any[];
+  selectedEmployeeId?: string | null;
+  onEmployeeChange?: (employeeId: string | null) => void;
 }
 
-export default function WeeklySlotView({ businessId, appointments }: WeeklySlotViewProps) {
+export default function WeeklySlotView({ businessId, appointments, selectedEmployeeId, onEmployeeChange }: WeeklySlotViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [customDate, setCustomDate] = useState<string>('');
   const [showCustomDate, setShowCustomDate] = useState(false);
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<string | null>(null);
   const [showManualAppointmentModal, setShowManualAppointmentModal] = useState(false);
   const [selectedSlotData, setSelectedSlotData] = useState<{date: string, time: string} | null>(null);
+  const [localSelectedEmployeeId, setLocalSelectedEmployeeId] = useState<string | null>(selectedEmployeeId || null);
 
   // Socket.IO hook'u
   const { isConnected, socket } = useSocket();
@@ -37,6 +40,14 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
   const { data: employees } = trpc.business.getEmployees.useQuery(
     businessId ? { businessId } : skipToken
   );
+
+  // Çalışan değişikliğini handle et
+  const handleEmployeeChange = (employeeId: string | null) => {
+    setLocalSelectedEmployeeId(employeeId);
+    if (onEmployeeChange) {
+      onEmployeeChange(employeeId);
+    }
+  };
 
   // Socket.IO event'lerini dinle ve UI'ı güncelle
   useEffect(() => {
@@ -198,9 +209,20 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
     
     return appointments.filter((apt: any) => {
       const aptDate = new Date(apt.appointment_datetime).toLocaleDateString('en-CA');
-      return aptDate === selectedDate && (apt.status === 'pending' || apt.status === 'confirmed');
+      const matchesDate = aptDate === selectedDate;
+      const matchesStatus = apt.status === 'pending' || apt.status === 'confirmed';
+      
+      // Çalışan filtresi
+      let matchesEmployee = true;
+      if (localSelectedEmployeeId) {
+        matchesEmployee = apt.services?.some((service: any) => 
+          service.employee_id === localSelectedEmployeeId
+        ) || false;
+      }
+      
+      return matchesDate && matchesStatus && matchesEmployee;
     });
-  }, [selectedDate, appointments]);
+  }, [selectedDate, appointments, localSelectedEmployeeId]);
 
   // Özel seçilen gün için randevu detaylarını al
   const customDateAppointments = useMemo(() => {
@@ -208,9 +230,20 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
     
     return appointments.filter((apt: any) => {
       const aptDate = new Date(apt.appointment_datetime).toLocaleDateString('en-CA');
-      return aptDate === customDate && (apt.status === 'pending' || apt.status === 'confirmed');
+      const matchesDate = aptDate === customDate;
+      const matchesStatus = apt.status === 'pending' || apt.status === 'confirmed';
+      
+      // Çalışan filtresi
+      let matchesEmployee = true;
+      if (localSelectedEmployeeId) {
+        matchesEmployee = apt.services?.some((service: any) => 
+          service.employee_id === localSelectedEmployeeId
+        ) || false;
+      }
+      
+      return matchesDate && matchesStatus && matchesEmployee;
     });
-  }, [customDate, appointments]);
+  }, [customDate, appointments, localSelectedEmployeeId]);
 
   // Loading state'i optimize et
   const isLoading = weeklyLoading || !weeklySlots;
@@ -257,6 +290,43 @@ export default function WeeklySlotView({ businessId, appointments }: WeeklySlotV
           </button>
         </div>
       </div>
+
+      {/* Çalışan Seçici */}
+      {employees && employees.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-medium text-gray-700">Çalışan Filtresi:</span>
+            <button
+              onClick={() => handleEmployeeChange(null)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                !localSelectedEmployeeId
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
+                  : 'bg-white/80 text-gray-700 border border-white/50 hover:bg-white/90'
+              }`}
+            >
+              👥 Tümü
+            </button>
+            {employees.map((employee: any) => (
+              <button
+                key={employee.id}
+                onClick={() => handleEmployeeChange(employee.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  localSelectedEmployeeId === employee.id
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
+                    : 'bg-white/80 text-gray-700 border border-white/50 hover:bg-white/90'
+                }`}
+              >
+                {employee.name}
+              </button>
+            ))}
+          </div>
+          {localSelectedEmployeeId && (
+            <div className="text-xs text-gray-600">
+              Sadece <strong>{employees.find((e: any) => e.id === localSelectedEmployeeId)?.name}</strong> çalışanının randevuları gösteriliyor
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Özel Tarih Seçimi */}
       {showCustomDate && (

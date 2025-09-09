@@ -14,6 +14,16 @@ export default function BusinessServicesPage() {
   const { data: businesses, isLoading: loadingBusiness } = trpc.business.getBusinesses.useQuery();
   const business = businesses?.find((b: any) => b.owner_user_id === userId);
   const businessId = business?.id;
+
+  // Employee ise yetki kontrolü
+  if (session?.user?.role === 'employee' && !session?.user?.permissions?.can_manage_services) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+        <span className="text-5xl mb-2">🔒</span>
+        <span className="text-lg text-gray-500">Bu sayfaya erişim yetkiniz yok.</span>
+      </main>
+    );
+  }
   const servicesQuery = trpc.business.getServices.useQuery(businessId ? { businessId } : skipToken);
   const { data: services, isLoading } = servicesQuery;
   const createService = trpc.business.createService.useMutation();
