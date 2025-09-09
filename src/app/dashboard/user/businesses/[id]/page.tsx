@@ -133,8 +133,6 @@ export default function BusinessDetailPage() {
   // tRPC mutations
   const likeStoryMutation = trpc.story.toggleLike.useMutation();
   const viewStoryMutation = trpc.story.view.useMutation();
-  const commentStoryMutation = trpc.story.comment.useMutation();
-  const shareStoryMutation = trpc.story.share.useMutation();
 
   // Hikaye etkileşim fonksiyonları
   const handleStoryClick = (story: any, index: number) => {
@@ -185,25 +183,6 @@ export default function BusinessDetailPage() {
     }
   };
 
-  const handleStoryComment = async (storyId: string, comment: string) => {
-    // Hikaye yorum işlemi
-    try {
-      await commentStoryMutation.mutateAsync({ storyId, comment });
-      refetchStories(); // Hikayeleri yenile
-    } catch (error) {
-      console.error('Hikaye yorum hatası:', error);
-    }
-  };
-
-  const handleStoryShare = async (storyId: string, shareType: 'internal' | 'external' | 'copy_link') => {
-    // Hikaye paylaşım işlemi
-    try {
-      await shareStoryMutation.mutateAsync({ storyId, shareType });
-      refetchStories(); // Hikayeleri yenile
-    } catch (error) {
-      console.error('Hikaye paylaşım hatası:', error);
-    }
-  };
 
   // Filtrelenmiş ve sıralanmış yorumlar
   const filteredAndSortedReviews = useMemo(() => {
@@ -261,49 +240,51 @@ export default function BusinessDetailPage() {
 
   return (
     <>
-      <main className="relative max-w-4xl mx-auto p-4 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+      <main className="relative max-w-4xl mx-auto p-3 pb-20 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
+      {/* Top Bar - Mobil Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/30 shadow-sm mb-3">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <button 
             onClick={() => router.back()}
-            className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-white/40 text-sm"
+            className="flex items-center gap-1 px-3 py-2 bg-white/70 backdrop-blur-md rounded-xl shadow-sm active:scale-95 transition-all duration-200 border border-white/40 text-sm touch-manipulation"
           >
-            <span className="text-base text-gray-900">←</span>
-            <span className="font-medium text-gray-700 hidden sm:block">Geri</span>
+            <span className="text-lg text-gray-900">←</span>
+            <span className="font-medium text-gray-700 text-xs">Geri</span>
           </button>
         </div>
       </div>
 
-      {/* Favorite toggle + Image Slider */}
-      <div className="relative mb-6 md:mb-8 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl md:shadow-2xl bg-white/60 backdrop-blur-md border border-white/40">
-        <div className="absolute right-4 top-4 z-10">
+      {/* Favorite toggle + Image Slider - Mobil Optimized */}
+      <div className="relative mb-4 rounded-2xl overflow-hidden shadow-lg bg-white/60 backdrop-blur-md border border-white/40">
+        <div className="absolute right-3 top-3 z-10">
           <button
             disabled={!session?.user}
             onClick={async () => {
               await toggleFavorite.mutateAsync({ businessId });
               await refetchFav();
             }}
-            className={`px-3 py-2 rounded-full shadow transition-all ${favStatus?.isFavorite ? 'bg-rose-600 text-white' : 'bg-white/70 text-gray-900 border border-white/40 backdrop-blur-md'}`}
+            className={`px-3 py-2 rounded-full shadow transition-all active:scale-95 touch-manipulation ${favStatus?.isFavorite ? 'bg-rose-600 text-white' : 'bg-white/80 text-gray-900 border border-white/40 backdrop-blur-md'}`}
             title={session?.user ? (favStatus?.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle') : 'Giriş yapmalısınız'}
           >
-            <span className="inline-flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z"/></svg>
-              {favStatus?.isFavorite ? 'Favoride' : 'Favori'}
+            <span className="inline-flex items-center gap-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z"/></svg>
+              <span className="text-xs font-medium">{favStatus?.isFavorite ? 'Favoride' : 'Favori'}</span>
             </span>
           </button>
         </div>
         <Swiper 
           spaceBetween={0} 
           slidesPerView={1} 
-          className="w-full h-56 sm:h-72 md:h-80 lg:h-96"
+          className="w-full h-48 sm:h-56 md:h-72 lg:h-80"
           onSwiper={setSlider}
           autoplay={{ delay: 5000, disableOnInteraction: false }}
           loop={true}
           pagination={{ clickable: true }}
           effect="fade"
           fadeEffect={{ crossFade: true }}
+          touchRatio={1}
+          touchStartPreventDefault={false}
         >
           {(businessImages && businessImages.length > 0
             ? businessImages.map((img: any) => img.image_url)
@@ -356,36 +337,36 @@ export default function BusinessDetailPage() {
             </SwiperSlide>
           ))}
         </Swiper>
-        {/* Slider Nav */}
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
-          <button onClick={() => slider?.slidePrev()} className="w-9 h-9 grid place-items-center rounded-full bg-white/70 hover:bg-white/90 border border-white/40 shadow">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {/* Slider Nav - Mobil Optimized */}
+        <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1">
+          <button onClick={() => slider?.slidePrev()} className="w-8 h-8 grid place-items-center rounded-full bg-white/80 hover:bg-white/90 border border-white/40 shadow active:scale-95 transition-all touch-manipulation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <button onClick={() => slider?.slideNext()} className="w-9 h-9 grid place-items-center rounded-full bg-white/70 hover:bg-white/90 border border-white/40 shadow">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <button onClick={() => slider?.slideNext()} className="w-8 h-8 grid place-items-center rounded-full bg-white/80 hover:bg-white/90 border border-white/40 shadow active:scale-95 transition-all touch-manipulation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
       </div>
 
-      {/* Business Info */}
-      <div className="bg-white/60 backdrop-blur-md rounded-2xl md:rounded-3xl shadow-xl p-6 md:p-8 mb-4 md:mb-6 border border-white/40 animate-fade-in">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none mb-3">
+      {/* Business Info - Mobil Optimized */}
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-lg p-4 mb-4 border border-white/40 animate-fade-in">
+        <div className="text-center mb-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none mb-2">
             {business.name}
           </h1>
           {business.description && (
-            <p className="text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto px-2 mb-4">
+            <p className="text-gray-600 text-sm leading-relaxed max-w-2xl mx-auto px-1 mb-3">
               {business.description}
             </p>
           )}
 
-          {/* Hikayeler Bölümü */}
+          {/* Hikayeler Bölümü - Mobil Optimized */}
           {businessStories && businessStories.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-700 mr-3">Hikayeler</h3>
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">📱</span>
+            <div className="mb-4">
+              <div className="flex items-center justify-center mb-3">
+                <h3 className="text-base font-semibold text-gray-700 mr-2">Hikayeler</h3>
+                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">📱</span>
                 </div>
               </div>
               <StoryGrid 
@@ -396,7 +377,7 @@ export default function BusinessDetailPage() {
             </div>
           )}
           
-          {/* Business Rating - Tıklanabilir */}
+          {/* Business Rating - Mobil Optimized */}
           {businessRating && businessRating.total_reviews > 0 && (
             <button 
               onClick={() => {
@@ -412,29 +393,29 @@ export default function BusinessDetailPage() {
                   }
                 }, 100);
               }}
-              className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-2xl border border-yellow-100/50 hover:from-yellow-100/80 hover:to-orange-100/60 hover:border-yellow-200/70 transition-all duration-200 cursor-pointer group mx-auto"
+              className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-xl border border-yellow-100/50 active:from-yellow-100/80 active:to-orange-100/60 active:border-yellow-200/70 transition-all duration-200 cursor-pointer group mx-auto touch-manipulation active:scale-95"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform">
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center text-white text-sm font-bold group-active:scale-110 transition-transform">
                 ⭐
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <StarRating rating={parseFloat(businessRating.overall_rating || 0)} readonly size="md" showValue />
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <StarRating rating={parseFloat(businessRating.overall_rating || 0)} readonly size="sm" showValue />
                 </div>
-                <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors">
-                  {businessRating.total_reviews} değerlendirme • Son 6 ay: {parseFloat(businessRating.last_6_months_rating || 0).toFixed(1)}/5
+                <p className="text-xs text-gray-600 group-active:text-gray-700 transition-colors">
+                  {businessRating.total_reviews} değerlendirme
                 </p>
-                <p className="text-[10px] text-yellow-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Tüm yorumları görmek için tıklayın →
+                <p className="text-[10px] text-yellow-600 mt-1">
+                  Tıklayın →
                 </p>
               </div>
             </button>
           )}
         </div>
 
-        {/* Contact Info Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {/* Adres Kartı - Tıklanabilir */}
+        {/* Contact Info Cards - Mobil Optimized */}
+        <div className="grid grid-cols-1 gap-2">
+          {/* Adres Kartı - Mobil Optimized */}
           <button 
             onClick={() => {
               if (business.address) {
@@ -442,24 +423,24 @@ export default function BusinessDetailPage() {
                 window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
               }
             }}
-            className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl md:rounded-2xl border border-blue-100/30 hover:from-blue-100/60 hover:to-blue-200/40 hover:border-blue-200/50 transition-all duration-200 cursor-pointer group"
+            className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl border border-blue-100/30 active:from-blue-100/60 active:to-blue-200/40 active:border-blue-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95"
             disabled={!business.address}
           >
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg group-hover:scale-110 transition-transform">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white"/></svg>
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-xs text-blue-600 font-medium">Adres</p>
-              <p className="text-xs md:text-sm font-semibold text-gray-800 truncate group-hover:text-blue-700 transition-colors">
+              <p className="text-xs font-semibold text-gray-800 truncate group-active:text-blue-700 transition-colors">
                 {business.address || 'Adres bilgisi yok'}
               </p>
-              <p className="text-[10px] text-blue-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <p className="text-[10px] text-blue-500 mt-1">
                 Yol tarifi için tıklayın →
               </p>
             </div>
           </button>
 
-          {/* Telefon Kartı - Tıklanabilir */}
+          {/* Telefon Kartı - Mobil Optimized */}
           {business.phone && (
             <button 
               onClick={() => {
@@ -467,22 +448,22 @@ export default function BusinessDetailPage() {
                   window.open(`tel:${business.phone}`, '_self');
                 }
               }}
-              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl md:rounded-2xl border border-green-100/30 hover:from-green-100/60 hover:to-green-200/40 hover:border-green-200/50 transition-all duration-200 cursor-pointer group"
+              className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl border border-green-100/30 active:from-green-100/60 active:to-green-200/40 active:border-green-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95"
             >
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg group-hover:scale-110 transition-transform">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.46 15.46 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.49a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z"/></svg>
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.46 15.46 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.49a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z"/></svg>
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs text-green-600 font-medium">Telefon</p>
-                <p className="text-xs md:text-sm font-semibold text-gray-800 group-hover:text-green-700 transition-colors">{business.phone}</p>
-                <p className="text-[10px] text-green-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="text-xs font-semibold text-gray-800 group-active:text-green-700 transition-colors">{business.phone}</p>
+                <p className="text-[10px] text-green-500 mt-1">
                   Arama yapmak için tıklayın →
                 </p>
               </div>
             </button>
           )}
 
-          {/* E-posta Kartı - Tıklanabilir */}
+          {/* E-posta Kartı - Mobil Optimized */}
           {business.email && (
             <button 
               onClick={() => {
@@ -490,15 +471,15 @@ export default function BusinessDetailPage() {
                   window.open(`mailto:${business.email}`, '_self');
                 }
               }}
-              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl md:rounded-2xl border border-purple-100/30 hover:from-purple-100/60 hover:to-purple-200/40 hover:border-purple-200/50 transition-all duration-200 cursor-pointer group"
+              className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl border border-purple-100/30 active:from-purple-100/60 active:to-purple-200/40 active:border-purple-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95"
             >
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg md:rounded-xl flex items-center justify-center text-white text-base md:text-lg group-hover:scale-110 transition-transform">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2l8 5 8-5"/></svg>
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2l8 5 8-5"/></svg>
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-xs text-purple-600 font-medium">E-posta</p>
-                <p className="text-xs md:text-sm font-semibold text-gray-800 truncate group-hover:text-purple-700 transition-colors">{business.email}</p>
-                <p className="text-[10px] text-purple-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="text-xs font-semibold text-gray-800 truncate group-active:text-purple-700 transition-colors">{business.email}</p>
+                <p className="text-[10px] text-purple-500 mt-1">
                   E-posta göndermek için tıklayın →
                 </p>
               </div>
@@ -506,8 +487,8 @@ export default function BusinessDetailPage() {
           )}
         </div>
       </div>
-      {/* Segmented Tabs */}
-      <div className="flex items-center justify-center mb-4">
+      {/* Segmented Tabs - Mobil Optimized */}
+      <div className="flex items-center justify-center mb-3">
         <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
           {([
             { key: 'services', label: 'Hizmetler' },
@@ -516,7 +497,7 @@ export default function BusinessDetailPage() {
           ] as const).map(tab => (
             <button
               key={tab.key}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeTab===tab.key? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md':'text-gray-800 hover:bg-white/70'}`}
+              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all touch-manipulation active:scale-95 ${activeTab===tab.key? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md':'text-gray-800 active:bg-white/70'}`}
               onClick={() => setActiveTab(tab.key as any)}
             >
               {tab.label}
@@ -525,86 +506,86 @@ export default function BusinessDetailPage() {
         </div>
       </div>
 
-      {/* Services Section - table */}
+      {/* Services Section - Mobil Optimized */}
       {activeTab === 'services' && (
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">Hizmetler</h2>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">Hizmetler</h2>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
-          <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-4 py-3 text-[11px] uppercase tracking-wide text-gray-600 border-b border-white/40">
+        <div className="overflow-hidden rounded-xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
+          <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-3 py-2 text-[10px] uppercase tracking-wide text-gray-600 border-b border-white/40">
             <span>Hizmet</span>
             <span>Süre</span>
             <span>Fiyat</span>
           </div>
           <div>
             {services?.map((s: any) => (
-              <div key={s.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-4 py-3 border-t border-white/30 hover:bg-white/70 transition">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white grid place-items-center text-sm shrink-0">⚡</div>
+              <div key={s.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-3 py-2 border-t border-white/30 active:bg-white/70 transition">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white grid place-items-center text-xs shrink-0">⚡</div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 truncate">{s.name}</div>
-                    {s.description && <div className="text-xs text-gray-600 truncate">{s.description}</div>}
+                    <div className="text-xs font-semibold text-gray-900 truncate">{s.name}</div>
+                    {s.description && <div className="text-[10px] text-gray-600 truncate">{s.description}</div>}
                   </div>
                 </div>
-                <div className="text-sm text-gray-800">{s.duration_minutes} dk</div>
-                <div className="text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">₺{s.price}</div>
+                <div className="text-xs text-gray-800">{s.duration_minutes} dk</div>
+                <div className="text-xs font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">₺{s.price}</div>
               </div>
             ))}
             {(!services || services.length === 0) && (
-              <div className="px-4 py-10 text-center text-gray-500">Bu işletme henüz hizmet eklememiş.</div>
+              <div className="px-3 py-8 text-center text-gray-500 text-sm">Bu işletme henüz hizmet eklememiş.</div>
             )}
           </div>
         </div>
       </div>
       )}
 
-      {/* Employees Section - table */}
+      {/* Employees Section - Mobil Optimized */}
       {activeTab === 'employees' && (
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">Çalışanlar</h2>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">Çalışanlar</h2>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
-          <div className="grid grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 text-[11px] uppercase tracking-wide text-gray-600 border-b border-white/40">
+        <div className="overflow-hidden rounded-xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-2 px-3 py-2 text-[10px] uppercase tracking-wide text-gray-600 border-b border-white/40">
             <span>Ad</span>
             <span>E-posta</span>
             <span>Telefon</span>
           </div>
           <div>
             {employees?.map((e: any) => (
-              <div key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 py-3 border-t border-white/30 hover:bg-white/70 transition">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white grid place-items-center text-sm shrink-0">{e.name.charAt(0).toUpperCase()}</div>
-                  <div className="text-sm font-semibold text-gray-900 truncate">{e.name}</div>
+              <div key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-2 border-t border-white/30 active:bg-white/70 transition">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white grid place-items-center text-xs shrink-0">{e.name.charAt(0).toUpperCase()}</div>
+                  <div className="text-xs font-semibold text-gray-900 truncate">{e.name}</div>
                 </div>
-                <div className="text-sm text-gray-800 truncate">{e.email || '-'}</div>
-                <div className="text-sm text-gray-800">{e.phone || '-'}</div>
+                <div className="text-xs text-gray-800 truncate">{e.email || '-'}</div>
+                <div className="text-xs text-gray-800">{e.phone || '-'}</div>
               </div>
             ))}
             {(!employees || employees.length === 0) && (
-              <div className="px-4 py-10 text-center text-gray-500">Bu işletme henüz çalışan eklememiş.</div>
+              <div className="px-3 py-8 text-center text-gray-500 text-sm">Bu işletme henüz çalışan eklememiş.</div>
             )}
           </div>
         </div>
       </div>
       )}
 
-      {/* Reviews Section - table */}
+      {/* Reviews Section - Mobil Optimized */}
       {activeTab === 'reviews' && (
-      <div className="mb-6 md:mb-8" data-tab="reviews">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Müşteri Değerlendirmeleri</h2>
+      <div className="mb-4" data-tab="reviews">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Müşteri Değerlendirmeleri</h2>
         </div>
 
-        {/* Filtreleme Seçenekleri */}
-        <div className="mb-4 flex flex-wrap gap-3">
+        {/* Filtreleme Seçenekleri - Mobil Optimized */}
+        <div className="mb-3 flex flex-col gap-2">
           {/* Puan Filtresi */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Min Puan:</span>
+            <span className="text-xs font-medium text-gray-700">Min Puan:</span>
             <select 
               value={minRating}
-              className="px-3 py-2 border border-white/40 rounded-lg bg-white/60 text-sm"
+              className="px-2 py-1 border border-white/40 rounded-lg bg-white/60 text-xs flex-1"
               onChange={(e) => setMinRating(Number(e.target.value))}
             >
               <option value={0}>Tümü</option>
@@ -616,10 +597,10 @@ export default function BusinessDetailPage() {
 
           {/* Tarih Filtresi */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Sıralama:</span>
+            <span className="text-xs font-medium text-gray-700">Sıralama:</span>
             <select 
               value={sortBy}
-              className="px-3 py-2 border border-white/40 rounded-lg bg-white/60 text-sm"
+              className="px-2 py-1 border border-white/40 rounded-lg bg-white/60 text-xs flex-1"
               onChange={(e) => setSortBy(e.target.value as any)}
             >
               <option value="newest">En Yeni</option>
@@ -635,16 +616,16 @@ export default function BusinessDetailPage() {
         {filteredAndSortedReviews.length > 0 ? (
           <div className="space-y-2">
             {filteredAndSortedReviews.slice(0, 5).map((review: any) => (
-              <div key={review.id} className="bg-white/30 backdrop-blur-sm border border-white/20 rounded-lg p-3 hover:bg-white/40 transition-all duration-200">
-                {/* Kullanıcı Bilgisi ve Genel Puan */}
-                <div className="flex items-center justify-between mb-2">
+              <div key={review.id} className="bg-white/30 backdrop-blur-sm border border-white/20 rounded-lg p-2 active:bg-white/40 transition-all duration-200 touch-manipulation">
+                {/* Kullanıcı Bilgisi ve Genel Puan - Mobil Optimized */}
+                <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-xs font-medium">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-xs font-medium">
                       {(review.user_name?.charAt(0).toUpperCase() || 'M')}
                     </div>
                     <div>
                       <div className="text-xs font-medium text-gray-800">{review.user_name || 'Anonim'}</div>
-                      <div className="text-[10px] text-gray-500">
+                      <div className="text-[9px] text-gray-500">
                         {new Date(review.created_at).toLocaleDateString('tr-TR', { 
                           month: 'short', 
                           day: 'numeric' 
@@ -655,10 +636,10 @@ export default function BusinessDetailPage() {
                   
                   {/* Genel Puan */}
                   <div className="text-right">
-                    <div className="text-sm font-semibold text-amber-600">
+                    <div className="text-xs font-semibold text-amber-600">
                       {(((review.service_rating || 0) + (review.employee_rating || 0)) / 2).toFixed(1)}
                     </div>
-                    <div className="text-[10px] text-gray-400">/ 5</div>
+                    <div className="text-[9px] text-gray-400">/ 5</div>
                   </div>
                 </div>
 
@@ -1066,8 +1047,6 @@ export default function BusinessDetailPage() {
         onNext={handleStoryNext}
         onPrevious={handleStoryPrevious}
         onLike={handleStoryLike}
-        onComment={handleStoryComment}
-        onShare={handleStoryShare}
       />
     )}
     </>

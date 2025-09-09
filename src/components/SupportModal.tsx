@@ -65,18 +65,18 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-md border border-white/50 rounded-2xl shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/40">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 min-h-screen">
+      <div className="w-full max-w-sm bg-white/90 backdrop-blur-md border border-white/50 rounded-2xl shadow-2xl mx-auto my-auto">
+        {/* Header - Mobil Optimized */}
+        <div className="flex items-center justify-between p-3 border-b border-white/40">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Destek Talebi</h2>
+              <h2 className="text-base font-bold text-gray-900">Destek Talebi</h2>
               <p className="text-xs text-gray-600">
                 {userType === 'business' ? 'İşletme Desteği' : 'Kullanıcı Desteği'}
               </p>
@@ -84,23 +84,23 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors touch-manipulation"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        {/* Form - Mobil Optimized */}
+        <form onSubmit={handleSubmit} className="p-3 space-y-3">
           {/* Category */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">Kategori</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Kategori</label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-              className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors touch-manipulation"
             >
               {userType === 'business' ? (
                 <>
@@ -120,11 +120,11 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
 
           {/* Priority */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">Öncelik</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Öncelik</label>
             <select
               value={formData.priority}
               onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-              className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-white/80 border border-white/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors touch-manipulation"
             >
               <option value="low">Düşük</option>
               <option value="medium">Orta</option>
@@ -134,26 +134,26 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
 
           {/* Subject */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">Konu</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Konu</label>
             <input
               type="text"
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               required
-              className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors touch-manipulation"
               placeholder="Sorununuzu kısaca özetleyin"
             />
           </div>
 
           {/* Message */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">Mesaj</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Mesaj</label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               required
-              rows={4}
-              className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors resize-none"
+              rows={3}
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-colors resize-none touch-manipulation"
               placeholder="Sorununuzu detaylı olarak açıklayın..."
             />
           </div>
@@ -164,7 +164,7 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span>Destek talebiniz başarıyla gönderildi! En kısa sürede dönüş yapacağız.</span>
+              <span className="text-xs">Destek talebiniz başarıyla gönderildi! En kısa sürede dönüş yapacağız.</span>
             </div>
           )}
 
@@ -173,15 +173,15 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span>Bir hata oluştu. Lütfen tekrar deneyin.</span>
+              <span className="text-xs">Bir hata oluştu. Lütfen tekrar deneyin.</span>
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit Button - Mobil Optimized */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-bold shadow-lg hover:shadow-xl active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2 touch-manipulation"
           >
             {isSubmitting ? (
               <>
@@ -206,12 +206,6 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
         <div className="px-4 pb-4">
           <div className="text-center text-xs text-gray-500">
             <p>Destek talebiniz 24 saat içinde yanıtlanacaktır.</p>
-            <p className="mt-1">
-              Acil durumlar için: 
-              <a href="mailto:destek@randevuo.com" className="text-rose-600 hover:text-rose-700 font-medium ml-1">
-                destek@randevuo.com
-              </a>
-            </p>
           </div>
         </div>
       </div>

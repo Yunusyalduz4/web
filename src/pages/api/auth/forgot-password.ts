@@ -50,8 +50,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const resetLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
     // Email gönder
-    await resend.emails.send({
-      from: `${process.env.RANDEVUO_DOMAIN || 'Randevuo'} <noreply@${process.env.RANDEVUO_DOMAIN || 'randevuo.com'}>`,
+    const fromEmail = process.env.NODE_ENV === 'production' 
+      ? `${process.env.RANDEVUO_DOMAIN || 'Randevuo'} <noreply@${process.env.RANDEVUO_DOMAIN || 'randevuo.com'}>`
+      : 'onboarding@resend.dev';
+    
+    const emailResult = await resend.emails.send({
+      from: fromEmail,
       to: [email],
       subject: 'Şifre Sıfırlama',
       html: `
@@ -74,9 +78,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `
     });
 
+    console.log('Password reset email sent successfully');
+
     res.status(200).json({ message: 'Şifre sıfırlama bağlantısı gönderildi' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Forgot password error:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack
+    });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
