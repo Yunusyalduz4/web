@@ -1,4 +1,4 @@
-import { t, isBusiness, isApprovedBusiness, isEmployee } from '../trpc/trpc';
+import { t, isBusiness, isApprovedBusiness, isEmployee, isEmployeeOrBusiness } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { pool } from '../db';
@@ -508,6 +508,84 @@ export const businessRouter = t.router({
         WHERE e.id = $1 AND e.business_id = $2
         GROUP BY e.id, b.name`,
         [input.employeeId, ctx.employee.businessId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Çalışan bulunamadı' });
+      }
+
+      return result.rows[0];
+    }),
+
+  // Employee endpoint'leri
+  getEmployeeById: t.procedure
+    .use(isEmployeeOrBusiness)
+    .input(z.object({ employeeId: z.string().uuid() }))
+    .query(async ({ input, ctx }) => {
+      // Employee ise sadece kendi bilgilerini görebilir
+      if (ctx.user.role === 'employee' && ctx.user.employeeId !== input.employeeId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece kendi bilgilerinizi görüntüleyebilirsiniz' });
+      }
+
+      const result = await pool.query(
+        `SELECT e.*, b.name as business_name, b.id as business_id
+         FROM employees e
+         LEFT JOIN businesses b ON e.business_id = b.id
+         WHERE e.id = $1`,
+        [input.employeeId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Çalışan bulunamadı' });
+      }
+
+      return result.rows[0];
+    }),
+
+  updateEmployeeProfile: t.procedure
+    .use(isEmployeeOrBusiness)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      name: z.string().min(1).optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Employee ise sadece kendi bilgilerini güncelleyebilir
+      if (ctx.user.role === 'employee' && ctx.user.employeeId !== input.employeeId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece kendi bilgilerinizi güncelleyebilirsiniz' });
+      }
+
+      const updateFields = [];
+      const values = [];
+      let paramCount = 1;
+
+      if (input.name !== undefined) {
+        updateFields.push(`name = $${paramCount}`);
+        values.push(input.name);
+        paramCount++;
+      }
+      if (input.email !== undefined) {
+        updateFields.push(`email = $${paramCount}`);
+        values.push(input.email);
+        paramCount++;
+      }
+      if (input.phone !== undefined) {
+        updateFields.push(`phone = $${paramCount}`);
+        values.push(input.phone);
+        paramCount++;
+      }
+
+      if (updateFields.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Güncellenecek alan bulunamadı' });
+      }
+
+      updateFields.push(`updated_at = NOW()`);
+      values.push(input.employeeId);
+
+      const result = await pool.query(
+        `UPDATE employees SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+        values
       );
 
       if (result.rows.length === 0) {

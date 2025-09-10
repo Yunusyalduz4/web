@@ -116,15 +116,15 @@ export default function AdminDashboard() {
   }
 
   return (
-    <main className="relative max-w-7xl mx-auto p-3 pb-20 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Header */}
-      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40">
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/70 backdrop-blur-md border-b border-white/40">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <div className="text-lg font-bold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="text-sm sm:text-lg font-bold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">
               🛡️ Admin Panel • RANDEVUO
             </div>
-            <div className="text-xs text-gray-500 bg-white/60 px-2 py-1 rounded-full">
+            <div className="text-[10px] sm:text-xs text-gray-500 bg-white/60 px-1.5 sm:px-2 py-1 rounded-full">
               {session.user.email}
             </div>
             {/* WebSocket Durumu */}
@@ -142,22 +142,22 @@ export default function AdminDashboard() {
           </div>
           
           {/* Global Search */}
-          <div className="flex items-center gap-2 border border-white/40 bg-white/60 text-gray-900 rounded-xl px-3 py-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-600">
+          <div className="flex items-center gap-2 border border-white/40 bg-white/60 text-gray-900 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-600">
               <path d="M15.5 15.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="2"/>
             </svg>
             <input 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
-              placeholder="Global arama..." 
-              className="bg-transparent outline-none text-sm w-48" 
+              placeholder="Ara..." 
+              className="bg-transparent outline-none text-[10px] sm:text-sm w-24 sm:w-48" 
             />
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div className="mt-2 sm:mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
           {([
             { id: 'overview', label: '📊 Genel Bakış', icon: '📊' },
             { id: 'pending', label: '⏳ Onay Bekleyenler', icon: '⏳' },
@@ -174,14 +174,14 @@ export default function AdminDashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-sm font-medium transition-all min-h-[44px] ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-lg'
                   : 'bg-white/60 text-gray-700 border border-white/50 hover:bg-white/80'
               }`}
             >
-              <span className="hidden sm:inline">{tab.icon}</span>
-              <span className="sm:ml-1">{tab.label}</span>
+              <span className="hidden xs:inline">{tab.icon}</span>
+              <span className="xs:ml-1">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -201,6 +201,95 @@ export default function AdminDashboard() {
         {activeTab === 'slider-approval' && <SliderApprovalPanel pendingBusinessImages={pendingBusinessImagesQuery.data} isLoading={pendingBusinessImagesQuery.isLoading} />}
         {activeTab === 'analytics' && <AnalyticsPanel />}
       </div>
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+        
+        :root {
+          --primary-gradient: linear-gradient(135deg, #f43f5e 0%, #a855f7 50%, #3b82f6 100%);
+          --glass-bg: rgba(255, 255, 255, 0.7);
+          --glass-border: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Mobile optimizations */
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Touch optimizations */
+        * {
+          touch-action: manipulation;
+        }
+        
+        /* Prevent zoom on input focus */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="search"],
+        textarea,
+        select {
+          font-size: 16px !important;
+        }
+        
+        /* Smooth scrolling */
+        html {
+          scroll-behavior: smooth;
+        }
+        
+        /* Overscroll behavior */
+        body {
+          overscroll-behavior: contain;
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:text-\\[10px\\] { font-size: 10px !important; }
+          .xs\\:text-xs { font-size: 12px !important; }
+          .xs\\:text-sm { font-size: 14px !important; }
+          .xs\\:text-base { font-size: 16px !important; }
+          .xs\\:text-lg { font-size: 18px !important; }
+          .xs\\:text-xl { font-size: 20px !important; }
+          .xs\\:text-2xl { font-size: 24px !important; }
+          .xs\\:text-3xl { font-size: 30px !important; }
+          .xs\\:text-4xl { font-size: 36px !important; }
+          .xs\\:text-5xl { font-size: 48px !important; }
+          .xs\\:text-6xl { font-size: 60px !important; }
+          .xs\\:text-7xl { font-size: 72px !important; }
+          .xs\\:text-8xl { font-size: 96px !important; }
+          .xs\\:text-9xl { font-size: 128px !important; }
+          .xs\\:hidden { display: none !important; }
+          .xs\\:inline { display: inline !important; }
+          .xs\\:block { display: block !important; }
+          .xs\\:flex { display: flex !important; }
+          .xs\\:grid { display: grid !important; }
+        }
+        
+        /* Animation keyframes */
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+          20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
     </main>
   );
 }
@@ -209,114 +298,114 @@ export default function AdminDashboard() {
 
 function OverviewPanel({ stats, setActiveTab }: { stats: any; setActiveTab: (tab: AdminTab) => void }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Sistem Genel Bakış</h2>
-        <p className="text-gray-600">RANDEVUO platformunun genel durumu ve istatistikleri</p>
+        <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">📊 Sistem Genel Bakış</h2>
+        <p className="text-xs sm:text-sm text-gray-600">RANDEVUO platformunun genel durumu ve istatistikleri</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-6 text-center">
-          <div className="text-3xl mb-2">👥</div>
-          <div className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</div>
-          <div className="text-sm text-gray-600">Toplam Kullanıcı</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">👥</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</div>
+          <div className="text-[10px] sm:text-sm text-gray-600">Toplam Kullanıcı</div>
         </div>
         
-        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-6 text-center">
-          <div className="text-3xl mb-2">🏢</div>
-          <div className="text-2xl font-bold text-gray-900">{stats?.totalBusinesses || 0}</div>
-          <div className="text-sm text-gray-600">Toplam İşletme</div>
+        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">🏢</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalBusinesses || 0}</div>
+          <div className="text-[10px] sm:text-sm text-gray-600">Toplam İşletme</div>
         </div>
         
-        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-6 text-center">
-          <div className="text-3xl mb-2">📅</div>
-          <div className="text-2xl font-bold text-gray-900">{stats?.totalAppointments || 0}</div>
-          <div className="text-sm text-gray-600">Toplam Randevu</div>
+        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">📅</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalAppointments || 0}</div>
+          <div className="text-[10px] sm:text-sm text-gray-600">Toplam Randevu</div>
         </div>
         
-        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-6 text-center">
-          <div className="text-3xl mb-2">⭐</div>
-          <div className="text-2xl font-bold text-gray-900">{stats?.totalReviews || 0}</div>
-          <div className="text-sm text-gray-600">Toplam Değerlendirme</div>
+        <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">⭐</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalReviews || 0}</div>
+          <div className="text-[10px] sm:text-sm text-gray-600">Toplam Değerlendirme</div>
         </div>
       </div>
 
       {/* Pending Approvals Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">⏳</div>
-          <div className="text-2xl font-bold text-yellow-800">{stats?.pendingBusinesses || 0}</div>
-          <div className="text-sm text-yellow-700">Onay Bekleyen İşletme</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">⏳</div>
+          <div className="text-lg sm:text-2xl font-bold text-yellow-800">{stats?.pendingBusinesses || 0}</div>
+          <div className="text-[10px] sm:text-sm text-yellow-700">Onay Bekleyen İşletme</div>
         </div>
         
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">📸</div>
-          <div className="text-2xl font-bold text-blue-800">{stats?.pendingImages || 0}</div>
-          <div className="text-sm text-blue-700">Görsel Onay Bekleyen</div>
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">📸</div>
+          <div className="text-lg sm:text-2xl font-bold text-blue-800">{stats?.pendingImages || 0}</div>
+          <div className="text-[10px] sm:text-sm text-blue-700">Görsel Onay Bekleyen</div>
         </div>
 
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">⭐</div>
-          <div className="text-2xl font-bold text-orange-800">{stats?.pendingReviews || 0}</div>
-          <div className="text-sm text-orange-700">Onay Bekleyen Yorum</div>
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">⭐</div>
+          <div className="text-lg sm:text-2xl font-bold text-orange-800">{stats?.pendingReviews || 0}</div>
+          <div className="text-[10px] sm:text-sm text-orange-700">Onay Bekleyen Yorum</div>
         </div>
 
-        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">💬</div>
-          <div className="text-2xl font-bold text-purple-800">{stats?.pendingReplies || 0}</div>
-          <div className="text-sm text-purple-700">Onay Bekleyen Yanıt</div>
+        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">💬</div>
+          <div className="text-lg sm:text-2xl font-bold text-purple-800">{stats?.pendingReplies || 0}</div>
+          <div className="text-[10px] sm:text-sm text-purple-700">Onay Bekleyen Yanıt</div>
         </div>
 
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">🖼️</div>
-          <div className="text-2xl font-bold text-indigo-800">{stats?.pendingSliderImages || 0}</div>
-          <div className="text-sm text-indigo-700">Onay Bekleyen Slider Görsel</div>
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 sm:p-6 text-center">
+          <div className="text-2xl sm:text-3xl mb-2">🖼️</div>
+          <div className="text-lg sm:text-2xl font-bold text-indigo-800">{stats?.pendingSliderImages || 0}</div>
+          <div className="text-[10px] sm:text-sm text-indigo-700">Onay Bekleyen Slider Görsel</div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 Hızlı İşlemler</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6">
+        <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">🚀 Hızlı İşlemler</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           <button 
             onClick={() => setActiveTab('pending')}
-            className="p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all"
+            className="p-3 sm:p-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all min-h-[44px]"
           >
-            <div className="text-2xl mb-2">⏳</div>
-            <div className="font-medium">Onay Bekleyenler</div>
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">⏳</div>
+            <div className="text-[10px] sm:text-sm font-medium">Onay Bekleyenler</div>
           </button>
           
           <button 
             onClick={() => setActiveTab('businesses')}
-            className="p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all"
+            className="p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all min-h-[44px]"
           >
-            <div className="text-2xl mb-2">🏢</div>
-            <div className="font-medium">İşletmeleri Yönet</div>
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">🏢</div>
+            <div className="text-[10px] sm:text-sm font-medium">İşletmeleri Yönet</div>
           </button>
           
           <button 
             onClick={() => setActiveTab('users')}
-            className="p-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all"
+            className="p-3 sm:p-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all min-h-[44px]"
           >
-            <div className="text-2xl mb-2">👥</div>
-            <div className="font-medium">Kullanıcıları Yönet</div>
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">👥</div>
+            <div className="text-[10px] sm:text-sm font-medium">Kullanıcıları Yönet</div>
           </button>
 
           <button 
             onClick={() => setActiveTab('review-approval')}
-            className="p-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all"
+            className="p-3 sm:p-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all min-h-[44px]"
           >
-            <div className="text-2xl mb-2">✅</div>
-            <div className="font-medium">Yorum Onayları</div>
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">✅</div>
+            <div className="text-[10px] sm:text-sm font-medium">Yorum Onayları</div>
           </button>
 
           <button 
             onClick={() => setActiveTab('slider-approval')}
-            className="p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all"
+            className="p-3 sm:p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all min-h-[44px]"
           >
-            <div className="text-2xl mb-2">🖼️</div>
-            <div className="font-medium">Slider Onayları</div>
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">🖼️</div>
+            <div className="text-[10px] sm:text-sm font-medium">Slider Onayları</div>
           </button>
         </div>
       </div>
@@ -332,13 +421,13 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
   const [showAddModal, setShowAddModal] = useState(false);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3 sm:space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">🏢 İşletme Yönetimi</h2>
+        <h2 className="text-sm sm:text-xl font-bold text-gray-900">🏢 İşletme Yönetimi</h2>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all"
+          className="px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all text-[10px] sm:text-sm min-h-[44px]"
         >
           ➕ Yeni İşletme
         </button>
@@ -346,8 +435,8 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
 
       {/* Search Results */}
       {query && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
+          <p className="text-[10px] sm:text-sm text-blue-800">
             🔍 "{query}" için arama sonuçları: {data?.length || 0} işletme bulundu
           </p>
         </div>
@@ -355,41 +444,41 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-sm text-gray-500">Yükleniyor…</div>
+        <div className="flex items-center justify-center py-6 sm:py-8">
+          <div className="text-[10px] sm:text-sm text-gray-500">Yükleniyor…</div>
         </div>
       )}
 
       {/* Business List */}
       {!isLoading && data && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {data.map((b: any) => (
-            <div key={b.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow-lg p-4 hover:shadow-xl transition-all">
-              <div className="flex items-start justify-between gap-3 mb-3">
+            <div key={b.id} className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow-lg p-3 sm:p-4 hover:shadow-xl transition-all">
+              <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-gray-900 truncate">{b.name}</h3>
-                  <p className="text-xs text-gray-600 truncate mt-1">{b.address}</p>
-                  {b.email && <p className="text-xs text-gray-500 truncate mt-1">{b.email}</p>}
+                  <h3 className="text-[10px] sm:text-sm font-semibold text-gray-900 truncate">{b.name}</h3>
+                  <p className="text-[9px] sm:text-xs text-gray-600 truncate mt-1">{b.address}</p>
+                  {b.email && <p className="text-[9px] sm:text-xs text-gray-500 truncate mt-1">{b.email}</p>}
                 </div>
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/70 border border-white/50 flex-shrink-0">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-white/70 border border-white/50 flex-shrink-0">
                   {b.profile_image_url ? (
                     <img src={b.profile_image_url} alt={b.name} className="w-full h-full object-cover"/>
                   ) : (
-                    <div className="w-full h-full grid place-items-center text-lg text-gray-400">🏢</div>
+                    <div className="w-full h-full grid place-items-center text-sm sm:text-lg text-gray-400">🏢</div>
                   )}
                 </div>
               </div>
               
               <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                <div className="flex items-center gap-1 sm:gap-2 text-[9px] sm:text-xs">
+                  <span className="px-1.5 sm:px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                     {b.is_verified ? '✅ Onaylı' : '⏳ Beklemede'}
                   </span>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
+                  <span className="px-1.5 sm:px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
                     ⭐ {b.average_rating || 0}/5 ({b.total_reviews || 0})
                   </span>
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-[9px] sm:text-xs text-gray-600">
                   📅 {new Date(b.created_at).toLocaleDateString('tr-TR')}
                 </div>
               </div>
@@ -397,7 +486,7 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setEditing(b)}
-                  className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-xs font-medium"
+                  className="flex-1 px-2 sm:px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-[9px] sm:text-xs font-medium min-h-[44px]"
                 >
                   ✏️ Düzenle
                 </button>
@@ -408,7 +497,7 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
                       utils.admin.listBusinesses.invalidate(); 
                     }
                   }}
-                  className="flex-1 px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition-colors text-xs font-medium"
+                  className="flex-1 px-2 sm:px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition-colors text-[9px] sm:text-xs font-medium min-h-[44px]"
                 >
                   🗑️ Sil
                 </button>
@@ -420,9 +509,9 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
 
       {/* Empty State */}
       {!isLoading && data && data.length === 0 && (
-        <div className="text-center py-8">
-          <div className="text-4xl mb-2">🏢</div>
-          <p className="text-gray-500">Henüz işletme bulunmuyor</p>
+        <div className="text-center py-6 sm:py-8">
+          <div className="text-3xl sm:text-4xl mb-2">🏢</div>
+          <p className="text-[10px] sm:text-sm text-gray-500">Henüz işletme bulunmuyor</p>
         </div>
       )}
 

@@ -108,10 +108,17 @@ export default function EmployeeBottomNav() {
     };
   }, []);
 
-  // Filter nav items based on employee permissions
+  // Filter nav items - Employee'ler sadece belirli sayfaları görebilir
   const filteredNavItems = navItems.filter(item => {
-    if (!item.permission) return true; // Always show items without permission requirement
-    return session?.user?.permissions?.[item.permission] === true;
+    // Employee'ler sadece bu sayfaları görebilir
+    const allowedEmployeePages = [
+      '/dashboard/employee', // Dashboard
+      '/dashboard/employee/appointments', // Randevular
+      '/dashboard/employee/analytics', // İstatistikler
+      '/dashboard/employee/reviews', // Yorumlar
+      '/dashboard/employee/profile' // Profil
+    ];
+    return allowedEmployeePages.includes(item.href);
   });
   
   return (
@@ -120,14 +127,14 @@ export default function EmployeeBottomNav() {
       <div className="absolute inset-0 bg-white/80 backdrop-blur-md border-t border-white/40" />
       
       {/* Navigation items */}
-      <div className="relative flex justify-around items-center h-24 px-2">
+      <div className="relative flex justify-around items-center h-20 sm:h-24 px-1 sm:px-2 overflow-x-auto no-scrollbar">
         {filteredNavItems.map((item) => {
           const isActive = currentPath === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${
+              className={`group relative flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl transition-all duration-300 min-h-[44px] flex-shrink-0 ${
                 isActive 
                   ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
@@ -143,11 +150,13 @@ export default function EmployeeBottomNav() {
               <div className={`transition-transform duration-300 ${
                 isActive ? 'scale-110' : 'group-hover:scale-105'
               }`}>
-                {item.icon}
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {item.icon.props.children}
+                </svg>
               </div>
               
               {/* Label */}
-              <span className={`text-[10px] font-medium mt-1 transition-all duration-300 ${
+              <span className={`text-[9px] sm:text-[10px] font-medium mt-1 transition-all duration-300 ${
                 isActive ? 'text-white' : 'text-gray-600'
               }`}>
                 {item.label}

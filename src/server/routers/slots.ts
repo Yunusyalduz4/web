@@ -1,10 +1,10 @@
-import { t, isApprovedBusiness } from '../trpc/trpc';
+import { t, isApprovedBusiness, isEmployeeOrBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 
 export const slotsRouter = t.router({
   // 7 günlük slot görünümü - sadece görüntüleme
-  getWeeklySlots: t.procedure.use(isApprovedBusiness)
+  getWeeklySlots: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       startDate: z.string(), // YYYY-MM-DD formatında
@@ -205,7 +205,7 @@ export const slotsRouter = t.router({
     }),
 
   // Özel tarih için slot görünümü
-  getCustomDateSlots: t.procedure.use(isApprovedBusiness)
+  getCustomDateSlots: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       date: z.string(), // YYYY-MM-DD formatında

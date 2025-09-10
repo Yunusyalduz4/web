@@ -4,6 +4,7 @@ import { trpc } from '../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { useSocket } from '../hooks/useSocket';
+import { useSession } from 'next-auth/react';
 
 interface WeeklySlotViewProps {
   businessId: string;
@@ -13,6 +14,7 @@ interface WeeklySlotViewProps {
 }
 
 export default function WeeklySlotView({ businessId, appointments, selectedEmployeeId, onEmployeeChange }: WeeklySlotViewProps) {
+  const { data: session } = useSession();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [customDate, setCustomDate] = useState<string>('');
   const [showCustomDate, setShowCustomDate] = useState(false);
@@ -23,6 +25,17 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
   // Socket.IO hook'u
   const { isConnected, socket } = useSocket();
+
+  // Employee ise sadece kendi ID'sini kullan
+  const isEmployee = session?.user?.role === 'employee';
+  const currentEmployeeId = isEmployee ? session?.user?.employeeId : selectedEmployeeId;
+
+  // Employee ise otomatik olarak kendi ID'sini seç
+  useEffect(() => {
+    if (isEmployee && currentEmployeeId) {
+      setLocalSelectedEmployeeId(currentEmployeeId);
+    }
+  }, [isEmployee, currentEmployeeId]);
 
   // TRPC queries
   const { data: weeklySlots, isLoading: weeklyLoading, refetch: refetchWeeklySlots } = trpc.slots.getWeeklySlots.useQuery(
@@ -40,6 +53,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
   const { data: employees } = trpc.business.getEmployees.useQuery(
     businessId ? { businessId } : skipToken
   );
+
+  // Employee ise sadece kendi bilgilerini filtrele
+  const filteredEmployees = useMemo(() => {
+    if (!employees) return [];
+    if (isEmployee && currentEmployeeId) {
+      return employees.filter((emp: any) => emp.id === currentEmployeeId);
+    }
+    return employees;
+  }, [employees, isEmployee, currentEmployeeId]);
 
   // Çalışan değişikliğini handle et
   const handleEmployeeChange = (employeeId: string | null) => {
@@ -291,8 +313,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         </div>
       </div>
 
-      {/* Çalışan Seçici */}
-      {employees && employees.length > 0 && (
+      {/* Çalışan Seçici - Sadece business owner için */}
+      {!isEmployee && filteredEmployees && filteredEmployees.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-medium text-gray-700">Çalışan Filtresi:</span>
@@ -306,7 +328,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
             >
               👥 Tümü
             </button>
-            {employees.map((employee: any) => (
+            {filteredEmployees.map((employee: any) => (
               <button
                 key={employee.id}
                 onClick={() => handleEmployeeChange(employee.id)}
@@ -322,7 +344,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
           </div>
           {localSelectedEmployeeId && (
             <div className="text-xs text-gray-600">
-              Sadece <strong>{employees.find((e: any) => e.id === localSelectedEmployeeId)?.name}</strong> çalışanının randevuları gösteriliyor
+              Sadece <strong>{filteredEmployees.find((e: any) => e.id === localSelectedEmployeeId)?.name}</strong> çalışanının randevuları gösteriliyor
             </div>
           )}
         </div>
@@ -855,7 +877,7 @@ function ManualAppointmentModal({
               } focus:outline-none focus:ring-2 focus:ring-rose-200`}
             >
               <option value="">Çalışan seçin</option>
-              {employees.map((employee) => (
+              {filteredEmployees.map((employee) => (
                 <option key={employee.id} value={employee.id}>
                   {employee.name}
                 </option>
