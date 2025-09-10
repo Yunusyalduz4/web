@@ -481,22 +481,68 @@ export const businessRouter = t.router({
 
   getBusinessByUserId: t.procedure.use(isBusiness)
     .input(z.object({ userId: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const result = await pool.query(
-        `SELECT * FROM businesses WHERE owner_user_id = $1`,
-        [input.userId]
-      );
-      return result.rows[0];
+    .query(async ({ input, ctx }) => {
+      try {
+        // Sadece kendi işletmesini getirebilir
+        if (ctx.user.id !== input.userId) {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: 'Sadece kendi işletmenizi görüntüleyebilirsiniz' 
+          });
+        }
+
+        const result = await pool.query(
+          `SELECT * FROM businesses WHERE owner_user_id = $1`,
+          [input.userId]
+        );
+        
+        if (result.rows.length === 0) {
+          throw new TRPCError({ 
+            code: 'NOT_FOUND', 
+            message: 'İşletme bulunamadı' 
+          });
+        }
+        
+        return result.rows[0];
+      } catch (error) {
+        console.error('getBusinessByUserId error:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'İşletme bilgileri alınırken hata oluştu' 
+        });
+      }
     }),
 
   // İşletme sahibi için kendi işletmesini getir
   getMyBusiness: t.procedure.use(isBusiness)
     .query(async ({ ctx }) => {
-      const result = await pool.query(
-        `SELECT * FROM businesses WHERE owner_user_id = $1`,
-        [ctx.user.id]
-      );
-      return result.rows[0];
+      try {
+        const result = await pool.query(
+          `SELECT * FROM businesses WHERE owner_user_id = $1`,
+          [ctx.user.id]
+        );
+        
+        if (result.rows.length === 0) {
+          throw new TRPCError({ 
+            code: 'NOT_FOUND', 
+            message: 'İşletme bulunamadı' 
+          });
+        }
+        
+        return result.rows[0];
+      } catch (error) {
+        console.error('getMyBusiness error:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'İşletme bilgileri alınırken hata oluştu' 
+        });
+      }
     }),
 
   // Business görseli ekleme (onay bekliyor)
