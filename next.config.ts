@@ -41,6 +41,25 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Uploads klasörü için static file serving
+      {
+        source: '/uploads/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+  // Static file serving için rewrites
+  async rewrites() {
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: '/api/static/:path*',
+      },
     ];
   },
 };
