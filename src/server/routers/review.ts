@@ -1,4 +1,4 @@
-import { t, isUser, isBusiness } from '../trpc/trpc';
+import { t, isUser, isBusiness, isEmployeeOrBusiness } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 import { TRPCError } from '@trpc/server';
@@ -237,17 +237,45 @@ export const reviewRouter = t.router({
 
   // Get reviews by business with pagination
   getByBusiness: t.procedure
+    .use(isEmployeeOrBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       page: z.number().min(1).default(1),
       limit: z.number().min(1).max(50).default(10),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { businessId, page, limit } = input;
       const offset = (page - 1) * limit;
 
-      const result = await pool.query(
-        `SELECT r.*, u.name as user_name, a.appointment_datetime,
+      let reviewsQuery;
+      let reviewsParams;
+      let totalQuery;
+      let totalParams;
+
+      if (ctx.user.role === 'employee') {
+        // Employee sadece kendi yorumlarını görür
+        reviewsQuery = `SELECT r.*, u.name as user_name, a.appointment_datetime,
+                b.name as business_name, r.business_reply, r.business_reply_at, r.photos,
+                aps.employee_id
+         FROM reviews r
+         JOIN users u ON r.user_id = u.id
+         JOIN appointments a ON r.appointment_id = a.id
+         JOIN businesses b ON r.business_id = b.id
+         JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE r.business_id = $1 AND aps.employee_id = $2 AND b.is_approved = true AND r.is_approved = true
+         ORDER BY r.created_at DESC
+         LIMIT $3 OFFSET $4`;
+        reviewsParams = [businessId, ctx.user.employeeId, limit, offset];
+
+        totalQuery = `SELECT COUNT(*) as total 
+         FROM reviews r
+         JOIN appointments a ON r.appointment_id = a.id
+         JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE r.business_id = $1 AND aps.employee_id = $2`;
+        totalParams = [businessId, ctx.user.employeeId];
+      } else {
+        // Business tüm yorumları görür
+        reviewsQuery = `SELECT r.*, u.name as user_name, a.appointment_datetime,
                 b.name as business_name, r.business_reply, r.business_reply_at, r.photos
          FROM reviews r
          JOIN users u ON r.user_id = u.id
@@ -255,16 +283,15 @@ export const reviewRouter = t.router({
          JOIN businesses b ON r.business_id = b.id
          WHERE r.business_id = $1 AND b.is_approved = true AND r.is_approved = true
          ORDER BY r.created_at DESC
-         LIMIT $2 OFFSET $3`,
-        [businessId, limit, offset]
-      );
+         LIMIT $2 OFFSET $3`;
+        reviewsParams = [businessId, limit, offset];
 
+        totalQuery = 'SELECT COUNT(*) as total FROM reviews WHERE business_id = $1';
+        totalParams = [businessId];
+      }
 
-
-      const totalResult = await pool.query(
-        'SELECT COUNT(*) as total FROM reviews WHERE business_id = $1',
-        [businessId]
-      );
+      const result = await pool.query(reviewsQuery, reviewsParams);
+      const totalResult = await pool.query(totalQuery, totalParams);
 
       return {
         reviews: result.rows.map(row => ({
@@ -282,13 +309,19 @@ export const reviewRouter = t.router({
 
   // Get reviews by employee
   getByEmployee: t.procedure
+    .use(isEmployeeOrBusiness)
     .input(z.object({
       employeeId: z.string().uuid(),
       ...paginationSchema.shape,
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { employeeId, page, limit } = input;
       const offset = (page - 1) * limit;
+
+      // Employee ise sadece kendi yorumlarını görebilir
+      if (ctx.user.role === 'employee' && ctx.user.employeeId !== employeeId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece kendi yorumlarınızı görüntüleyebilirsiniz' });
+      }
 
       const result = await pool.query(
         `SELECT r.*, u.name as user_name, a.appointment_datetime
@@ -337,6 +370,7 @@ export const reviewRouter = t.router({
 
   // Get business rating summary
   getBusinessRating: t.procedure
+    .use(isEmployeeOrBusiness)
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
       const { businessId } = input;
@@ -357,8 +391,14 @@ export const reviewRouter = t.router({
 
   // Get employee rating summary
   getEmployeeRating: t.procedure
+    .use(isEmployeeOrBusiness)
     .input(z.object({ employeeId: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Employee ise sadece kendi puanlarını görebilir
+      if (ctx.user.role === 'employee' && ctx.user.employeeId !== input.employeeId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece kendi puanlarınızı görüntüleyebilirsiniz' });
+      }
+
       const result = await pool.query(
         'SELECT * FROM employee_ratings WHERE employee_id = $1',
         [input.employeeId]

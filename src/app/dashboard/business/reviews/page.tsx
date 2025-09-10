@@ -102,6 +102,7 @@ export default function BusinessReviewsPage() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const businessId = session?.user?.businessId;
+  const isEmployee = session?.user?.role === 'employee';
   const [replyModal, setReplyModal] = useState<{ isOpen: boolean; review: any }>({ isOpen: false, review: null });
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
@@ -114,23 +115,15 @@ export default function BusinessReviewsPage() {
     businessId ? { businessId, page: currentPage, limit: 10 } : skipToken
   );
 
-  // Employee ise sadece kendi yorumlarını filtrele
-  const reviewsData = useMemo(() => {
-    if (session?.user?.role === 'employee' && session?.user?.employeeId && allReviewsData) {
-      return {
-        ...allReviewsData,
-        reviews: allReviewsData.reviews?.filter((r: any) => r.employee_id === session.user.employeeId) || []
-      };
-    }
-    return allReviewsData;
-  }, [allReviewsData, session?.user?.role, session?.user?.employeeId]);
+  // Backend'de filtreleme yapıldığı için frontend filtrelemesi kaldırıldı
+  const reviewsData = allReviewsData;
 
   // İşletme puan özetini getir - hook'ları her zaman çağır
   const { data: ratingSummary, error: ratingError, isLoading: ratingLoading } = trpc.review.getBusinessRating.useQuery(
     businessId ? { businessId } : skipToken
   );
 
-  // Yanıt verme mutation'ları - hook'ları her zaman çağır
+  // Yanıt verme mutation'ları - sadece business için
   const addReply = trpc.review.addBusinessReply.useMutation({
     onSuccess: () => {
       if (businessId) {
@@ -186,8 +179,9 @@ export default function BusinessReviewsPage() {
   const reviews = reviewsData?.reviews || [];
   const pagination = reviewsData?.pagination;
 
-  // Yanıt verme fonksiyonları
+  // Yanıt verme fonksiyonları - sadece business için
   const handleReply = async (reply: string) => {
+    if (isEmployee) return; // Employee'ler yanıt veremez
     const review = replyModal.review;
     if (review.business_reply) {
       await updateReply.mutateAsync({ reviewId: review.id, reply });
@@ -197,6 +191,7 @@ export default function BusinessReviewsPage() {
   };
 
   const handleDeleteReply = async (reviewId: string) => {
+    if (isEmployee) return; // Employee'ler yanıt silemez
     if (confirm('Yanıtı silmek istediğinizden emin misiniz?')) {
       await deleteReply.mutateAsync({ reviewId });
     }
@@ -486,45 +481,49 @@ export default function BusinessReviewsPage() {
                     </span>
                   </div>
                   <div className="text-[10px] sm:text-xs text-blue-800 leading-relaxed mb-2 sm:mb-3 pl-5 sm:pl-6">{review.business_reply}</div>
-                  <div className="flex gap-1.5 sm:gap-2 pl-5 sm:pl-6">
-                    <button
-                      onClick={() => setReplyModal({ isOpen: true, review })}
-                      className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-200 text-blue-800 rounded-md hover:bg-blue-300 text-[10px] sm:text-xs font-medium transition-colors min-h-[44px]"
-                    >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Düzenle
-                    </button>
-                    <button
-                      onClick={() => handleDeleteReply(review.id)}
-                      className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-200 text-red-800 rounded-md hover:bg-red-300 text-[10px] sm:text-xs font-medium transition-colors min-h-[44px]"
-                    >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Sil
-                    </button>
-                  </div>
+                  {!isEmployee && (
+                    <div className="flex gap-1.5 sm:gap-2 pl-5 sm:pl-6">
+                      <button
+                        onClick={() => setReplyModal({ isOpen: true, review })}
+                        className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-200 text-blue-800 rounded-md hover:bg-blue-300 text-[10px] sm:text-xs font-medium transition-colors min-h-[44px]"
+                      >
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Düzenle
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReply(review.id)}
+                        className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-200 text-red-800 rounded-md hover:bg-red-300 text-[10px] sm:text-xs font-medium transition-colors min-h-[44px]"
+                      >
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Sil
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Yanıt Verme Butonu */}
-              <div className="flex justify-end">
-                {!review.business_reply ? (
-                  <button
-                    onClick={() => setReplyModal({ isOpen: true, review })}
-                    className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 min-h-[44px]"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Yanıt Ver
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setReplyModal({ isOpen: true, review })}
-                    className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 min-h-[44px]"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Yanıtı Düzenle
-                  </button>
-                )}
-              </div>
+              {/* Yanıt Verme Butonu - Sadece Business için */}
+              {!isEmployee && (
+                <div className="flex justify-end">
+                  {!review.business_reply ? (
+                    <button
+                      onClick={() => setReplyModal({ isOpen: true, review })}
+                      className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 min-h-[44px]"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Yanıt Ver
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setReplyModal({ isOpen: true, review })}
+                      className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 min-h-[44px]"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Yanıtı Düzenle
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))
           )}
@@ -594,13 +593,15 @@ export default function BusinessReviewsPage() {
           </div>
         </div>
       )}
-      {/* Yanıt Verme Modal */}
-      <ReplyModal
-        review={replyModal.review}
-        isOpen={replyModal.isOpen}
-        onClose={() => setReplyModal({ isOpen: false, review: null })}
-        onSubmit={handleReply}
-      />
+      {/* Yanıt Verme Modal - Sadece Business için */}
+      {!isEmployee && (
+        <ReplyModal
+          review={replyModal.review}
+          isOpen={replyModal.isOpen}
+          onClose={() => setReplyModal({ isOpen: false, review: null })}
+          onSubmit={handleReply}
+        />
+      )}
 
       {/* Photo Modal - Swiper */}
       {photoModalOpen && (

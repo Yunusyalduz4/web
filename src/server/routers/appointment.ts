@@ -227,24 +227,45 @@ export const appointmentRouter = t.router({
   getByBusiness: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
-      const result = await pool.query(
-        `SELECT 
-          a.*,
-          u.name as user_name,
-          COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
-          COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
-          COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
-          COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations
-        FROM appointments a
-        LEFT JOIN users u ON a.user_id = u.id
-        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
-        LEFT JOIN services s ON aps.service_id = s.id
-        LEFT JOIN employees e ON aps.employee_id = e.id
-        WHERE a.business_id = $1 
-        GROUP BY a.id, u.name
-        ORDER BY a.appointment_datetime DESC`,
-        [input.businessId]
-      );
+      let query = `SELECT 
+        a.*,
+        u.name as user_name,
+        COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
+        COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
+        COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
+        COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations,
+        COALESCE(array_agg(
+          json_build_object(
+            'service_id', s.id,
+            'service_name', s.name,
+            'duration_minutes', aps.duration_minutes,
+            'price', aps.price,
+            'employee_id', aps.employee_id
+          )
+        ) FILTER (WHERE s.id IS NOT NULL), ARRAY[]::json[]) as services
+      FROM appointments a
+      LEFT JOIN users u ON a.user_id = u.id
+      LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+      LEFT JOIN services s ON aps.service_id = s.id
+      LEFT JOIN employees e ON aps.employee_id = e.id
+      WHERE a.business_id = $1`;
+      
+      let params = [input.businessId];
+      
+      // Employee ise sadece kendi randevularını getir
+      if (ctx.user.role === 'employee') {
+        query += ` AND EXISTS (
+          SELECT 1 FROM appointment_services aps2 
+          WHERE aps2.appointment_id = a.id 
+          AND aps2.employee_id = $2
+        )`;
+        params.push(ctx.user.employeeId);
+      }
+      
+      query += ` GROUP BY a.id, u.name
+        ORDER BY a.appointment_datetime DESC`;
+      
+      const result = await pool.query(query, params);
       
       // UTC'den Türkiye saatine çevir
       const rows = result.rows.map(row => ({
@@ -419,7 +440,7 @@ export const appointmentRouter = t.router({
   // getWeeklySlots endpoint'i kaldırıldı - yeni sistem gelecek
 
   // Yeni: Manuel randevu oluşturma endpoint'i - Güncellenmiş
-  createManualAppointment: t.procedure.use(isApprovedBusiness)
+  createManualAppointment: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       customerId: z.string(), // Manuel müşteri ID'si
@@ -432,8 +453,16 @@ export const appointmentRouter = t.router({
       employeeId: z.string().uuid(),
       notes: z.string().nullable().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       console.log('Backend\'e gelen veri:', input);
+      
+      // Employee ise sadece kendi business'ına randevu oluşturabilir
+      if (ctx.user.role === 'employee' && ctx.user.businessId !== input.businessId) {
+        throw new TRPCError({ 
+          code: 'FORBIDDEN', 
+          message: 'Sadece kendi işletmenize randevu oluşturabilirsiniz' 
+        });
+      }
       
       let appointmentDatetime: Date;
       
@@ -471,6 +500,14 @@ export const appointmentRouter = t.router({
       );
       if (employeeRes.rows.length === 0) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bulunamadı' });
+      }
+
+      // Employee ise sadece kendi ID'sini seçebilir
+      if (ctx.user.role === 'employee' && ctx.user.employeeId !== input.employeeId) {
+        throw new TRPCError({ 
+          code: 'FORBIDDEN', 
+          message: 'Sadece kendi randevularınızı oluşturabilirsiniz' 
+        });
       }
 
       // Toplam süreyi hesapla
@@ -549,21 +586,32 @@ export const appointmentRouter = t.router({
     }),
 
   // Yeni: Randevu durumunu güncelleme endpoint'i
-  updateStatus: t.procedure.use(isApprovedBusiness)
+  updateStatus: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({
       appointmentId: z.string().uuid(),
       businessId: z.string().uuid(),
       status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // Randevunun bu işletmeye ait olduğunu kontrol et ve mevcut durumu al
       const appointmentCheck = await pool.query(
-        `SELECT id, status, user_id, appointment_datetime FROM appointments WHERE id = $1 AND business_id = $2`,
+        `SELECT a.id, a.status, a.user_id, a.appointment_datetime, aps.employee_id
+         FROM appointments a
+         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE a.id = $1 AND a.business_id = $2`,
         [input.appointmentId, input.businessId]
       );
       
       if (appointmentCheck.rows.length === 0) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
+      }
+
+      // Employee ise sadece kendi randevularını güncelleyebilir
+      if (ctx.user.role === 'employee') {
+        const employeeIds = appointmentCheck.rows.map(row => row.employee_id);
+        if (!employeeIds.includes(ctx.user.employeeId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece kendi randevularınızı güncelleyebilirsiniz' });
+        }
       }
 
       const oldStatus = appointmentCheck.rows[0].status;

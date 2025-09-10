@@ -53,20 +53,44 @@ export default function BusinessProfilePage() {
     }
   }, [business]);
 
+  // Employee profil yüklendiğinde inputlara aktar
+  React.useEffect(() => {
+    if (employee) {
+      setName(employee.name || '');
+      setEmail(employee.email || '');
+      setPhone(employee.phone || '');
+    }
+  }, [employee]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (!business?.id) return;
+    
     try {
-      await updateMutation.mutateAsync({ 
-        businessId: business.id, 
-        name, 
-        email, 
-        phone,
-        password: password || undefined 
-      });
-      setSuccess('Profil başarıyla güncellendi!');
+      if (session?.user?.role === 'business' && business?.id) {
+        await updateMutation.mutateAsync({ 
+          businessId: business.id, 
+          name, 
+          email, 
+          phone,
+          password: password || undefined 
+        });
+        setSuccess('İşletme profili başarıyla güncellendi!');
+      } else if (session?.user?.role === 'employee' && employee?.id) {
+        await updateEmployeeMutation.mutateAsync({ 
+          employeeId: employee.id, 
+          name, 
+          email, 
+          phone,
+          password: password || undefined 
+        });
+        setSuccess('Çalışan profili başarıyla güncellendi!');
+      } else {
+        setError('Profil bilgisi bulunamadı');
+        return;
+      }
+      
       setPassword('');
       setTimeout(() => router.refresh(), 1200);
     } catch (err: any) {
@@ -78,12 +102,14 @@ export default function BusinessProfilePage() {
     await handleLogout();
   };
 
-  // Show loading if business is still loading
-  if (businessLoading) {
+  // Show loading if business or employee is still loading
+  if (businessLoading || employeeLoading) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 animate-pulse">
         <span className="text-5xl mb-2">⏳</span>
-        <span className="text-lg text-gray-400">İşletme bilgileri yükleniyor...</span>
+        <span className="text-lg text-gray-400">
+          {session?.user?.role === 'employee' ? 'Çalışan bilgileri yükleniyor...' : 'İşletme bilgileri yükleniyor...'}
+        </span>
       </main>
     );
   }
@@ -101,7 +127,9 @@ export default function BusinessProfilePage() {
             </button>
             <div>
               <div className="text-sm sm:text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-              <div className="text-[10px] sm:text-xs text-gray-600">İşletme Profili</div>
+              <div className="text-[10px] sm:text-xs text-gray-600">
+                {session?.user?.role === 'employee' ? 'Çalışan Profili' : 'İşletme Profili'}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
@@ -112,7 +140,7 @@ export default function BusinessProfilePage() {
       </div>
 
       {/* İşletme İstatistikleri - Mobile Optimized */}
-      {business && (
+      {business && session?.user?.role === 'business' && (
         <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
@@ -149,6 +177,44 @@ export default function BusinessProfilePage() {
         </div>
       )}
 
+      {/* Çalışan Bilgileri - Mobile Optimized */}
+      {employee && session?.user?.role === 'employee' && (
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+            </div>
+            <h2 className="text-[10px] sm:text-xs font-semibold text-gray-900">Çalışan Bilgileri</h2>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center justify-center">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] sm:text-xs text-green-600 font-semibold">Durum</div>
+                <div className="text-[10px] sm:text-xs text-green-800 font-bold">
+                  {employee.is_active ? 'Aktif' : 'Pasif'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/></svg>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] sm:text-xs text-blue-600 font-semibold">Toplam Randevu</div>
+                <div className="text-[10px] sm:text-xs text-blue-800 font-bold">
+                  {employee.total_appointments || 0}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Form - Mobile Optimized */}
       <section className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
         <div className="flex items-center gap-2 mb-3">
@@ -160,14 +226,16 @@ export default function BusinessProfilePage() {
         
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
-            <label className="block text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2 font-medium">İşletme Adı</label>
+            <label className="block text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2 font-medium">
+              {session?.user?.role === 'employee' ? 'Ad Soyad' : 'İşletme Adı'}
+            </label>
             <input 
               type="text" 
               value={name} 
               onChange={e => setName(e.target.value)} 
               required 
               className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors touch-manipulation min-h-[44px]" 
-              placeholder="İşletme adınız"
+              placeholder={session?.user?.role === 'employee' ? 'Adınız ve soyadınız' : 'İşletme adınız'}
               style={{ fontSize: '16px' }}
             />
           </div>

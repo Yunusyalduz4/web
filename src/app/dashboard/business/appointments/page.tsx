@@ -20,7 +20,16 @@ export default function BusinessAppointmentsPage() {
   const router = useRouter();
   const userId = session?.user.id;
   const { data: businesses, isLoading: loadingBusiness } = trpc.business.getBusinesses.useQuery();
-  const business = businesses?.find((b: any) => b.owner_user_id === userId);
+  
+  // Business'ı role'e göre bul
+  const business = businesses?.find((b: any) => {
+    if (session?.user?.role === 'business') {
+      return b.owner_user_id === session?.user?.id;
+    } else if (session?.user?.role === 'employee') {
+      return b.id === session?.user?.businessId;
+    }
+    return false;
+  });
   const businessId = business?.id;
   const appointmentsQuery = trpc.appointment.getByBusiness.useQuery(businessId ? { businessId } : skipToken);
   const { data: allAppointments, isLoading } = appointmentsQuery;
@@ -28,7 +37,9 @@ export default function BusinessAppointmentsPage() {
   // Employee ise sadece kendi randevularını filtrele
   const appointments = useMemo(() => {
     if (session?.user?.role === 'employee' && session?.user?.employeeId) {
-      return allAppointments?.filter((a: any) => a.employee_id === session.user.employeeId) || [];
+      return allAppointments?.filter((a: any) => 
+        a.services?.some((service: any) => service.employee_id === session.user.employeeId)
+      ) || [];
     }
     return allAppointments || [];
   }, [allAppointments, session?.user?.role, session?.user?.employeeId]);

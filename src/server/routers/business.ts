@@ -235,7 +235,40 @@ export const businessRouter = t.router({
   getEmployees: t.procedure
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
-      const result = await pool.query(`SELECT * FROM employees WHERE business_id = $1`, [input.businessId]);
+      const result = await pool.query(
+        `SELECT 
+          e.*,
+          COALESCE(
+            array_agg(
+              json_build_object(
+                'day_of_week', ea.day_of_week,
+                'start_time', ea.start_time,
+                'end_time', ea.end_time
+              )
+            ) FILTER (WHERE ea.day_of_week IS NOT NULL),
+            ARRAY[]::json[]
+          ) as availability,
+          COALESCE(
+            array_agg(
+              json_build_object(
+                'id', s.id,
+                'name', s.name,
+                'description', s.description,
+                'duration_minutes', s.duration_minutes,
+                'price', s.price
+              )
+            ) FILTER (WHERE s.id IS NOT NULL),
+            ARRAY[]::json[]
+          ) as services
+         FROM employees e
+         LEFT JOIN employee_availability ea ON e.id = ea.employee_id
+         LEFT JOIN employee_services es ON e.id = es.employee_id
+         LEFT JOIN services s ON es.service_id = s.id
+         WHERE e.business_id = $1
+         GROUP BY e.id
+         ORDER BY e.name`,
+        [input.businessId]
+      );
       return result.rows;
     }),
   createEmployee: t.procedure.use(isApprovedBusiness)
@@ -283,6 +316,10 @@ export const businessRouter = t.router({
   deleteEmployee: t.procedure.use(isBusiness)
     .input(z.object({ id: z.string().uuid(), businessId: z.string().uuid() }))
     .mutation(async ({ input }) => {
+      // Önce users tablosundaki employee_id'yi NULL yap
+      await pool.query(`UPDATE users SET employee_id = NULL WHERE employee_id = $1`, [input.id]);
+      
+      // Sonra çalışanı sil
       await pool.query(`DELETE FROM employees WHERE id = $1 AND business_id = $2`, [input.id, input.businessId]);
       return { success: true };
     }),
