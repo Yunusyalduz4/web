@@ -17,8 +17,8 @@ export default function BusinessProfilePage() {
   const userId = session?.user.id;
   
   // Employee ise çalışan profilini getir, business ise işletme profilini getir
-  const { data: business, isLoading: businessLoading } = trpc.business.getBusinessByUserId.useQuery(
-    userId && session?.user?.role === 'business' ? { userId } : skipToken
+  const { data: business, isLoading: businessLoading, error: businessError } = trpc.business.getMyBusiness.useQuery(
+    session?.user?.role === 'business' ? undefined : skipToken
   );
   
   const { data: employee, isLoading: employeeLoading } = trpc.business.getEmployeeById.useQuery(
@@ -110,6 +110,25 @@ export default function BusinessProfilePage() {
         <span className="text-lg text-gray-400">
           {session?.user?.role === 'employee' ? 'Çalışan bilgileri yükleniyor...' : 'İşletme bilgileri yükleniyor...'}
         </span>
+      </main>
+    );
+  }
+
+  // Error handling
+  if (businessError) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50">
+        <span className="text-6xl mb-4">⚠️</span>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Profil Yüklenemedi</h2>
+        <p className="text-gray-600 mb-4 text-center max-w-md">
+          {businessError.message || 'Profil bilgileri yüklenirken bir hata oluştu.'}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors font-medium"
+        >
+          Sayfayı Yenile
+        </button>
       </main>
     );
   }
