@@ -11,13 +11,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { path: filePath } = req.query;
     
-    if (!filePath || Array.isArray(filePath)) {
+    // Path parametresi array olarak geliyor, join et
+    const actualPath = Array.isArray(filePath) ? filePath.join('/') : filePath;
+    
+    if (!actualPath) {
       return res.status(400).json({ error: 'Invalid file path' });
     }
 
     // Güvenlik kontrolü - sadece uploads klasöründeki dosyalara erişim
-    const safePath = filePath.replace(/\.\./g, '').replace(/\/+/g, '/');
+    const safePath = actualPath.replace(/\.\./g, '').replace(/\/+/g, '/');
     const fullPath = join(process.cwd(), 'public', 'uploads', safePath);
+    
+    console.log('Static file request:', { actualPath, safePath, fullPath });
 
     // Dosya var mı kontrol et
     try {
