@@ -146,12 +146,12 @@ export default function UserDashboard() {
   };
 
   return (
-    <main className="relative max-w-2xl mx-auto p-4 pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
+    <main className="relative max-w-2xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar - Mobile Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none truncate">randevuo</div>
             {/* WebSocket Durumu */}
             <div className="flex items-center gap-1">
               {isConnecting && (
@@ -165,26 +165,25 @@ export default function UserDashboard() {
               )}
             </div>
           </div>
-          <div className="inline-flex items-center gap-2">
+          <div className="inline-flex items-center gap-1 sm:gap-2">
             <NotificationsButton userType="user" />
             <button
               onClick={() => setHistoryOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 text-gray-900 border border-white/40 shadow-sm transition"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 text-gray-900 border border-white/40 shadow-sm transition-all touch-manipulation min-h-[44px]"
               aria-label="Randevu geçmişini aç"
             >
-              <span className="text-base">🕓</span>
-              <span className="text-sm font-medium">Geçmiş</span>
+              <span className="text-sm sm:text-base">🕓</span>
+              <span className="text-xs sm:text-sm font-medium hidden xs:inline">Geçmiş</span>
             </button>
           </div>
         </div>
       </div>
 
-      <h1 className="text-3xl font-extrabold mt-4 mb-6 text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none animate-soft-in">
+      <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 sm:mt-4 mb-4 sm:mb-6 text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none animate-soft-in px-2">
         Merhaba, {profile?.name} 👋
       </h1>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Randevularım</h2>
-      
+      <div className="flex items-center justify-between mb-3 sm:mb-4 px-1">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Randevularım</h2>
       </div>
       <div className="space-y-3">
         {isLoading && (
@@ -203,13 +202,13 @@ export default function UserDashboard() {
         {activeAppointments.map((a: any) => (
           <div
             key={a.id}
-            className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow p-3"
+            className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow-sm hover:shadow-md transition-all p-3 sm:p-4"
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">{a.business_name || 'Bilinmiyor'}</div>
-                <div className="text-[12px] text-gray-600 flex items-center gap-1" suppressHydrationWarning>
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-sm sm:text-base font-semibold text-gray-900 truncate">{a.business_name || 'Bilinmiyor'}</div>
+                <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1 mt-1" suppressHydrationWarning>
                   <span>📅</span>
                   <span>
                     {typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}
@@ -221,7 +220,7 @@ export default function UserDashboard() {
                   </span>
                 </div>
               </div>
-              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] border ${
+              <span className={`shrink-0 px-2 py-1 rounded-full text-xs border ${
                 a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                 a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-200' :
                 a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
@@ -235,16 +234,20 @@ export default function UserDashboard() {
             </div>
 
             {/* Details */}
-            <div className="space-y-1.5 mb-2">
-              <div className="text-[13px] text-gray-800 truncate">Hizmet: {a.service_names?.length ? a.service_names.join(', ') : '—'}</div>
-              <div className="text-[13px] text-gray-800 truncate">Çalışan: {a.employee_names?.length ? a.employee_names.join(', ') : '—'}</div>
+            <div className="space-y-2 mb-3">
+              <div className="text-sm text-gray-800 truncate">
+                <span className="font-medium">Hizmet:</span> {a.service_names?.length ? a.service_names.join(', ') : '—'}
+              </div>
+              <div className="text-sm text-gray-800 truncate">
+                <span className="font-medium">Çalışan:</span> {a.employee_names?.length ? a.employee_names.join(', ') : '—'}
+              </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-6">
+            {/* Actions - Mobile Optimized */}
+            <div className="flex gap-3 sm:gap-6">
               {a.status === 'pending' && (
                 <button
-                  className="text-[13px] font-medium text-rose-700"
+                  className="text-sm font-medium text-rose-700 hover:text-rose-800 active:text-rose-900 touch-manipulation min-h-[44px] px-2 py-2 -mx-2 -my-2 rounded-lg hover:bg-rose-50 active:bg-rose-100 transition-colors"
                   onClick={() => handleCancel(a.id)}
                 >
                   İptal Et
@@ -252,17 +255,27 @@ export default function UserDashboard() {
               )}
               {a.status === 'completed' && (
                 <button
-                  className="text-[13px] font-medium text-gray-900"
+                  className="text-sm font-medium text-gray-900 hover:text-gray-700 active:text-gray-800 touch-manipulation min-h-[44px] px-2 py-2 -mx-2 -my-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   onClick={() => handleReviewClick(a)}
                 >
                   Değerlendir
                 </button>
               )}
               {a.status === 'confirmed' && (
-                <div className="text-[13px] text-green-700">Onaylandı</div>
+                <div className="text-sm text-green-700 flex items-center min-h-[44px]">
+                  <span className="inline-flex items-center gap-1">
+                    <span>✅</span>
+                    <span>Onaylandı</span>
+                  </span>
+                </div>
               )}
               {a.status === 'cancelled' && (
-                <div className="text-[13px] text-gray-600">İptal edildi</div>
+                <div className="text-sm text-gray-600 flex items-center min-h-[44px]">
+                  <span className="inline-flex items-center gap-1">
+                    <span>❌</span>
+                    <span>İptal edildi</span>
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -270,8 +283,63 @@ export default function UserDashboard() {
       </div>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        :root { --randevuo-radius: 16px; --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25); }
-        html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+        :root { 
+          --randevuo-radius: 16px; 
+          --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25);
+          --mobile-safe-area: env(safe-area-inset-bottom, 0px);
+        }
+        html, body { 
+          font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Touch targets */
+          button, input, select, textarea {
+            touch-action: manipulation;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+            font-size: 16px;
+          }
+          
+          /* Smooth scrolling */
+          .overscroll-contain {
+            overscroll-behavior: contain;
+          }
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:inline {
+            display: inline;
+          }
+        }
+        
+        /* Animation improvements */
+        .animate-soft-in {
+          animation: softIn 0.6s ease-out;
+        }
+        
+        @keyframes softIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
 
       {/* Review Modal */}
@@ -285,9 +353,9 @@ export default function UserDashboard() {
         onReviewSubmitted={handleReviewSubmitted}
       />
 
-      {/* History Modal */}
+      {/* History Modal - Mobile Optimized */}
       {historyOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setHistoryOpen(false)} />
 
@@ -295,62 +363,86 @@ export default function UserDashboard() {
           <div
             role="dialog"
             aria-modal="true"
-            className="relative w-full md:max-w-2xl h-[85vh] md:h-[80vh] bg-white/70 backdrop-blur-md rounded-t-3xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/40"
+            className="relative w-full sm:max-w-2xl h-[90vh] sm:h-[85vh] bg-white/70 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/40"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* Header - Mobile Optimized */}
             <div className="sticky top-0 z-20 bg-white/60 backdrop-blur-md border-b border-white/40">
-              <div className="py-2 flex items-center justify-center">
+              {/* Mobile drag handle */}
+              <div className="py-2 flex items-center justify-center sm:hidden">
                 <div className="w-12 h-1.5 rounded-full bg-gray-300" />
               </div>
-              <div className="px-4 pb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Tüm Randevular</h3>
-                <button className="px-3 py-1.5 rounded-xl bg-white/60 border border-white/40 hover:bg-white/80 text-sm" onClick={() => setHistoryOpen(false)}>Kapat</button>
+              <div className="px-3 sm:px-4 pb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 text-lg">Tüm Randevular</h3>
+                <button 
+                  className="px-3 py-2 rounded-xl bg-white/60 border border-white/40 hover:bg-white/80 active:bg-white/90 text-sm touch-manipulation min-h-[44px] transition-colors" 
+                  onClick={() => setHistoryOpen(false)}
+                >
+                  Kapat
+                </button>
               </div>
 
-              {/* Filters */}
-              <div className="px-4 pb-3 border-t border-white/40">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="flex items-center gap-2 border border-white/40 rounded-xl px-3 py-2 bg-white/60 backdrop-blur-md">
-                    <span className="text-gray-900">🔎</span>
+              {/* Filters - Mobile Optimized */}
+              <div className="px-3 sm:px-4 pb-3 border-t border-white/40">
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Search */}
+                  <div className="flex items-center gap-2 border border-white/40 rounded-xl px-3 py-3 bg-white/60 backdrop-blur-md">
+                    <span className="text-gray-900 text-lg">🔎</span>
                     <input
-                      className="w-full outline-none text-sm text-gray-900 bg-transparent"
+                      className="w-full outline-none text-sm text-gray-900 bg-transparent placeholder-gray-500"
                       placeholder="Ara: işletme, hizmet, çalışan"
                       value={historySearch}
                       onChange={(e) => setHistorySearch(e.target.value)}
                     />
                   </div>
-                  <input
-                    type="date"
-                    className="w-full border border-white/40 rounded-xl px-3 py-2 text-sm text-gray-900 bg-white/60 backdrop-blur-md"
-                    value={historyDate}
-                    onChange={(e) => setHistoryDate(e.target.value)}
-                  />
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                    {(['all','pending','confirmed','completed','cancelled'] as const).map(st => (
-                      <button
-                        key={st}
-                        onClick={() => setHistoryStatus(st)}
-                        className={`shrink-0 px-3 py-1.5 rounded-full text-xs border transition ${historyStatus===st? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow':'bg-white/60 text-gray-700 border-white/40 backdrop-blur-md'}`}
-                      >
-                        {st === 'all' ? 'Tümü' : st === 'pending' ? 'Bekliyor' : st === 'confirmed' ? 'Onaylandı' : st === 'completed' ? 'Tamamlandı' : 'İptal'}
-                      </button>
-                    ))}
-                    {(historySearch||historyDate||historyStatus!=='all') && (
-                      <button onClick={() => { setHistorySearch(''); setHistoryDate(''); setHistoryStatus('all'); }} className="ml-auto text-xs text-rose-600">Temizle</button>
-                    )}
+                  
+                  {/* Date and Status Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      className="w-full border border-white/40 rounded-xl px-3 py-3 text-sm text-gray-900 bg-white/60 backdrop-blur-md touch-manipulation"
+                      value={historyDate}
+                      onChange={(e) => setHistoryDate(e.target.value)}
+                    />
+                    
+                    {/* Status Filter - Horizontal Scroll on Mobile */}
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                      {(['all','pending','confirmed','completed','cancelled'] as const).map(st => (
+                        <button
+                          key={st}
+                          onClick={() => setHistoryStatus(st)}
+                          className={`shrink-0 px-3 py-2 rounded-full text-xs border transition-all touch-manipulation min-h-[44px] ${
+                            historyStatus===st? 
+                            'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow-md' :
+                            'bg-white/60 text-gray-700 border-white/40 backdrop-blur-md hover:bg-white/80 active:bg-white/90'
+                          }`}
+                        >
+                          {st === 'all' ? 'Tümü' : st === 'pending' ? 'Bekliyor' : st === 'confirmed' ? 'Onaylandı' : st === 'completed' ? 'Tamamlandı' : 'İptal'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                  
+                  {/* Clear Filters */}
+                  {(historySearch||historyDate||historyStatus!=='all') && (
+                    <button 
+                      onClick={() => { setHistorySearch(''); setHistoryDate(''); setHistoryStatus('all'); }} 
+                      className="w-full px-3 py-2 text-xs text-rose-600 hover:text-rose-700 active:text-rose-800 touch-manipulation min-h-[44px] rounded-xl hover:bg-rose-50 active:bg-rose-100 transition-colors"
+                    >
+                      🗑️ Filtreleri Temizle
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 overscroll-contain">
+            {/* Content - Mobile Optimized Scroll */}
+            <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 space-y-3 overscroll-contain">
               {filteredHistory.map((a: any) => (
-                <div key={a.id} className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md shadow p-4">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <div className="font-medium text-gray-900 truncate mr-2">{a.business_name || 'Bilinmiyor'}</div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                <div key={a.id} className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md shadow-sm hover:shadow-md transition-all p-3 sm:p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="font-medium text-gray-900 truncate mr-2 text-sm sm:text-base">{a.business_name || 'Bilinmiyor'}</div>
+                    <span className={`px-2 py-1 rounded-full text-xs shrink-0 ${
                       a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       a.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                       a.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-700'
@@ -361,9 +453,19 @@ export default function UserDashboard() {
                        a.status === 'cancelled' ? 'İptal Edildi' : a.status}
                     </span>
                   </div>
-                   <div className="text-xs text-gray-600 mb-1" suppressHydrationWarning>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(a.appointment_datetime))}</div>
-                  <div className="text-xs text-gray-800 truncate">Hizmet: {a.service_names?.length ? a.service_names.join(', ') : '—'}</div>
-                  <div className="text-xs text-gray-800 truncate">Çalışan: {a.employee_names?.length ? a.employee_names.join(', ') : '—'}</div>
+                  
+                  <div className="text-xs sm:text-sm text-gray-600 mb-2" suppressHydrationWarning>
+                    {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(a.appointment_datetime))}
+                  </div>
+                  
+                  <div className="space-y-1 mb-3">
+                    <div className="text-xs sm:text-sm text-gray-800 truncate">
+                      <span className="font-medium">Hizmet:</span> {a.service_names?.length ? a.service_names.join(', ') : '—'}
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-800 truncate">
+                      <span className="font-medium">Çalışan:</span> {a.employee_names?.length ? a.employee_names.join(', ') : '—'}
+                    </div>
+                  </div>
                   
                   {/* Tamamlanan randevular için değerlendirme butonu - sadece değerlendirme yapılmamış olanlar için */}
                   {a.status === 'completed' && !userReviews?.reviews?.some((review: any) => review.appointment_id === a.id) && (
@@ -373,7 +475,7 @@ export default function UserDashboard() {
                           handleReviewClick(a);
                           setHistoryOpen(false);
                         }}
-                        className="w-full px-3 py-2 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white text-xs font-medium rounded-lg hover:from-rose-700 hover:to-fuchsia-700 transition shadow-sm"
+                        className="w-full px-3 py-3 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white text-sm font-medium rounded-lg hover:from-rose-700 hover:to-fuchsia-700 active:from-rose-800 active:to-fuchsia-800 transition-all shadow-sm touch-manipulation min-h-[44px]"
                       >
                         ⭐ Değerlendir
                       </button>
@@ -383,7 +485,7 @@ export default function UserDashboard() {
                   {/* Değerlendirme yapılmış tamamlanan randevular için bilgi */}
                   {a.status === 'completed' && userReviews?.reviews?.some((review: any) => review.appointment_id === a.id) && (
                     <div className="mt-3 pt-3 border-t border-white/40">
-                      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg">
+                      <div className="flex items-center justify-center gap-2 px-3 py-3 bg-emerald-600 text-white text-sm font-medium rounded-lg">
                         <span>✅ Değerlendirme yapıldı</span>
                       </div>
                     </div>
@@ -391,9 +493,12 @@ export default function UserDashboard() {
                 </div>
               ))}
               {filteredHistory.length === 0 && (
-                <div className="text-center text-sm text-gray-500 py-8">Kayıt bulunamadı</div>
+                <div className="text-center text-sm text-gray-500 py-8">
+                  <div className="text-4xl mb-2">🔍</div>
+                  <div>Kayıt bulunamadı</div>
+                </div>
               )}
-              <div className="h-2" />
+              <div className="h-4" />
             </div>
           </div>
         </div>

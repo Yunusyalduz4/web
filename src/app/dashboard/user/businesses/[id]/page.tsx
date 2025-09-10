@@ -241,22 +241,22 @@ export default function BusinessDetailPage() {
 
   return (
     <>
-      <main className="relative max-w-4xl mx-auto p-3 pb-20 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
-      {/* Top Bar - Mobil Optimized */}
-      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/30 shadow-sm mb-3">
+      <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 animate-fade-in">
+      {/* Top Bar - Mobile Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/80 backdrop-blur-md border-b border-white/30 shadow-sm mb-3">
         <div className="flex items-center justify-between">
-          <div className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <button 
             onClick={() => router.back()}
-            className="flex items-center gap-1 px-3 py-2 bg-white/70 backdrop-blur-md rounded-xl shadow-sm active:scale-95 transition-all duration-200 border border-white/40 text-sm touch-manipulation"
+            className="flex items-center gap-1 sm:gap-2 px-3 py-2 bg-white/70 backdrop-blur-md rounded-xl shadow-sm active:scale-95 transition-all duration-200 border border-white/40 text-sm touch-manipulation min-h-[44px]"
           >
             <span className="text-lg text-gray-900">←</span>
-            <span className="font-medium text-gray-700 text-xs">Geri</span>
+            <span className="font-medium text-gray-700 text-xs sm:text-sm">Geri</span>
           </button>
         </div>
       </div>
 
-      {/* Favorite toggle + Image Slider - Mobil Optimized */}
+      {/* Favorite toggle + Image Slider - Mobile Optimized */}
       <div className="relative mb-4 rounded-2xl overflow-hidden shadow-lg bg-white/60 backdrop-blur-md border border-white/40">
         <div className="absolute right-3 top-3 z-10">
           <button
@@ -265,7 +265,7 @@ export default function BusinessDetailPage() {
               await toggleFavorite.mutateAsync({ businessId });
               await refetchFav();
             }}
-            className={`px-3 py-2 rounded-full shadow transition-all active:scale-95 touch-manipulation ${favStatus?.isFavorite ? 'bg-rose-600 text-white' : 'bg-white/80 text-gray-900 border border-white/40 backdrop-blur-md'}`}
+            className={`px-3 py-2 rounded-full shadow transition-all active:scale-95 touch-manipulation min-h-[44px] ${favStatus?.isFavorite ? 'bg-rose-600 text-white' : 'bg-white/80 text-gray-900 border border-white/40 backdrop-blur-md'}`}
             title={session?.user ? (favStatus?.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle') : 'Giriş yapmalısınız'}
           >
             <span className="inline-flex items-center gap-1">
@@ -338,34 +338,34 @@ export default function BusinessDetailPage() {
             </SwiperSlide>
           ))}
         </Swiper>
-        {/* Slider Nav - Mobil Optimized */}
+        {/* Slider Nav - Mobile Optimized */}
         <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1">
-          <button onClick={() => slider?.slidePrev()} className="w-8 h-8 grid place-items-center rounded-full bg-white/80 hover:bg-white/90 border border-white/40 shadow active:scale-95 transition-all touch-manipulation">
+          <button onClick={() => slider?.slidePrev()} className="w-8 h-8 grid place-items-center rounded-full bg-white/80 hover:bg-white/90 border border-white/40 shadow active:scale-95 transition-all touch-manipulation min-h-[44px]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <button onClick={() => slider?.slideNext()} className="w-8 h-8 grid place-items-center rounded-full bg-white/80 hover:bg-white/90 border border-white/40 shadow active:scale-95 transition-all touch-manipulation">
+          <button onClick={() => slider?.slideNext()} className="w-8 h-8 grid place-items-center rounded-full bg-white/80 hover:bg-white/90 border border-white/40 shadow active:scale-95 transition-all touch-manipulation min-h-[44px]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
       </div>
 
-      {/* Business Info - Mobil Optimized */}
-      <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-lg p-4 mb-4 border border-white/40 animate-fade-in">
+      {/* Business Info - Mobile Optimized */}
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-lg p-3 sm:p-4 mb-4 border border-white/40 animate-fade-in">
         <div className="text-center mb-4">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none mb-2">
             {business.name}
           </h1>
           {business.description && (
-            <p className="text-gray-600 text-sm leading-relaxed max-w-2xl mx-auto px-1 mb-3">
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto px-1 mb-3">
               {business.description}
             </p>
           )}
 
-          {/* Hikayeler Bölümü - Mobil Optimized */}
+          {/* Hikayeler Bölümü - Mobile Optimized */}
           {businessStories && businessStories.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-center mb-3">
-                <h3 className="text-base font-semibold text-gray-700 mr-2">Hikayeler</h3>
+                <h3 className="text-sm sm:text-base font-semibold text-gray-700 mr-2">Hikayeler</h3>
                 <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs">📱</span>
                 </div>
@@ -378,7 +378,7 @@ export default function BusinessDetailPage() {
             </div>
           )}
           
-          {/* Business Rating - Mobil Optimized */}
+          {/* Business Rating - Mobile Optimized */}
           {businessRating && businessRating.total_reviews > 0 && (
             <button 
               onClick={() => {
@@ -394,7 +394,7 @@ export default function BusinessDetailPage() {
                   }
                 }, 100);
               }}
-              className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-xl border border-yellow-100/50 active:from-yellow-100/80 active:to-orange-100/60 active:border-yellow-200/70 transition-all duration-200 cursor-pointer group mx-auto touch-manipulation active:scale-95"
+              className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-yellow-50/60 to-orange-50/40 rounded-xl border border-yellow-100/50 active:from-yellow-100/80 active:to-orange-100/60 active:border-yellow-200/70 transition-all duration-200 cursor-pointer group mx-auto touch-manipulation active:scale-95 min-h-[44px]"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center text-white text-sm font-bold group-active:scale-110 transition-transform">
                 ⭐
@@ -414,9 +414,9 @@ export default function BusinessDetailPage() {
           )}
         </div>
 
-        {/* Contact Info Cards - Mobil Optimized */}
+        {/* Contact Info Cards - Mobile Optimized */}
         <div className="grid grid-cols-1 gap-2">
-          {/* Adres Kartı - Mobil Optimized */}
+          {/* Adres Kartı - Mobile Optimized */}
           <button 
             onClick={() => {
               if (business.address) {
@@ -424,7 +424,7 @@ export default function BusinessDetailPage() {
                 window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
               }
             }}
-            className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl border border-blue-100/30 active:from-blue-100/60 active:to-blue-200/40 active:border-blue-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95"
+            className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50/50 to-blue-100/30 rounded-xl border border-blue-100/30 active:from-blue-100/60 active:to-blue-200/40 active:border-blue-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95 min-h-[44px]"
             disabled={!business.address}
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
@@ -441,7 +441,7 @@ export default function BusinessDetailPage() {
             </div>
           </button>
 
-          {/* Telefon Kartı - Mobil Optimized */}
+          {/* Telefon Kartı - Mobile Optimized */}
           {business.phone && (
             <button 
               onClick={() => {
@@ -449,7 +449,7 @@ export default function BusinessDetailPage() {
                   window.open(`tel:${business.phone}`, '_self');
                 }
               }}
-              className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl border border-green-100/30 active:from-green-100/60 active:to-green-200/40 active:border-green-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95"
+              className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50/50 to-green-100/30 rounded-xl border border-green-100/30 active:from-green-100/60 active:to-green-200/40 active:border-green-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95 min-h-[44px]"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.46 15.46 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.49a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z"/></svg>
@@ -464,7 +464,7 @@ export default function BusinessDetailPage() {
             </button>
           )}
 
-          {/* E-posta Kartı - Mobil Optimized */}
+          {/* E-posta Kartı - Mobile Optimized */}
           {business.email && (
             <button 
               onClick={() => {
@@ -472,7 +472,7 @@ export default function BusinessDetailPage() {
                   window.open(`mailto:${business.email}`, '_self');
                 }
               }}
-              className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl border border-purple-100/30 active:from-purple-100/60 active:to-purple-200/40 active:border-purple-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95"
+              className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl border border-purple-100/30 active:from-purple-100/60 active:to-purple-200/40 active:border-purple-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95 min-h-[44px]"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2l8 5 8-5"/></svg>
@@ -488,7 +488,7 @@ export default function BusinessDetailPage() {
           )}
         </div>
       </div>
-      {/* Segmented Tabs - Mobil Optimized */}
+      {/* Segmented Tabs - Mobile Optimized */}
       <div className="flex items-center justify-center mb-3">
         <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
           {([
@@ -498,7 +498,7 @@ export default function BusinessDetailPage() {
           ] as const).map(tab => (
             <button
               key={tab.key}
-              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all touch-manipulation active:scale-95 ${activeTab===tab.key? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md':'text-gray-800 active:bg-white/70'}`}
+              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all touch-manipulation active:scale-95 min-h-[44px] ${activeTab===tab.key? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md':'text-gray-800 active:bg-white/70'}`}
               onClick={() => setActiveTab(tab.key as any)}
             >
               {tab.label}
@@ -507,7 +507,7 @@ export default function BusinessDetailPage() {
         </div>
       </div>
 
-      {/* Services Section - Mobil Optimized */}
+      {/* Services Section - Mobile Optimized */}
       {activeTab === 'services' && (
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
@@ -521,7 +521,7 @@ export default function BusinessDetailPage() {
           </div>
           <div>
             {services?.map((s: any) => (
-              <div key={s.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-3 py-2 border-t border-white/30 active:bg-white/70 transition">
+              <div key={s.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-3 py-3 border-t border-white/30 active:bg-white/70 transition touch-manipulation min-h-[44px]">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white grid place-items-center text-xs shrink-0">⚡</div>
                   <div className="min-w-0">
@@ -541,7 +541,7 @@ export default function BusinessDetailPage() {
       </div>
       )}
 
-      {/* Employees Section - Mobil Optimized */}
+      {/* Employees Section - Mobile Optimized */}
       {activeTab === 'employees' && (
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
@@ -555,7 +555,7 @@ export default function BusinessDetailPage() {
           </div>
           <div>
             {employees?.map((e: any) => (
-              <div key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-2 border-t border-white/30 active:bg-white/70 transition">
+              <div key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-3 border-t border-white/30 active:bg-white/70 transition touch-manipulation min-h-[44px]">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white grid place-items-center text-xs shrink-0">{e.name.charAt(0).toUpperCase()}</div>
                   <div className="text-xs font-semibold text-gray-900 truncate">{e.name}</div>
@@ -572,21 +572,21 @@ export default function BusinessDetailPage() {
       </div>
       )}
 
-      {/* Reviews Section - Mobil Optimized */}
+      {/* Reviews Section - Mobile Optimized */}
       {activeTab === 'reviews' && (
       <div className="mb-4" data-tab="reviews">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Müşteri Değerlendirmeleri</h2>
         </div>
 
-        {/* Filtreleme Seçenekleri - Mobil Optimized */}
+        {/* Filtreleme Seçenekleri - Mobile Optimized */}
         <div className="mb-3 flex flex-col gap-2">
           {/* Puan Filtresi */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-gray-700">Min Puan:</span>
             <select 
               value={minRating}
-              className="px-2 py-1 border border-white/40 rounded-lg bg-white/60 text-xs flex-1"
+              className="px-2 py-2 border border-white/40 rounded-lg bg-white/60 text-xs flex-1 touch-manipulation min-h-[44px]"
               onChange={(e) => setMinRating(Number(e.target.value))}
             >
               <option value={0}>Tümü</option>
@@ -601,7 +601,7 @@ export default function BusinessDetailPage() {
             <span className="text-xs font-medium text-gray-700">Sıralama:</span>
             <select 
               value={sortBy}
-              className="px-2 py-1 border border-white/40 rounded-lg bg-white/60 text-xs flex-1"
+              className="px-2 py-2 border border-white/40 rounded-lg bg-white/60 text-xs flex-1 touch-manipulation min-h-[44px]"
               onChange={(e) => setSortBy(e.target.value as any)}
             >
               <option value="newest">En Yeni</option>
@@ -617,7 +617,7 @@ export default function BusinessDetailPage() {
         {filteredAndSortedReviews.length > 0 ? (
           <div className="space-y-2">
             {filteredAndSortedReviews.slice(0, 5).map((review: any) => (
-              <div key={review.id} className="bg-white/30 backdrop-blur-sm border border-white/20 rounded-lg p-2 active:bg-white/40 transition-all duration-200 touch-manipulation">
+              <div key={review.id} className="bg-white/30 backdrop-blur-sm border border-white/20 rounded-lg p-3 active:bg-white/40 transition-all duration-200 touch-manipulation min-h-[44px]">
                 {/* Kullanıcı Bilgisi ve Genel Puan - Mobil Optimized */}
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
@@ -726,7 +726,7 @@ export default function BusinessDetailPage() {
               <div className="text-center">
                 <button
                   onClick={() => { setReviewsOpen(true); setReviewsPage(1); }}
-                  className="px-3 py-1.5 rounded-md bg-white/40 backdrop-blur-sm border border-white/30 text-gray-600 text-xs font-medium hover:bg-white/60 transition-all duration-200"
+                  className="px-3 py-2 rounded-md bg-white/40 backdrop-blur-sm border border-white/30 text-gray-600 text-xs font-medium hover:bg-white/60 active:bg-white/70 transition-all duration-200 touch-manipulation min-h-[44px]"
                 >
                   Tüm Değerlendirmeleri Gör ({reviewsData.pagination.total})
                 </button>
@@ -747,9 +747,43 @@ export default function BusinessDetailPage() {
       )}
 
       <style jsx global>{`
-        /* Ensure button is always visible */
-        body { overflow-x: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        :root { 
+          --randevuo-radius: 16px; 
+          --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25);
+          --mobile-safe-area: env(safe-area-inset-bottom, 0px);
+        }
+        html, body { 
+          font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+          overflow-x: hidden; 
+        }
         .fixed-button { position: fixed !important; bottom: 24px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999 !important; }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Touch targets */
+          button, input, select, textarea {
+            touch-action: manipulation;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+            font-size: 16px;
+          }
+          
+          /* Smooth scrolling */
+          .overscroll-contain {
+            overscroll-behavior: contain;
+          }
+        }
         
         /* Custom Swiper Styles */
         .swiper-pagination-bullet-custom {
@@ -772,35 +806,69 @@ export default function BusinessDetailPage() {
         .swiper-pagination {
           bottom: 20px !important;
         }
+        
+        /* Animation improvements */
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
     </main>
     
-    {/* Reviews Modal */}
+    {/* Reviews Modal - Mobile Optimized */}
     {reviewsOpen && (
       <div className="fixed inset-0 z-50">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setReviewsOpen(false)} />
-        <div className="absolute inset-x-0 bottom-0 md:inset-0 md:m-auto md:max-w-2xl md:h-[80vh] bg-white/70 backdrop-blur-md rounded-t-3xl md:rounded-2xl shadow-2xl flex flex-col border border-white/40">
-          <div className="py-2 flex items-center justify-center">
+        <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:m-auto sm:max-w-2xl sm:h-[80vh] bg-white/70 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40">
+          {/* Mobile drag handle */}
+          <div className="py-2 flex items-center justify-center sm:hidden">
             <div className="w-12 h-1.5 rounded-full bg-gray-300" />
           </div>
-          <div className="px-4 pb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Tüm Değerlendirmeler</h3>
-            <button className="px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 text-sm" onClick={() => setReviewsOpen(false)}>Kapat</button>
+          <div className="px-3 sm:px-4 pb-3 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 text-lg">Tüm Değerlendirmeler</h3>
+            <button 
+              className="px-3 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 text-sm touch-manipulation min-h-[44px]" 
+              onClick={() => setReviewsOpen(false)}
+            >
+              Kapat
+            </button>
           </div>
-          <div className="px-4 pb-3 border-b border-white/40 flex items-center justify-between text-sm text-gray-700">
+          <div className="px-3 sm:px-4 pb-3 border-b border-white/40 flex items-center justify-between text-sm text-gray-700">
             <span>Toplam: {fullReviews?.pagination?.total ?? reviewsData?.pagination?.total ?? 0}</span>
             <div className="flex items-center gap-2">
-              <button disabled={reviewsPage<=1} onClick={() => setReviewsPage(p => Math.max(1, p-1))} className="px-3 py-1.5 rounded-xl bg-white/60 border border-white/40 disabled:opacity-50">Önceki</button>
+              <button 
+                disabled={reviewsPage<=1} 
+                onClick={() => setReviewsPage(p => Math.max(1, p-1))} 
+                className="px-3 py-2 rounded-xl bg-white/60 border border-white/40 disabled:opacity-50 touch-manipulation min-h-[44px]"
+              >
+                Önceki
+              </button>
               <span>Sayfa {reviewsPage}</span>
-              <button disabled={fullReviews && (reviewsPage >= (fullReviews.pagination?.totalPages || 1))} onClick={() => setReviewsPage(p => p+1)} className="px-3 py-1.5 rounded-xl bg-white/60 border border-white/40 disabled:opacity-50">Sonraki</button>
+              <button 
+                disabled={fullReviews && (reviewsPage >= (fullReviews.pagination?.totalPages || 1))} 
+                onClick={() => setReviewsPage(p => p+1)} 
+                className="px-3 py-2 rounded-xl bg-white/60 border border-white/40 disabled:opacity-50 touch-manipulation min-h-[44px]"
+              >
+                Sonraki
+              </button>
             </div>
           </div>
-          <div className="p-4 overflow-auto flex-1 space-y-3">
+          <div className="p-3 sm:p-4 overflow-auto flex-1 space-y-3 overscroll-contain">
             {fullReviewsLoading && (
               <div className="text-center text-gray-500">Yükleniyor...</div>
             )}
             {fullReviews?.reviews?.map((review: any) => (
-              <div key={review.id} className="border border-white/30 bg-white/40 backdrop-blur-sm rounded-lg p-3 hover:bg-white/50 transition-all duration-200">
+              <div key={review.id} className="border border-white/30 bg-white/40 backdrop-blur-sm rounded-lg p-3 hover:bg-white/50 active:bg-white/60 transition-all duration-200 touch-manipulation">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-xs font-medium">
@@ -902,12 +970,12 @@ export default function BusinessDetailPage() {
       </div>
     )}
 
-    {/* Sticky Booking Bar (mobile-first) */}
-    <div className="fixed bottom-20 md:bottom-6 inset-x-0 z-[9999]">
-      <div className="mx-auto max-w-4xl px-4 pb-[env(safe-area-inset-bottom)]">
-        <div className="md:rounded-2xl md:border md:border-white/40 md:backdrop-blur-md md:bg-white/60 md:shadow-2xl">
-          <div className="flex justify-center md:grid md:grid-cols-[1fr_auto] gap-3 items-center p-3">
-            <div className="hidden md:flex items-center gap-3 text-sm text-gray-800">
+    {/* Sticky Booking Bar - Mobile Optimized */}
+    <div className="fixed bottom-20 sm:bottom-6 inset-x-0 z-[9999]">
+      <div className="mx-auto max-w-4xl px-3 sm:px-4 pb-[env(safe-area-inset-bottom)]">
+        <div className="sm:rounded-2xl sm:border sm:border-white/40 sm:backdrop-blur-md sm:bg-white/60 sm:shadow-2xl">
+          <div className="flex justify-center sm:grid sm:grid-cols-[1fr_auto] gap-3 items-center p-3">
+            <div className="hidden sm:flex items-center gap-3 text-sm text-gray-800">
               <div className="w-9 h-9 rounded-xl bg-white/70 border border-white/40 backdrop-blur-md shadow grid place-items-center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M8 3v4M16 3v4M3 11h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </div>
@@ -926,7 +994,7 @@ export default function BusinessDetailPage() {
                   setTimeout(() => setBookingLoading(false), 600);
                 }
               }}
-              className={`w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white font-semibold shadow-2xl transition-all duration-200 active:scale-95 bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 ${bookingLoading? 'opacity-80 cursor-wait':''}`}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white font-semibold shadow-2xl transition-all duration-200 active:scale-95 bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 touch-manipulation min-h-[44px] ${bookingLoading? 'opacity-80 cursor-wait':''}`}
             >
               {bookingLoading ? (
                 <>
@@ -945,20 +1013,20 @@ export default function BusinessDetailPage() {
       </div>
     </div>
 
-    {/* Photo Slider Modal */}
+    {/* Photo Slider Modal - Mobile Optimized */}
     {photoSliderOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-4">
+      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-2 sm:p-4">
         <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
-          {/* Close Button */}
+          {/* Close Button - Mobile Optimized */}
           <button
             onClick={() => setPhotoSliderOpen(false)}
-            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+            className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors touch-manipulation min-h-[44px]"
           >
             <span className="text-xl">×</span>
           </button>
 
-          {/* Photo Counter */}
-          <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
+          {/* Photo Counter - Mobile Optimized */}
+          <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-xs sm:text-sm">
             {currentPhotoIndex + 1} / {currentPhotos.length}
           </div>
 
@@ -998,21 +1066,21 @@ export default function BusinessDetailPage() {
             </Swiper>
           </div>
 
-          {/* Custom Navigation Buttons */}
+          {/* Custom Navigation Buttons - Mobile Optimized */}
           {currentPhotos.length > 1 && (
             <>
-              <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
-                <span className="text-2xl">‹</span>
+              <button className="swiper-button-prev-custom absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors z-10 touch-manipulation min-h-[44px]">
+                <span className="text-xl sm:text-2xl">‹</span>
               </button>
-              <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
-                <span className="text-2xl">›</span>
+              <button className="swiper-button-next-custom absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors z-10 touch-manipulation min-h-[44px]">
+                <span className="text-xl sm:text-2xl">›</span>
               </button>
             </>
           )}
 
-          {/* Thumbnail Strip */}
+          {/* Thumbnail Strip - Mobile Optimized */}
           {currentPhotos.length > 1 && (
-            <div className="flex justify-center gap-2 p-4 overflow-x-auto">
+            <div className="flex justify-center gap-2 p-2 sm:p-4 overflow-x-auto no-scrollbar">
               {currentPhotos.map((photo, index) => (
                 <button
                   key={index}
@@ -1020,10 +1088,10 @@ export default function BusinessDetailPage() {
                     setCurrentPhotoIndex(index);
                     photoSwiper?.slideTo(index);
                   }}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                  className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${
                     index === currentPhotoIndex
                       ? 'border-white'
-                      : 'border-white/30 hover:border-white/60'
+                      : 'border-white/30 hover:border-white/60 active:border-white/80'
                   }`}
                 >
                   <img

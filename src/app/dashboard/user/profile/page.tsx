@@ -101,133 +101,135 @@ export default function UserProfilePage() {
   }
 
   return (
-    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40">
+    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar - Mobile Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/70 backdrop-blur-md border-b border-white/40">
         <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs">
+          <button onClick={() => router.back()} className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs sm:text-sm hover:bg-white/80 active:bg-white/90 transition touch-manipulation min-h-[44px]">
             <span>←</span>
-            <span className="hidden sm:inline">Geri</span>
+            <span className="hidden xs:inline">Geri</span>
           </button>
-          <div className="text-sm font-bold tracking-tight text-gray-800">Profil</div>
-          <div className="flex items-center gap-2">
+          <div className="text-sm sm:text-base font-bold tracking-tight text-gray-800">Profil</div>
+          <div className="flex items-center gap-1 sm:gap-2">
             <SupportButton userType="user" />
             <NotificationsButton userType="user" />
           </div>
         </div>
       </div>
 
-      {/* Header Mini */}
-      <section className="mt-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
+      {/* Header Mini - Mobile Optimized */}
+      <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-bold grid place-items-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs sm:text-sm font-bold grid place-items-center">
             {(profile?.name?.[0] || 'U').toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-gray-900 truncate">{profile?.name || 'Kullanıcı'}</div>
-            <div className="text-xs text-gray-600 truncate">{profile?.email || ''}</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm sm:text-base font-semibold text-gray-900 truncate">{profile?.name || 'Kullanıcı'}</div>
+            <div className="text-xs sm:text-sm text-gray-600 truncate">{profile?.email || ''}</div>
           </div>
         </div>
       </section>
 
-      {/* Tab Navigation */}
-      <section className="mt-3">
+      {/* Tab Navigation - Mobile Optimized */}
+      <section className="mt-3 sm:mt-4">
         <div className="flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex-1 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`flex-1 px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] ${
               activeTab === 'profile'
                 ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-white/70'
+                : 'text-gray-700 hover:bg-white/70 active:bg-white/80'
             }`}
           >
-            Profil Bilgileri
+            <span className="hidden xs:inline">Profil Bilgileri</span>
+            <span className="xs:hidden">Profil</span>
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`flex-1 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`flex-1 px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] ${
               activeTab === 'reviews'
                 ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-white/70'
+                : 'text-gray-700 hover:bg-white/70 active:bg-white/80'
             }`}
           >
-            Değerlendirmelerim
+            <span className="hidden xs:inline">Değerlendirmelerim</span>
+            <span className="xs:hidden">Yorumlar</span>
           </button>
         </div>
       </section>
 
-      {/* Tab Content */}
+      {/* Tab Content - Mobile Optimized */}
       {activeTab === 'profile' && (
-        <section className="mt-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
-          <form onSubmit={handleSubmit} className="space-y-2.5">
+        <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-[11px] text-gray-600 mb-1">Ad Soyad</label>
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Ad Soyad</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 touch-manipulation min-h-[44px]"
                 autoComplete="name"
                 placeholder="Adınız ve soyadınız"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-gray-600 mb-1">E-posta</label>
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">E-posta</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 touch-manipulation min-h-[44px]"
                 autoComplete="email"
                 placeholder="E-posta adresiniz"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-gray-600 mb-1">Telefon</label>
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Telefon</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200 touch-manipulation min-h-[44px]"
                 autoComplete="tel"
                 placeholder="05xx xxx xx xx"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-gray-600 mb-1">Adres</label>
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Adres</label>
               <textarea
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-200"
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-200 touch-manipulation resize-none"
                 placeholder="Adresiniz"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-gray-600 mb-1">Yeni Şifre (opsiyonel)</label>
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Yeni Şifre (opsiyonel)</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-200"
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-200 touch-manipulation min-h-[44px]"
                 autoComplete="new-password"
                 placeholder="Yeni şifreniz"
               />
             </div>
 
             {error && (
-              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700">{error}</div>
+              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-xs sm:text-sm text-red-700">{error}</div>
             )}
             {success && (
-              <div className="px-3 py-2 rounded-lg border border-green-200 bg-green-50 text-[12px] text-green-700">{success}</div>
+              <div className="px-3 py-2 rounded-lg border border-green-200 bg-green-50 text-xs sm:text-sm text-green-700">{success}</div>
             )}
 
             <button
               type="submit"
               disabled={updateMutation.isPending}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition disabled:opacity-60"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm sm:text-base font-semibold shadow-md hover:shadow-lg active:shadow-xl transition disabled:opacity-60 touch-manipulation min-h-[44px]"
             >
               {updateMutation.isPending ? 'Güncelleniyor…' : 'Kaydet'}
             </button>
@@ -235,32 +237,32 @@ export default function UserProfilePage() {
         </section>
       )}
 
-      {/* Değerlendirmelerim Tab */}
+      {/* Değerlendirmelerim Tab - Mobile Optimized */}
       {activeTab === 'reviews' && (
-        <section className="mt-3 space-y-4">
-          {/* Header Stats */}
+        <section className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
+          {/* Header Stats - Mobile Optimized */}
           {userReviews?.reviews && userReviews.reviews.length > 0 && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
                     </svg>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-amber-900">Değerlendirme Geçmişiniz</h3>
-                    <p className="text-xs text-amber-700">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs sm:text-sm font-bold text-amber-900">Değerlendirme Geçmişiniz</h3>
+                    <p className="text-[10px] sm:text-xs text-amber-700">
                       {userReviews.reviews.length} değerlendirme • 
                       Ortalama {((userReviews.reviews.reduce((acc: number, r: any) => acc + (r.service_rating + r.employee_rating) / 2, 0) / userReviews.reviews.length)).toFixed(1)}/5
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-amber-900">
+                <div className="text-right shrink-0">
+                  <div className="text-sm sm:text-lg font-bold text-amber-900">
                     {userReviews.reviews.filter((r: any) => r.is_approved).length}
                   </div>
-                  <div className="text-xs text-amber-700">Onaylı</div>
+                  <div className="text-[10px] sm:text-xs text-amber-700">Onaylı</div>
                 </div>
               </div>
             </div>
@@ -529,13 +531,13 @@ export default function UserProfilePage() {
         </section>
       )}
 
-      {/* Push Notification - Kullanıcı */}
+      {/* Push Notification - Kullanıcı - Mobile Optimized */}
       {isSupported && (
-        <section className="mt-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
+        <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-semibold text-gray-800">Push Bildirimleri</div>
-              <div className="text-[12px] text-gray-600">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs sm:text-sm font-semibold text-gray-800">Push Bildirimleri</div>
+              <div className="text-[10px] sm:text-xs text-gray-600">
                 {isSubscribed 
                   ? 'Randevu güncellemeleri için bildirim alınıyor' 
                   : 'Randevu güncellemeleri için bildirim almak ister misiniz?'
@@ -545,15 +547,15 @@ export default function UserProfilePage() {
             <button 
               onClick={isSubscribed ? unsubscribe : subscribe} 
               disabled={pushLoading} 
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                isSubscribed ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+              className={`px-3 py-2 rounded-lg text-xs font-semibold touch-manipulation min-h-[44px] ${
+                isSubscribed ? 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700' : 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700'
               } disabled:opacity-50`}
             >
               {pushLoading ? '⏳' : isSubscribed ? 'Kapat' : 'Aç'}
             </button>
           </div>
           {pushError && (
-            <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[12px] text-red-700">
+            <div className="mt-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-[10px] sm:text-xs text-red-700">
               {pushError.includes('VAPID') 
                 ? 'Push bildirimleri yapılandırılmamış. Lütfen daha sonra tekrar deneyin.' 
                 : pushError
@@ -563,30 +565,30 @@ export default function UserProfilePage() {
         </section>
       )}
 
-      {/* Logout */}
-      <section className="mt-3">
+      {/* Logout - Mobile Optimized */}
+      <section className="mt-3 sm:mt-4">
         <button
           onClick={handleUserLogout}
-          className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
+          className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm sm:text-base font-medium transition-colors touch-manipulation min-h-[44px]"
         >
           Çıkış Yap
         </button>
       </section>
 
-      {/* Photo Modal - Swiper */}
+      {/* Photo Modal - Swiper - Mobile Optimized */}
       {photoModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-2 sm:p-4">
           <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
-            {/* Close Button */}
+            {/* Close Button - Mobile Optimized */}
             <button
               onClick={() => setPhotoModalOpen(false)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+              className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors touch-manipulation min-h-[44px]"
             >
               <span className="text-xl">×</span>
             </button>
 
-            {/* Photo Counter */}
-            <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
+            {/* Photo Counter - Mobile Optimized */}
+            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-2 sm:px-3 py-1 text-white text-xs sm:text-sm">
               {currentPhotoIndex + 1} / {currentPhotos.length}
             </div>
 
@@ -626,21 +628,21 @@ export default function UserProfilePage() {
               </Swiper>
             </div>
 
-            {/* Custom Navigation Buttons */}
+            {/* Custom Navigation Buttons - Mobile Optimized */}
             {currentPhotos.length > 1 && (
               <>
-                <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
-                  <span className="text-2xl">‹</span>
+                <button className="swiper-button-prev-custom absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors z-10 touch-manipulation min-h-[44px]">
+                  <span className="text-xl sm:text-2xl">‹</span>
                 </button>
-                <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10">
-                  <span className="text-2xl">›</span>
+                <button className="swiper-button-next-custom absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors z-10 touch-manipulation min-h-[44px]">
+                  <span className="text-xl sm:text-2xl">›</span>
                 </button>
               </>
             )}
 
-            {/* Thumbnail Strip */}
+            {/* Thumbnail Strip - Mobile Optimized */}
             {currentPhotos.length > 1 && (
-              <div className="flex justify-center gap-2 p-4 overflow-x-auto">
+              <div className="flex justify-center gap-1 sm:gap-2 p-2 sm:p-4 overflow-x-auto no-scrollbar">
                 {currentPhotos.map((photo, index) => (
                   <button
                     key={index}
@@ -648,10 +650,10 @@ export default function UserProfilePage() {
                       setCurrentPhotoIndex(index);
                       photoSwiper?.slideTo(index);
                     }}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${
                       index === currentPhotoIndex
                         ? 'border-white'
-                        : 'border-white/30 hover:border-white/60'
+                        : 'border-white/30 hover:border-white/60 active:border-white/80'
                     }`}
                   >
                     <img
@@ -669,7 +671,47 @@ export default function UserProfilePage() {
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+        :root { 
+          --randevuo-radius: 16px; 
+          --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25);
+          --mobile-safe-area: env(safe-area-inset-bottom, 0px);
+        }
+        html, body { 
+          font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Touch targets */
+          button, input, select, textarea {
+            touch-action: manipulation;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+            font-size: 16px;
+          }
+          
+          /* Smooth scrolling */
+          .overscroll-contain {
+            overscroll-behavior: contain;
+          }
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:inline {
+            display: inline;
+          }
+        }
         
         /* Custom Swiper Styles */
         .swiper-pagination-bullet-custom {
@@ -691,6 +733,22 @@ export default function UserProfilePage() {
         
         .swiper-pagination {
           bottom: 20px !important;
+        }
+        
+        /* Animation improvements */
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </main>

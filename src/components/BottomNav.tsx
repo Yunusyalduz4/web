@@ -20,27 +20,52 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-3 left-0 right-0 md:hidden">
-      <div className="mx-auto max-w-2xl px-4">
-        <div className="bg-white/70 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl">
-          <div className="grid grid-cols-4">
-            {navItems.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex flex-col items-center gap-1 text-[11px] py-2 transition ${active ? 'text-rose-600' : 'text-gray-600'}`}
-                >
-                  <span className="grid place-items-center w-8 h-8 rounded-xl">
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      {/* Background with blur effect */}
+      <div className="absolute inset-0 bg-white/80 backdrop-blur-md border-t border-white/40" />
+      
+      {/* Navigation items */}
+      <div className="relative flex justify-around items-center h-20 sm:h-24 px-2">
+        {navItems.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`group relative flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl transition-all duration-300 min-h-[44px] ${
+                active 
+                  ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+              }`}
+            >
+              {/* Active indicator */}
+              {active && (
+                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+              )}
+              
+              {/* Icon */}
+              <div className={`transition-transform duration-300 ${
+                active ? 'scale-110' : 'group-hover:scale-105'
+              }`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="sm:w-[18px] sm:h-[18px]">
+                  {item.icon.props.children}
+                </svg>
+              </div>
+              
+              {/* Label */}
+              <span className={`text-[9px] sm:text-[10px] font-medium mt-1 transition-all duration-300 ${
+                active ? 'text-white' : 'text-gray-600'
+              }`}>
+                {item.label}
+              </span>
+              
+              {/* Hover effect */}
+              {!active && (
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-rose-500/0 to-pink-500/0 group-hover:from-rose-500/5 group-hover:to-pink-500/5 transition-all duration-300" />
+              )}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

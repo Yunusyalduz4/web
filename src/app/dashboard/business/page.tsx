@@ -169,12 +169,12 @@ export default function BusinessDashboard() {
 
   return (
     <>
-    <main className="relative max-w-md mx-auto p-3 pb-24">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3">
+    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24">
+      {/* Top Bar - Mobile Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/70 backdrop-blur-md border-b border-white/40 mb-3 sm:mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+            <div className="text-sm sm:text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
             {/* WebSocket Durumu */}
             <div className="flex items-center gap-1">
               {isConnecting && (
@@ -188,117 +188,147 @@ export default function BusinessDashboard() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <NotificationsButton userType="business" />
-            <button onClick={() => router.push('/dashboard')} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs shadow-sm">
+            <button onClick={() => router.push('/dashboard')} className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs sm:text-sm shadow-sm hover:bg-white/80 active:bg-white/90 transition touch-manipulation min-h-[44px]">
               <span>←</span>
-              <span className="hidden sm:inline">User</span>
+              <span className="hidden xs:inline">User</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Approval Status Banner */}
+      {/* Approval Status Banner - Mobile Optimized */}
       {!business.is_approved && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm">⏳</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-yellow-800">Admin Onayı Bekleniyor</h3>
-              <p className="text-sm text-yellow-700">İşletme hesabınız admin onayından sonra aktif olacak. Bu süreçte randevu alamayacaksınız.</p>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs sm:text-sm">⏳</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm sm:text-base font-semibold text-yellow-800">Admin Onayı Bekleniyor</h3>
+              <p className="text-xs sm:text-sm text-yellow-700">İşletme hesabınız admin onayından sonra aktif olacak. Bu süreçte randevu alamayacaksınız.</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Profile Image Approval Banner */}
+      {/* Profile Image Approval Banner - Mobile Optimized */}
       {business.profile_image_url && !business.profile_image_approved && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">📸</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-blue-800">Profil Görseli Onay Bekliyor</h3>
-              <p className="text-sm text-blue-700">Yüklediğiniz profil görseli admin onayından sonra görünür olacak.</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs sm:text-sm">📸</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm sm:text-base font-semibold text-blue-800">Profil Görseli Onay Bekliyor</h3>
+              <p className="text-xs sm:text-sm text-blue-700">Yüklediğiniz profil görseli admin onayından sonra görünür olacak.</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Business Mini Card */}
-      <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-4 shadow mb-3">
-        <div className="flex items-center gap-3">
+      {/* Business Mini Card - Mobile Optimized */}
+      <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-3 sm:p-4 shadow mb-3 sm:mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           {business.profile_image_url && business.profile_image_approved ? (
-            <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
               <img 
                 src={business.profile_image_url} 
                 alt={business.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   // Resim yüklenemezse fallback ikon göster
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling!.style.display = 'flex';
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  ((e.currentTarget as HTMLImageElement).nextElementSibling as HTMLElement)!.style.display = 'flex';
                 }}
               />
-              <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-lg" style={{ display: 'none' }}>
+              <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-sm sm:text-lg" style={{ display: 'none' }}>
                 🏢
               </div>
             </div>
           ) : (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center">🏢</div>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-sm sm:text-lg">🏢</div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-extrabold text-gray-900 truncate">{business.name}</div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold"><span className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>Aktif</span>
-              <span className="text-[11px] text-gray-600 truncate">{business.address}</span>
+            <div className="text-xs sm:text-sm font-extrabold text-gray-900 truncate">{business.name}</div>
+            <div className="flex items-center gap-1 sm:gap-2 mt-0.5">
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] sm:text-[11px] font-semibold"><span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-600 rounded-full"></span>Aktif</span>
+              <span className="text-[10px] sm:text-[11px] text-gray-600 truncate">{business.address}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* Quick Stats Row - Mobile Optimized */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
         <MiniStat label="Aktif" value={activeAppointments} color="from-rose-500 to-fuchsia-600" />
         <MiniStat label="Hizmet" value={services?.length || 0} color="from-indigo-500 to-indigo-600" />
         <MiniStat label="Çalışan" value={employees?.length || 0} color="from-emerald-500 to-emerald-600" />
       </div>
 
-      {/* Push CTA */}
+      {/* Push CTA - Mobile Optimized */}
       {isSupported && !isSubscribed && (
-        <div className="mb-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 shadow">
+        <div className="mb-3 sm:mb-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4 shadow">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-[12px] text-gray-800">Yeni randevu taleplerinde anında bildirim almak için açın.</div>
-            <button onClick={subscribe} disabled={pushLoading} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[11px] font-semibold shadow hover:shadow-md disabled:opacity-60">
+            <div className="text-[10px] sm:text-[12px] text-gray-800 min-w-0 flex-1">Yeni randevu taleplerinde anında bildirim almak için açın.</div>
+            <button onClick={subscribe} disabled={pushLoading} className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] sm:text-[11px] font-semibold shadow hover:shadow-md active:shadow-lg disabled:opacity-60 touch-manipulation min-h-[44px]">
               {pushLoading ? 'Açılıyor…' : 'Bildirimleri Aç'}
             </button>
           </div>
-          {pushError && <div className="mt-1 text-[11px] text-rose-600">{pushError}</div>}
+          {pushError && <div className="mt-1 text-[10px] sm:text-[11px] text-rose-600">{pushError}</div>}
         </div>
       )}
 
-      {/* Actions Grid */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <ActionChip title="Düzenle" onClick={() => router.push('/dashboard/business/edit')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="1.6"/></svg>
-        } borderColor="border-l-blue-500" />
-        <ActionChip title="Hizmet" onClick={() => router.push('/dashboard/business/services')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
-        } borderColor="border-l-green-500" />
-        <ActionChip title="Çalışan" onClick={() => router.push('/dashboard/business/employees')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
-        } borderColor="border-l-purple-500" />
-        <ActionChip title="Randevu" onClick={() => router.push('/dashboard/business/appointments')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-        } borderColor="border-l-orange-500" />
-        <ActionChip title="Analitik" onClick={() => router.push('/dashboard/business/analytics')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z"/></svg>
-        } borderColor="border-l-indigo-500" />
-        <ActionChip title="Profil" onClick={() => router.push('/dashboard/business/profile')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
-        } borderColor="border-l-pink-500" />
-        <ActionChip title="Yorum" onClick={() => router.push('/dashboard/business/reviews')} icon={
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-        } borderColor="border-l-yellow-500" />
+      {/* Actions Grid - Mobile Optimized */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+        {/* Business Owner - Tüm butonlar görünür */}
+        {session?.user?.role === 'business' && (
+          <>
+            <ActionChip title="Düzenle" onClick={() => router.push('/dashboard/business/edit')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="1.6"/></svg>
+            } borderColor="border-l-blue-500" />
+            <ActionChip title="Hizmet" onClick={() => router.push('/dashboard/business/services')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
+            } borderColor="border-l-green-500" />
+            <ActionChip title="Çalışan" onClick={() => router.push('/dashboard/business/employees')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+            } borderColor="border-l-purple-500" />
+            <ActionChip title="Randevu" onClick={() => router.push('/dashboard/business/appointments')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+            } borderColor="border-l-orange-500" />
+            <ActionChip title="Analitik" onClick={() => router.push('/dashboard/business/analytics')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z"/></svg>
+            } borderColor="border-l-indigo-500" />
+            <ActionChip title="Profil" onClick={() => router.push('/dashboard/business/profile')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+            } borderColor="border-l-pink-500" />
+            <ActionChip title="Yorum" onClick={() => router.push('/dashboard/business/reviews')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            } borderColor="border-l-yellow-500" />
+          </>
+        )}
+
+        {/* Employee - Sadece belirli sayfalar görünür */}
+        {session?.user?.role === 'employee' && (
+          <>
+            {/* Randevu Yönetimi */}
+            <ActionChip title="Randevu" onClick={() => router.push('/dashboard/business/appointments')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+            } borderColor="border-l-orange-500" />
+            
+            {/* İstatistikler - Sadece kendi istatistikleri */}
+            <ActionChip title="Analitik" onClick={() => router.push('/dashboard/business/analytics')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z"/></svg>
+            } borderColor="border-l-indigo-500" />
+            
+            {/* Profil - Sadece kendi profili */}
+            <ActionChip title="Profil" onClick={() => router.push('/dashboard/business/profile')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+            } borderColor="border-l-pink-500" />
+            
+            {/* Yorumlar - Sadece kendi randevularının yorumları */}
+            <ActionChip title="Yorum" onClick={() => router.push('/dashboard/business/reviews')} icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            } borderColor="border-l-yellow-500" />
+          </>
+        )}
       </div>
 
       {/* 7 Günlük Slot Görünümü */}
@@ -307,8 +337,68 @@ export default function BusinessDashboard() {
         appointments={appointments || []}
         selectedEmployeeId={session?.user?.role === 'employee' ? session?.user?.employeeId : selectedEmployeeId}
         onEmployeeChange={session?.user?.role === 'employee' ? undefined : setSelectedEmployeeId}
-        isReadOnly={session?.user?.role === 'employee'}
       />
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        :root { 
+          --randevuo-radius: 16px; 
+          --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25);
+          --mobile-safe-area: env(safe-area-inset-bottom, 0px);
+        }
+        html, body { 
+          font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Touch targets */
+          button, input, select, textarea {
+            touch-action: manipulation;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+            font-size: 16px;
+          }
+          
+          /* Smooth scrolling */
+          .overscroll-contain {
+            overscroll-behavior: contain;
+          }
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:inline {
+            display: inline;
+          }
+        }
+        
+        /* Animation improvements */
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </main>
     </>
   );
@@ -316,19 +406,19 @@ export default function BusinessDashboard() {
 
 function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-2 text-center shadow">
-      <div className={`mx-auto mb-1 h-1 w-10 rounded-full bg-gradient-to-r ${color}`}></div>
-      <div className="text-lg font-extrabold text-gray-900 leading-none">{value}</div>
-      <div className="text-[11px] text-gray-600">{label}</div>
+    <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-2 sm:p-3 text-center shadow">
+      <div className={`mx-auto mb-1 h-1 w-8 sm:w-10 rounded-full bg-gradient-to-r ${color}`}></div>
+      <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-none">{value}</div>
+      <div className="text-[10px] sm:text-[11px] text-gray-600">{label}</div>
     </div>
   );
 }
 
 function ActionChip({ title, onClick, icon, borderColor = "border-l-gray-300" }: { title: string; onClick: () => void; icon: React.ReactNode; borderColor?: string }) {
   return (
-    <button onClick={onClick} className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/70 backdrop-blur-md border border-white/50 ${borderColor} border-l-4 text-gray-900 text-[11px] font-semibold shadow hover:shadow-md`}>
+    <button onClick={onClick} className={`inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-xl bg-white/70 backdrop-blur-md border border-white/50 ${borderColor} border-l-4 text-gray-900 text-[10px] sm:text-[11px] font-semibold shadow hover:shadow-md active:shadow-lg transition touch-manipulation min-h-[44px]`}>
       {icon}
-      <span>{title}</span>
+      <span className="hidden xs:inline">{title}</span>
     </button>
   );
 }

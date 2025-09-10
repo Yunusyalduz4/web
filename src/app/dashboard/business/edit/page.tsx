@@ -407,17 +407,17 @@ export default function BusinessEditPage() {
   }
 
   return (
-    <main className="relative max-w-md mx-auto p-3 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/80 backdrop-blur-md border-b border-white/60 mb-4">
+    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar - Mobile Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/80 backdrop-blur-md border-b border-white/60 mb-3 sm:mb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button onClick={() => router.push('/dashboard/business')} className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/70 border border-white/50 text-gray-900 shadow-sm hover:bg-white/90 active:bg-white transition-colors touch-manipulation min-h-[44px]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
             <div>
-              <div className="text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
-              <div className="text-xs text-gray-600">İşletme Düzenle</div>
+              <div className="text-sm sm:text-base font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+              <div className="text-[10px] sm:text-xs text-gray-600">İşletme Düzenle</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -426,21 +426,21 @@ export default function BusinessEditPage() {
         </div>
       </div>
 
-      {/* Modern Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Temel Bilgiler Card */}
-        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+      {/* Modern Form - Mobile Optimized */}
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        {/* Temel Bilgiler Card - Mobile Optimized */}
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-3 sm:p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
               </div>
-              <h2 className="text-lg font-bold text-gray-900">Temel Bilgiler</h2>
+              <h2 className="text-sm sm:text-lg font-bold text-gray-900">Temel Bilgiler</h2>
             </div>
             <button 
               type="button"
               onClick={() => toggleCard('basicInfo')}
-              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white active:bg-white/90 transition-colors touch-manipulation min-h-[44px]"
             >
               {cardStates.basicInfo ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -451,35 +451,35 @@ export default function BusinessEditPage() {
           </div>
           
           {cardStates.basicInfo && (
-            <div className="space-y-4">
-              {/* Profile Image Section */}
-            <div className="flex items-center gap-4 p-3 bg-white/50 rounded-xl border border-white/40">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/60 bg-white/80 flex items-center justify-center shadow-sm">
+            <div className="space-y-3 sm:space-y-4">
+              {/* Profile Image Section - Mobile Optimized */}
+            <div className="flex items-center gap-3 sm:gap-4 p-3 bg-white/50 rounded-xl border border-white/40">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border-2 border-white/60 bg-white/80 flex items-center justify-center shadow-sm">
                 {formData.profileImageUrl ? (
                   <img src={formData.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-xl">🏢</div>
+                  <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-lg sm:text-xl">🏢</div>
                 )}
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-gray-900 mb-1">Profil Fotoğrafı</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs sm:text-sm font-semibold text-gray-900 mb-1">Profil Fotoğrafı</div>
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all cursor-pointer">
+                  <label className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all cursor-pointer touch-manipulation min-h-[44px]">
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
                     {uploading ? (
                       <>
                         <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
-                        <span>Yükleniyor</span>
+                        <span className="hidden xs:inline">Yükleniyor</span>
                       </>
                     ) : (
                       <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                        <span>Fotoğraf Yükle</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <span className="hidden xs:inline">Fotoğraf Yükle</span>
                       </>
                     )}
                   </label>
                   {formData.profileImageUrl && (
-                    <button type="button" className="px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-gray-900 text-xs font-medium hover:bg-white transition-colors" onClick={() => setFormData(prev => ({ ...prev, profileImageUrl: null }))}>
+                    <button type="button" className="px-2 sm:px-3 py-2 rounded-xl bg-white/80 border border-white/50 text-gray-900 text-[10px] sm:text-xs font-medium hover:bg-white active:bg-white/90 transition-colors touch-manipulation min-h-[44px]" onClick={() => setFormData(prev => ({ ...prev, profileImageUrl: null }))}>
                       Kaldır
                     </button>
                   )}
@@ -487,37 +487,37 @@ export default function BusinessEditPage() {
               </div>
             </div>
             
-            {/* Hata mesajı */}
+            {/* Hata mesajı - Mobile Optimized */}
             {uploadError && (
-              <div className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs text-red-700 text-center">
+              <div className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-[10px] sm:text-xs text-red-700 text-center">
                 ⚠️ {uploadError}
               </div>
             )}
             
-            {/* İşletme Adı */}
+            {/* İşletme Adı - Mobile Optimized */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">İşletme Adı *</label>
+              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">İşletme Adı *</label>
               <input 
                 name="name" 
                 value={formData.name} 
                 onChange={handleInputChange} 
                 required 
                 placeholder="İşletme adınızı girin" 
-                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all" 
+                className="w-full rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all touch-manipulation min-h-[44px]" 
                 style={{ fontSize: '16px' }} 
               />
             </div>
             
-            {/* Açıklama */}
+            {/* Açıklama - Mobile Optimized */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Açıklama</label>
+              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Açıklama</label>
               <textarea 
                 name="description" 
                 value={formData.description} 
                 onChange={handleInputChange} 
                 rows={3} 
                 placeholder="İşletmeniz hakkında kısa bir açıklama yazın..." 
-                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all resize-none" 
+                className="w-full rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all resize-none touch-manipulation" 
                 style={{ fontSize: '16px' }} 
               />
             </div>
@@ -525,19 +525,19 @@ export default function BusinessEditPage() {
           )}
         </div>
 
-        {/* İletişim Card */}
-        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        {/* İletişim Card - Mobile Optimized */}
+        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-3 sm:p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
               </div>
-              <h2 className="text-lg font-bold text-gray-900">İletişim Bilgileri</h2>
+              <h2 className="text-sm sm:text-lg font-bold text-gray-900">İletişim Bilgileri</h2>
             </div>
             <button 
               type="button"
               onClick={() => toggleCard('contact')}
-              className="w-8 h-8 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white active:bg-white/90 transition-colors touch-manipulation min-h-[44px]"
             >
               {cardStates.contact ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -548,42 +548,42 @@ export default function BusinessEditPage() {
           </div>
           
           {cardStates.contact && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">Telefon</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Telefon</label>
               <input 
                 type="tel" 
                 name="phone" 
                 value={formData.phone} 
                 onChange={handleInputChange} 
                 placeholder="Telefon numaranızı girin" 
-                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all" 
+                className="w-full rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all touch-manipulation min-h-[44px]" 
                 style={{ fontSize: '16px' }} 
               />
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">E-posta</label>
+              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">E-posta</label>
               <input 
                 type="email" 
                 name="email" 
                 value={formData.email} 
                 onChange={handleInputChange} 
                 placeholder="E-posta adresinizi girin" 
-                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all" 
+                className="w-full rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all touch-manipulation min-h-[44px]" 
                 style={{ fontSize: '16px' }} 
               />
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Adres *</label>
+              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Adres *</label>
               <input 
                 name="address" 
                 value={formData.address} 
                 onChange={handleInputChange} 
                 required 
                 placeholder="İşletme adresinizi girin" 
-                className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all" 
+                className="w-full rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition-all touch-manipulation min-h-[44px]" 
                 style={{ fontSize: '16px' }} 
               />
             </div>
@@ -711,12 +711,12 @@ export default function BusinessEditPage() {
           )}
         </div>
 
-        {/* Kaydet Butonu */}
+        {/* Kaydet Butonu - Mobile Optimized */}
         <div className="sticky bottom-4 z-20">
           <button 
             type="submit" 
             disabled={isSubmitting} 
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-base font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            className="w-full py-3 sm:py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm sm:text-base font-bold shadow-lg hover:shadow-xl active:shadow-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-2">
@@ -725,7 +725,7 @@ export default function BusinessEditPage() {
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M17 21v-8H7v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M17 21v-8H7v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 <span>Değişiklikleri Kaydet</span>
               </div>
             )}
@@ -856,6 +856,67 @@ export default function BusinessEditPage() {
           </div>
         )}
       </div>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        :root { 
+          --randevuo-radius: 16px; 
+          --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25);
+          --mobile-safe-area: env(safe-area-inset-bottom, 0px);
+        }
+        html, body { 
+          font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Touch targets */
+          button, input, select, textarea {
+            touch-action: manipulation;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+            font-size: 16px;
+          }
+          
+          /* Smooth scrolling */
+          .overscroll-contain {
+            overscroll-behavior: contain;
+          }
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:inline {
+            display: inline;
+          }
+        }
+        
+        /* Animation improvements */
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </main>
   );
 }

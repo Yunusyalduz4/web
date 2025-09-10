@@ -197,66 +197,66 @@ export default function BusinessStoriesPage() {
   }
 
   return (
-    <main className="relative max-w-6xl mx-auto p-4 pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-6">
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-3 sm:mb-6">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">
+          <div className="text-sm sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">
             randevuo
           </div>
           <button 
             onClick={() => router.back()}
-            className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-white/40 text-sm"
+            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-white/60 backdrop-blur-md rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-white/40 text-xs sm:text-sm min-h-[44px]"
           >
-            <span className="text-base text-gray-900">←</span>
-            <span className="font-medium text-gray-700 hidden sm:block">Geri</span>
+            <span className="text-sm sm:text-base text-gray-900">←</span>
+            <span className="font-medium text-gray-700 hidden xs:block">Geri</span>
           </button>
         </div>
       </div>
 
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+      <div className="text-center mb-4 sm:mb-8">
+        <h1 className="text-lg sm:text-3xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent mb-1 sm:mb-2">
           Hikaye Yönetimi
         </h1>
-        <p className="text-gray-600">İşletmenizin hikayelerini oluşturun ve yönetin</p>
+        <p className="text-xs sm:text-base text-gray-600">İşletmenizin hikayelerini oluşturun ve yönetin</p>
       </div>
 
       {/* İstatistikler */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-8">
+          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/40 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.overview.total_stories || 0}</p>
-                <p className="text-sm text-gray-600">Toplam Hikaye</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.overview.total_stories || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Toplam Hikaye</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <Eye className="w-5 h-5 text-white" />
+          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/40 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.overview.total_views || 0}</p>
-                <p className="text-sm text-gray-600">Toplam Görüntülenme</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.overview.total_views || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Toplam Görüntülenme</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
+          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/40 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.overview.total_likes || 0}</p>
-                <p className="text-sm text-gray-600">Toplam Beğeni</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.overview.total_likes || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Toplam Beğeni</p>
               </div>
             </div>
           </div>
@@ -264,27 +264,29 @@ export default function BusinessStoriesPage() {
       )}
 
       {/* Filtreler ve Arama */}
-      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 mb-6 border border-white/40 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 border border-white/40 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {/* Arama */}
           <div className="flex items-center gap-2">
-            <Search className="w-5 h-5 text-gray-500" />
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
             <input
               type="text"
               placeholder="Hikayelerde ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] touch-manipulation"
+              style={{ fontSize: '16px' }}
             />
           </div>
 
           {/* Durum Filtresi */}
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-500" />
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
-              className="flex-1 bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] touch-manipulation"
+              style={{ fontSize: '16px' }}
             >
               <option value="all">Tüm Hikayeler</option>
               <option value="active">Aktif Hikayeler</option>
@@ -294,11 +296,12 @@ export default function BusinessStoriesPage() {
 
           {/* Sıralama */}
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-gray-500" />
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="flex-1 bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] touch-manipulation"
+              style={{ fontSize: '16px' }}
             >
               <option value="newest">En Yeni</option>
               <option value="oldest">En Eski</option>
@@ -309,27 +312,27 @@ export default function BusinessStoriesPage() {
       </div>
 
       {/* Hikaye Oluştur Butonu */}
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-center mb-4 sm:mb-6">
         <button
           onClick={() => setShowCreator(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+          className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 min-h-[44px]"
         >
-          <Plus className="w-5 h-5" />
-          Yeni Hikaye Oluştur
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="text-xs sm:text-sm">Yeni Hikaye Oluştur</span>
         </button>
       </div>
 
       {/* Hikaye Listesi */}
-      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-white/40 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Hikayeleriniz</h2>
-          <span className="text-sm text-gray-600">
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3 sm:p-6 border border-white/40 shadow-sm">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-sm sm:text-xl font-bold text-gray-900">Hikayeleriniz</h2>
+          <span className="text-xs sm:text-sm text-gray-600">
             {filteredStories.length} hikaye
           </span>
         </div>
 
         {filteredStories.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {filteredStories.map((story, index) => (
               <div key={story.id} className="relative group">
                 {/* Hikaye Kartı */}
@@ -337,7 +340,7 @@ export default function BusinessStoriesPage() {
                   className="relative cursor-pointer"
                   onClick={() => handleStoryClick(story, index)}
                 >
-                  <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 p-0.5">
+                  <div className="relative w-full h-24 sm:h-32 rounded-lg overflow-hidden border-2 border-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 p-0.5">
                     <div className="w-full h-full rounded-lg overflow-hidden bg-white">
                       {story.media_type === 'image' ? (
                         <img
@@ -356,13 +359,13 @@ export default function BusinessStoriesPage() {
                   </div>
                   
                   {/* Hikaye İstatistikleri - Mobil Uyumlu */}
-                  <div className="absolute bottom-2 left-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded-full opacity-100 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2 right-1 sm:right-2 bg-black/80 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full opacity-100 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Eye className="w-3 h-3" />
-                        <span className="font-bold">{story.view_count}</span>
-                        <Heart className="w-3 h-3" />
-                        <span className="font-bold">{story.like_count}</span>
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <span className="font-bold text-[10px] sm:text-xs">{story.view_count}</span>
+                        <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <span className="font-bold text-[10px] sm:text-xs">{story.like_count}</span>
                       </div>
                     </div>
                   </div>
@@ -374,18 +377,18 @@ export default function BusinessStoriesPage() {
                     e.stopPropagation();
                     handleDeleteStory(story.id);
                   }}
-                  className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full flex items-center justify-center text-sm font-bold opacity-100 group-hover:opacity-100 transition-all duration-200 shadow-lg border-2 border-white active:scale-95 touch-manipulation"
+                  className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 w-6 h-6 sm:w-7 sm:h-7 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold opacity-100 group-hover:opacity-100 transition-all duration-200 shadow-lg border-2 border-white active:scale-95 touch-manipulation min-h-[44px]"
                   title="Hikayeyi Sil"
                 >
                   ×
                 </button>
 
                 {/* Hikaye Bilgileri */}
-                <div className="mt-2 text-center">
-                  <p className="text-xs text-gray-600 truncate">
+                <div className="mt-1 sm:mt-2 text-center">
+                  <p className="text-[10px] sm:text-xs text-gray-600 truncate">
                     {story.caption || 'Hikaye'}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-[9px] sm:text-xs text-gray-400">
                     {new Date(story.created_at).toLocaleDateString('tr-TR')}
                   </p>
                 </div>
@@ -393,17 +396,17 @@ export default function BusinessStoriesPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-gray-400 text-3xl">📱</span>
+          <div className="text-center py-8 sm:py-12">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <span className="text-gray-400 text-2xl sm:text-3xl">📱</span>
             </div>
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Henüz hikaye yok</h3>
-            <p className="text-gray-500 text-sm mb-4">
+            <h3 className="text-sm sm:text-lg font-medium text-gray-700 mb-1 sm:mb-2">Henüz hikaye yok</h3>
+            <p className="text-gray-500 text-xs sm:text-sm mb-3 sm:mb-4">
               İlk hikayenizi oluşturarak müşterilerinizle etkileşime geçin
             </p>
             <button
               onClick={() => setShowCreator(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs sm:text-sm min-h-[44px]"
             >
               Hikaye Oluştur
             </button>
@@ -431,6 +434,96 @@ export default function BusinessStoriesPage() {
           onLike={handleStoryLike}
         />
       )}
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        html, body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+        
+        :root {
+          --primary-gradient: linear-gradient(135deg, #f43f5e 0%, #a855f7 50%, #3b82f6 100%);
+          --glass-bg: rgba(255, 255, 255, 0.6);
+          --glass-border: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Mobile optimizations */
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Touch optimizations */
+        * {
+          touch-action: manipulation;
+        }
+        
+        /* Prevent zoom on input focus */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="search"],
+        textarea,
+        select {
+          font-size: 16px !important;
+        }
+        
+        /* Smooth scrolling */
+        html {
+          scroll-behavior: smooth;
+        }
+        
+        /* Overscroll behavior */
+        body {
+          overscroll-behavior: contain;
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:text-\\[10px\\] { font-size: 10px !important; }
+          .xs\\:text-xs { font-size: 12px !important; }
+          .xs\\:text-sm { font-size: 14px !important; }
+          .xs\\:text-base { font-size: 16px !important; }
+          .xs\\:text-lg { font-size: 18px !important; }
+          .xs\\:text-xl { font-size: 20px !important; }
+          .xs\\:text-2xl { font-size: 24px !important; }
+          .xs\\:text-3xl { font-size: 30px !important; }
+          .xs\\:text-4xl { font-size: 36px !important; }
+          .xs\\:text-5xl { font-size: 48px !important; }
+          .xs\\:text-6xl { font-size: 60px !important; }
+          .xs\\:text-7xl { font-size: 72px !important; }
+          .xs\\:text-8xl { font-size: 96px !important; }
+          .xs\\:text-9xl { font-size: 128px !important; }
+          .xs\\:hidden { display: none !important; }
+          .xs\\:inline { display: inline !important; }
+          .xs\\:block { display: block !important; }
+          .xs\\:flex { display: flex !important; }
+          .xs\\:grid { display: grid !important; }
+        }
+        
+        /* Animation keyframes */
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+          20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
     </main>
   );
 }

@@ -129,15 +129,35 @@ export const isEmployeeOrBusiness = t.middleware(async ({ ctx, next }) => {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece çalışanlar ve işletme sahipleri erişebilir' });
   }
   
+  // Business ID kontrolü
+  if (!ctx.session.user.businessId) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme ID bulunamadı' });
+  }
+
+  // İşletme onay durumunu kontrol et
+  const businessId: string = ctx.session.user.businessId as string;
+  const businessResult = await pool.query(
+    'SELECT is_approved FROM businesses WHERE id = $1',
+    [businessId]
+  );
+  
+  if (businessResult.rows.length === 0) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme bulunamadı' });
+  }
+
+  if (!businessResult.rows[0].is_approved) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'İşletme hesabınız henüz admin onayından geçmemiş. Lütfen onay bekleyin.' });
+  }
+  
   // Eğer çalışan ise, hesap aktif mi kontrol et
   if (ctx.session.user.role === 'employee') {
-    if (!ctx.session.user.businessId || !ctx.session.user.employeeId) {
+    if (!ctx.session.user.employeeId) {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Çalışan hesap bilgileri eksik' });
     }
 
     const employeeResult = await pool.query(
       'SELECT is_active FROM employees WHERE id = $1 AND business_id = $2',
-      [ctx.session.user.employeeId as string, ctx.session.user.businessId as string]
+      [ctx.session.user.employeeId as string, businessId]
     );
     
     if (employeeResult.rows.length === 0 || !employeeResult.rows[0].is_active) {

@@ -298,38 +298,39 @@ export default function BookAppointmentPage() {
   const endDateTime = startDateTime ? new Date(startDateTime.getTime() + totalDuration * 60000) : null;
 
   return (
-    <main className="relative max-w-2xl mx-auto p-4 min-h-screen pb-24 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
+    <main className="relative max-w-2xl mx-auto p-3 sm:p-4 min-h-screen pb-20 sm:pb-24 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+      {/* Top Bar - Mobile Optimized */}
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
+          <div className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <button
             type="button"
             onClick={() => router.back()}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md transition"
+            className="inline-flex items-center gap-1 sm:gap-2 px-3 py-2 rounded-xl bg-white/60 backdrop-blur-md border border-white/40 text-gray-900 shadow-sm hover:shadow-md active:shadow-lg transition touch-manipulation min-h-[44px]"
           >
             <span className="text-base">←</span>
-            <span className="hidden sm:inline text-sm font-medium">Geri</span>
+            <span className="hidden xs:inline text-sm font-medium">Geri</span>
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white/60 backdrop-blur-md border border-white/40 p-6 md:p-8 rounded-2xl shadow-xl w-full animate-fade-in">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-6 bg-white/60 backdrop-blur-md border border-white/40 p-4 sm:p-6 md:p-8 rounded-2xl shadow-xl w-full animate-fade-in">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">
+          <h1 className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">
             Randevu Al
           </h1>
-          <div className="text-sm text-gray-700">
+          <div className="text-xs sm:text-sm text-gray-700">
             {selectedServices.length > 0 && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-white/40">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M8 3v4M16 3v4M3 11h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                {totalDuration} dk • ₺{totalPrice.toFixed(0)}
+              <span className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-white/70 border border-white/40">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M8 3v4M16 3v4M3 11h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <span className="hidden xs:inline">{totalDuration} dk • ₺{totalPrice.toFixed(0)}</span>
+                <span className="xs:hidden">{totalDuration}dk • ₺{totalPrice.toFixed(0)}</span>
               </span>
             )}
           </div>
         </div>
 
-        {/* Tek Çalışan Bilgisi */}
+        {/* Tek Çalışan Bilgisi - Mobile Optimized */}
         {employees && employees.length === 1 && (
           <div className="p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
             <div className="flex items-center gap-2">
@@ -344,35 +345,36 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {/* Modern Hizmet Seçimi */}
+        {/* Modern Hizmet Seçimi - Mobile Optimized */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Hizmetler</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Hizmetler</h2>
             <button
               type="button"
               onClick={() => setShowServiceModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold shadow hover:shadow-lg active:scale-95 transition"
+              className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold shadow hover:shadow-lg active:scale-95 transition touch-manipulation min-h-[44px]"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              Hizmet Seç
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              <span className="hidden xs:inline">Hizmet Seç</span>
+              <span className="xs:hidden">Seç</span>
             </button>
           </div>
 
-          {/* Seçili Hizmetler */}
+          {/* Seçili Hizmetler - Mobile Optimized */}
           {selectedServices.length > 0 ? (
             <div className="space-y-3">
               {selectedServices.map((selection, index) => (
                 <div key={index} className="group relative p-3 rounded-xl bg-white/80 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-md transition-all duration-200">
-                  {/* Hizmet Bilgisi */}
+                  {/* Hizmet Bilgisi - Mobile Optimized */}
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white text-xs font-bold grid place-items-center">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white text-xs font-bold grid place-items-center shrink-0">
                           {index + 1}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-sm">{selection.service?.name}</h3>
-                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">{selection.service?.name}</h3>
+                          <div className="flex items-center gap-2 sm:gap-3 text-xs text-gray-600">
                             <span className="flex items-center gap-1">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-rose-500">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -391,11 +393,11 @@ export default function BookAppointmentPage() {
                       </div>
                     </div>
                     
-                    {/* Kaldır Butonu */}
+                    {/* Kaldır Butonu - Mobile Optimized */}
                     <button
                       type="button"
                       onClick={() => removeService(index)}
-                      className="opacity-60 hover:opacity-100 transition-opacity duration-200 p-1.5 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95"
+                      className="opacity-60 hover:opacity-100 active:opacity-100 transition-opacity duration-200 p-2 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 active:bg-rose-200 active:scale-95 touch-manipulation min-h-[44px]"
                       title="Hizmeti kaldır"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -404,7 +406,7 @@ export default function BookAppointmentPage() {
                     </button>
                   </div>
 
-                  {/* Çalışan Seçimi */}
+                  {/* Çalışan Seçimi - Mobile Optimized */}
                   <div className="ml-8">
                     <label className="flex flex-col gap-1 text-gray-700 font-medium">
                       <span className="text-xs text-gray-600">Çalışan Seçin</span>
@@ -414,7 +416,7 @@ export default function BookAppointmentPage() {
                           onChange={(e) => updateEmployeeSelection(index, e.target.value)}
                           required
                           disabled={!selection.serviceId || (employees && employees.length === 1)}
-                          className="w-full border border-white/60 bg-white/80 text-gray-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-100 transition disabled:bg-gray-100 appearance-none cursor-pointer"
+                          className="w-full border border-white/60 bg-white/80 text-gray-900 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-100 transition disabled:bg-gray-100 appearance-none cursor-pointer touch-manipulation min-h-[44px]"
                         >
                           <option value="">Çalışan seçiniz</option>
                           {selection.serviceId && getEmployeesForService(selection.serviceId).map((e: any) => (
@@ -468,18 +470,18 @@ export default function BookAppointmentPage() {
           )}
         </div>
 
-        {/* Hizmet Seçim Modal */}
+        {/* Hizmet Seçim Modal - Mobile Optimized */}
         {showServiceModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
-              {/* Modal Header */}
-              <div className="p-6 border-b border-gray-100">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
+              {/* Modal Header - Mobile Optimized */}
+              <div className="p-4 sm:p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-900">Hizmet Seçin</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">Hizmet Seçin</h3>
                   <button
                     type="button"
                     onClick={() => setShowServiceModal(false)}
-                    className="p-2 rounded-full hover:bg-gray-100 transition"
+                    className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition touch-manipulation min-h-[44px]"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -489,11 +491,11 @@ export default function BookAppointmentPage() {
                 <p className="text-sm text-gray-600 mt-1">İstediğiniz hizmetleri seçin (çoklu seçim yapabilirsiniz)</p>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-6 max-h-96 overflow-y-auto">
+              {/* Modal Body - Mobile Optimized */}
+              <div className="p-4 sm:p-6 max-h-96 overflow-y-auto overscroll-contain">
                 <div className="space-y-3">
                   {services?.map((service: any) => (
-                    <label key={service.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-fuchsia-300 hover:bg-fuchsia-50 transition cursor-pointer group">
+                    <label key={service.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-fuchsia-300 hover:bg-fuchsia-50 active:bg-fuchsia-100 transition cursor-pointer group touch-manipulation min-h-[44px]">
                       <input
                         type="checkbox"
                         checked={selectedServiceIds.includes(service.id)}
@@ -506,9 +508,9 @@ export default function BookAppointmentPage() {
                         }}
                         className="mt-1 w-4 h-4 text-fuchsia-600 border-gray-300 rounded focus:ring-fuchsia-500"
                       />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 group-hover:text-fuchsia-700 transition">{service.name}</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 group-hover:text-fuchsia-700 transition truncate">{service.name}</h4>
+                        <div className="flex items-center gap-2 sm:gap-4 text-sm text-gray-600 mt-1">
                           <span className="flex items-center gap-1">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-rose-500">
                               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -529,13 +531,13 @@ export default function BookAppointmentPage() {
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="p-6 border-t border-gray-100 bg-gray-50">
+              {/* Modal Footer - Mobile Optimized */}
+              <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50">
                 <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => setShowServiceModal(false)}
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 active:bg-gray-200 transition touch-manipulation min-h-[44px]"
                   >
                     İptal
                   </button>
@@ -543,7 +545,7 @@ export default function BookAppointmentPage() {
                     type="button"
                     onClick={addSelectedServices}
                     disabled={selectedServiceIds.length === 0}
-                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:shadow-xl transition touch-manipulation min-h-[44px]"
                   >
                     {selectedServiceIds.length > 0 ? `${selectedServiceIds.length} Hizmet Ekle` : 'Hizmet Ekle'}
                   </button>
@@ -553,14 +555,14 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {/* Özel Tarih Seçme Modal */}
+        {/* Özel Tarih Seçme Modal - Mobile Optimized */}
         {showCustomDatePicker && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
-              {/* Modal Header */}
-              <div className="p-6 border-b border-gray-100">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
+              {/* Modal Header - Mobile Optimized */}
+              <div className="p-4 sm:p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-900">Özel Tarih Seçin</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">Özel Tarih Seçin</h3>
                   <button
                     type="button"
                     onClick={() => {
@@ -568,7 +570,7 @@ export default function BookAppointmentPage() {
                       setCustomDate('');
                       setError('');
                     }}
-                    className="p-2 rounded-full hover:bg-gray-100 transition"
+                    className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition touch-manipulation min-h-[44px]"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -578,8 +580,8 @@ export default function BookAppointmentPage() {
                 <p className="text-sm text-gray-600 mt-1">İstediğiniz tarihi seçin (bugünden 6 ay sonrasına kadar)</p>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-6">
+              {/* Modal Body - Mobile Optimized */}
+              <div className="p-4 sm:p-6">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -591,7 +593,7 @@ export default function BookAppointmentPage() {
                       onChange={(e) => setCustomDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
                       max={new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-4 focus:ring-fuchsia-100 focus:border-fuchsia-300 transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-4 focus:ring-fuchsia-100 focus:border-fuchsia-300 transition touch-manipulation min-h-[44px]"
                     />
                   </div>
                   
@@ -618,8 +620,8 @@ export default function BookAppointmentPage() {
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="p-6 border-t border-gray-100 bg-gray-50">
+              {/* Modal Footer - Mobile Optimized */}
+              <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50">
                 <div className="flex gap-3">
                   <button
                     type="button"
@@ -628,7 +630,7 @@ export default function BookAppointmentPage() {
                       setCustomDate('');
                       setError('');
                     }}
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 active:bg-gray-200 transition touch-manipulation min-h-[44px]"
                   >
                     İptal
                   </button>
@@ -636,7 +638,7 @@ export default function BookAppointmentPage() {
                     type="button"
                     onClick={handleCustomDateSelect}
                     disabled={!customDate}
-                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:shadow-xl transition touch-manipulation min-h-[44px]"
                   >
                     Tarihi Seç
                   </button>
@@ -646,10 +648,10 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {/* Tarih ve Saat Seçimi */}
+        {/* Tarih ve Saat Seçimi - Mobile Optimized */}
         {selectedServices.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800">Tarih ve Saat</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Tarih ve Saat</h2>
             
             {/* Seçilen Tarih Bilgisi */}
             {date && (
@@ -708,13 +710,13 @@ export default function BookAppointmentPage() {
               </div>
             )}
             
-            {/* Tarih Seçimi Header */}
+            {/* Tarih Seçimi Header - Mobile Optimized */}
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-gray-700">Tarih Seçin</h3>
               <button
                 type="button"
                 onClick={() => setShowCustomDatePicker(true)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 border border-white/40 text-sm text-gray-700 hover:bg-white/80 transition-colors"
+                className="inline-flex items-center gap-1 sm:gap-2 px-3 py-2 rounded-lg bg-white/60 border border-white/40 text-sm text-gray-700 hover:bg-white/80 active:bg-white/90 transition-colors touch-manipulation min-h-[44px]"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
@@ -722,13 +724,14 @@ export default function BookAppointmentPage() {
                   <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
                   <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
                 </svg>
-                Özel Tarih
+                <span className="hidden xs:inline">Özel Tarih</span>
+                <span className="xs:hidden">Özel</span>
               </button>
             </div>
 
-            {/* Tarih slotları (yatay kaydırmalı) */}
-            <div className="-mx-4 px-4">
-              <div className="flex gap-2 overflow-x-auto pb-1">
+            {/* Tarih slotları (yatay kaydırmalı) - Mobile Optimized */}
+            <div className="-mx-3 sm:-mx-4 px-3 sm:px-4">
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {nextDays.map((d) => {
                   const enabled = availableWeekdays.has(getDayOfWeek(d.dateStr));
                   const selected = date === d.dateStr;
@@ -739,11 +742,11 @@ export default function BookAppointmentPage() {
                       key={d.dateStr}
                       type="button"
                       onClick={() => { if (enabled) { setDate(d.dateStr); setTime(''); } }}
-                      className={`shrink-0 px-3 py-2 rounded-xl text-sm transition border relative ${
+                      className={`shrink-0 px-3 py-2 rounded-xl text-sm transition border relative touch-manipulation min-h-[44px] ${
                         selected 
                           ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' 
                           : enabled 
-                            ? 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80' 
+                            ? 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80 active:bg-white/90' 
                             : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                       }`}
                       aria-pressed={selected}
@@ -773,7 +776,7 @@ export default function BookAppointmentPage() {
               </div>
             </div>
 
-            {/* Saat slotları (chip grid) */}
+            {/* Saat slotları (chip grid) - Mobile Optimized */}
             {date && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -799,7 +802,7 @@ export default function BookAppointmentPage() {
                         }
                       }
                     }}
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-blue-600 hover:underline active:text-blue-800 touch-manipulation min-h-[44px] px-2 py-1"
                   >
                     En Yakın Uygun Saat
                   </button>
@@ -843,11 +846,11 @@ export default function BookAppointmentPage() {
                             }
                             setError(''); // Hata mesajını temizle
                           }}
-                          className={`px-3 py-2 rounded-lg text-sm transition border ${
+                          className={`px-3 py-2 rounded-lg text-sm transition border touch-manipulation min-h-[44px] ${
                             selected ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' 
                             : isPastSlot ? 'bg-orange-100 text-orange-600 border-orange-200 cursor-not-allowed opacity-70' 
                             : isBusy ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60' 
-                            : 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80'
+                            : 'bg-white/60 text-gray-800 border-white/40 backdrop-blur-md hover:bg-white/80 active:bg-white/90'
                           }`}
                           aria-pressed={selected}
                           disabled={isDisabled}
@@ -889,17 +892,17 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {/* Özet */}
+        {/* Özet - Mobile Optimized */}
         {selectedServices.length > 0 && (
-          <div className="p-4 md:p-5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 shadow">
+          <div className="p-3 sm:p-4 md:p-5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 shadow">
             <div className="flex items-start justify-between gap-3">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-white/40 text-gray-900">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M8 3v4M16 3v4M3 11h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                <span className="font-semibold">Randevu Özeti</span>
+                <span className="font-semibold text-sm sm:text-base">Randevu Özeti</span>
               </div>
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wide text-gray-500">Toplam</div>
-                <div className="text-2xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">₺{totalPrice.toFixed(0)}</div>
+                <div className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">₺{totalPrice.toFixed(0)}</div>
               </div>
             </div>
 
@@ -945,13 +948,56 @@ export default function BookAppointmentPage() {
         <button
           type="submit"
           disabled={selectedServices.length === 0}
-          className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+          className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-semibold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation min-h-[44px]"
         >
           Randevu Al
         </button>
       </form>
 
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        :root { 
+          --randevuo-radius: 16px; 
+          --randevuo-shadow: 0 8px 24px -12px rgba(0,0,0,0.25);
+          --mobile-safe-area: env(safe-area-inset-bottom, 0px);
+        }
+        html, body { 
+          font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Touch targets */
+          button, input, select, textarea {
+            touch-action: manipulation;
+          }
+          
+          /* Prevent zoom on input focus */
+          input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+            font-size: 16px;
+          }
+          
+          /* Smooth scrolling */
+          .overscroll-contain {
+            overscroll-behavior: contain;
+          }
+        }
+        
+        /* Custom breakpoint for extra small screens */
+        @media (max-width: 475px) {
+          .xs\\:inline {
+            display: inline;
+          }
+        }
+        
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(40px); }
           to { opacity: 1; transform: translateY(0); }
