@@ -38,13 +38,8 @@ export default function BusinessDashboard() {
     businessId ? { businessId } : skipToken
   );
 
-  // Employee ise sadece kendi randevularını filtrele
-  const appointments = useMemo(() => {
-    if (session?.user?.role === 'employee' && session?.user?.employeeId) {
-      return allAppointments?.filter((a: any) => a.employee_id === session.user.employeeId) || [];
-    }
-    return allAppointments || [];
-  }, [allAppointments, session?.user?.role, session?.user?.employeeId]);
+  // Backend'de filtreleme yapıldığı için frontend'de filtreleme gerekmiyor
+  const appointments = allAppointments || [];
 
   // Hizmetleri ve çalışanları getir
   const { data: services } = trpc.business.getServices.useQuery(

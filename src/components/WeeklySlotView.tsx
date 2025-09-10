@@ -39,11 +39,19 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
   // TRPC queries
   const { data: weeklySlots, isLoading: weeklyLoading, refetch: refetchWeeklySlots } = trpc.slots.getWeeklySlots.useQuery(
-    businessId ? { businessId, startDate: new Date().toLocaleDateString('en-CA') } : skipToken
+    businessId ? { 
+      businessId, 
+      startDate: new Date().toLocaleDateString('en-CA'),
+      selectedEmployeeId: localSelectedEmployeeId || undefined
+    } : skipToken
   );
 
   const { data: customDateSlots, refetch: refetchCustomDate } = trpc.slots.getCustomDateSlots.useQuery(
-    businessId && customDate ? { businessId, date: customDate } : skipToken
+    businessId && customDate ? { 
+      businessId, 
+      date: customDate,
+      selectedEmployeeId: localSelectedEmployeeId || undefined
+    } : skipToken
   );
 
   const { data: services } = trpc.business.getServices.useQuery(
@@ -225,6 +233,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     setShowManualAppointmentModal(true);
   };
 
+  // Randevu kartına tıklama işlemi
+  const handleAppointmentClick = (appointmentId: string) => {
+    setHighlightedAppointmentId(appointmentId);
+    // 3 saniye sonra highlight'ı kaldır
+    setTimeout(() => {
+      setHighlightedAppointmentId(null);
+    }, 3000);
+  };
+
   // Seçili gün için randevu detaylarını al
   const selectedDayAppointments = useMemo(() => {
     if (!selectedDate || !appointments) return [];
@@ -232,17 +249,24 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     return appointments.filter((apt: any) => {
       const aptDate = new Date(apt.appointment_datetime).toLocaleDateString('en-CA');
       const matchesDate = aptDate === selectedDate;
-      const matchesStatus = apt.status === 'pending' || apt.status === 'confirmed';
       
       // Çalışan filtresi
       let matchesEmployee = true;
       if (localSelectedEmployeeId) {
-        matchesEmployee = apt.services?.some((service: any) => 
-          service.employee_id === localSelectedEmployeeId
-        ) || false;
+        // Services array'i varsa kontrol et
+        if (apt.services && Array.isArray(apt.services)) {
+          matchesEmployee = apt.services.some((service: any) => 
+            service.employee_id === localSelectedEmployeeId
+          );
+        } else {
+          // Services array'i yoksa employee_names array'ini kontrol et
+          matchesEmployee = apt.employee_names?.some((name: any) => 
+            apt.employee_ids?.includes(localSelectedEmployeeId)
+          ) || false;
+        }
       }
       
-      return matchesDate && matchesStatus && matchesEmployee;
+      return matchesDate && matchesEmployee;
     });
   }, [selectedDate, appointments, localSelectedEmployeeId]);
 
@@ -461,28 +485,47 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
                   slot.isPast
                     ? 'bg-orange-100 text-orange-600 border border-orange-200'
-                    : slot.isBusy
+                    : slot.status === 'busy'
                     ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 hover:scale-105 cursor-pointer'
+                    : slot.status === 'half-busy'
+                    ? 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 hover:scale-105 cursor-pointer'
+                    : slot.status === 'unavailable'
+                    ? 'bg-gray-100 text-gray-500 border border-gray-200'
                     : 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200 hover:scale-105 cursor-pointer'
                 }`}
                 onClick={
                   slot.isPast 
                     ? undefined 
-                    : slot.isBusy 
+                    : slot.status === 'busy'
                     ? () => handleBusySlotClick(slot.time, selectedDate)
-                    : () => handleAvailableSlotClick(slot.time, selectedDate)
+                    : slot.status === 'half-busy' || slot.status === 'available'
+                    ? () => handleAvailableSlotClick(slot.time, selectedDate)
+                    : undefined
                 }
                 title={
                   slot.isPast 
                     ? 'Geçmiş saat' 
-                    : slot.isBusy 
+                    : slot.status === 'busy'
                     ? 'Randevu detayını görmek için tıklayın'
+                    : slot.status === 'half-busy'
+                    ? `Yarı dolu (${slot.capacity?.busy || 0}/${slot.capacity?.available || 0}) - Manuel randevu oluşturmak için tıklayın`
+                    : slot.status === 'unavailable'
+                    ? 'Müsaitlik bilgisi yok'
                     : 'Manuel randevu oluşturmak için tıklayın'
                 }
               >
                 <div className="font-bold">{slot.time}</div>
                 <div className="text-[10px]">
-                  {slot.isPast ? '⏰ Geçmiş' : slot.isBusy ? '🔴 Dolu' : '✅ Müsait'}
+                  {slot.isPast 
+                    ? '⏰ Geçmiş' 
+                    : slot.status === 'busy' 
+                    ? '🔴 Dolu' 
+                    : slot.status === 'half-busy'
+                    ? '🟡 Yarı Dolu'
+                    : slot.status === 'unavailable'
+                    ? '⚪ Müsait Değil'
+                    : '✅ Müsait'
+                  }
                 </div>
               </div>
             ))}
@@ -564,43 +607,63 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
                   slot.isPast
                     ? 'bg-orange-100 text-orange-600 border border-orange-200'
-                    : slot.isBusy
+                    : slot.status === 'busy'
                     ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 hover:scale-105 cursor-pointer'
+                    : slot.status === 'half-busy'
+                    ? 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 hover:scale-105 cursor-pointer'
+                    : slot.status === 'unavailable'
+                    ? 'bg-gray-100 text-gray-500 border border-gray-200'
                     : 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200 hover:scale-105 cursor-pointer'
                 }`}
                 onClick={
                   slot.isPast 
                     ? undefined 
-                    : slot.isBusy 
+                    : slot.status === 'busy'
                     ? () => handleBusySlotClick(slot.time, customDate)
-                    : () => handleAvailableSlotClick(slot.time, customDate)
+                    : slot.status === 'half-busy' || slot.status === 'available'
+                    ? () => handleAvailableSlotClick(slot.time, customDate)
+                    : undefined
                 }
                 title={
                   slot.isPast 
                     ? 'Geçmiş saat' 
-                    : slot.isBusy 
+                    : slot.status === 'busy'
                     ? 'Randevu detayını görmek için tıklayın'
+                    : slot.status === 'half-busy'
+                    ? `Yarı dolu (${slot.capacity?.busy || 0}/${slot.capacity?.available || 0}) - Manuel randevu oluşturmak için tıklayın`
+                    : slot.status === 'unavailable'
+                    ? 'Müsaitlik bilgisi yok'
                     : 'Manuel randevu oluşturmak için tıklayın'
                 }
               >
                 <div className="font-bold">{slot.time}</div>
                 <div className="text-[10px]">
-                  {slot.isPast ? '⏰ Geçmiş' : slot.isBusy ? '🔴 Dolu' : '✅ Müsait'}
+                  {slot.isPast 
+                    ? '⏰ Geçmiş' 
+                    : slot.status === 'busy' 
+                    ? '🔴 Dolu' 
+                    : slot.status === 'half-busy'
+                    ? '🟡 Yarı Dolu'
+                    : slot.status === 'unavailable'
+                    ? '⚪ Müsait Değil'
+                    : '✅ Müsait'
+                  }
                 </div>
               </div>
             ))}
           </div>
 
           {/* O Günkü Randevular */}
-          {customDateAppointments.length > 0 && (
+          {selectedDayAppointments.length > 0 && (
             <div className="border-t border-white/40 pt-3">
               <div className="text-xs font-bold text-gray-700 mb-2">O Günkü Randevular:</div>
               <div className="space-y-2">
-                {customDateAppointments.map((apt: any) => (
+                {selectedDayAppointments.map((apt: any) => (
                   <div 
                     key={apt.id} 
                     id={`appointment-${apt.id}`}
-                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-1500 ${
+                    onClick={() => handleAppointmentClick(apt.id)}
+                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-1500 cursor-pointer hover:bg-white/80 hover:shadow-md ${
                       highlightedAppointmentId === apt.id 
                         ? 'ring-4 ring-yellow-400 ring-opacity-75 shadow-2xl scale-105 bg-gradient-to-r from-yellow-50 to-orange-50' 
                         : ''
@@ -647,7 +710,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         slotData={selectedSlotData}
         businessId={businessId}
         services={services || []}
-        employees={employees || []}
+        employees={filteredEmployees || []}
         onCreateAppointment={createManualAppointment.mutate}
         isLoading={createManualAppointment.isPending}
       />
@@ -687,6 +750,59 @@ function ManualAppointmentModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // O gün o saatte müsait olan çalışanları filtrele
+  const availableEmployees = useMemo(() => {
+    if (!employees || !slotData) return [];
+    
+    const selectedDate = new Date(slotData.date + 'T00:00:00');
+    const dayOfWeek = selectedDate.getDay();
+    const selectedTime = slotData.time;
+    
+    return employees.filter((employee: any) => {
+      // Çalışanın o gün müsaitlik bilgisi var mı kontrol et
+      const availability = employee.availability || [];
+      const dayAvailability = availability.find((avail: any) => avail.day_of_week === dayOfWeek);
+      
+      if (!dayAvailability) return false;
+      
+      // Seçilen saat müsaitlik aralığında mı kontrol et
+      const [startHour, startMin] = dayAvailability.start_time.split(':').map(Number);
+      const [endHour, endMin] = dayAvailability.end_time.split(':').map(Number);
+      const [selectedHour, selectedMin] = selectedTime.split(':').map(Number);
+      
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      const selectedMinutes = selectedHour * 60 + selectedMin;
+      
+      return selectedMinutes >= startMinutes && selectedMinutes < endMinutes;
+    });
+  }, [employees, slotData]);
+
+  // Seçili çalışanın verebileceği hizmetleri filtrele
+  const availableServices = useMemo(() => {
+    console.log('🔍 availableServices - services:', services);
+    console.log('🔍 availableServices - selectedEmployee:', formData.selectedEmployee);
+    console.log('🔍 availableServices - employees:', employees);
+    
+    if (!services || !formData.selectedEmployee) return services;
+    
+    const selectedEmployee = employees.find((emp: any) => emp.id === formData.selectedEmployee);
+    console.log('🔍 availableServices - selectedEmployee found:', selectedEmployee);
+    console.log('🔍 availableServices - selectedEmployee.services:', selectedEmployee?.services);
+    
+    if (!selectedEmployee || !selectedEmployee.services) return [];
+    
+    // Çalışanın verebileceği hizmet ID'lerini al
+    const employeeServiceIds = selectedEmployee.services.map((service: any) => service.id);
+    console.log('🔍 availableServices - employeeServiceIds:', employeeServiceIds);
+    
+    // Sadece çalışanın verebileceği hizmetleri döndür
+    const filteredServices = services.filter((service: any) => employeeServiceIds.includes(service.id));
+    console.log('🔍 availableServices - filteredServices:', filteredServices);
+    
+    return filteredServices;
+  }, [services, formData.selectedEmployee, employees]);
+
   // Form validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -702,6 +818,9 @@ function ManualAppointmentModal({
     }
     if (!formData.selectedEmployee) {
       newErrors.selectedEmployee = 'Çalışan seçin';
+    }
+    if (availableEmployees.length === 0) {
+      newErrors.selectedEmployee = 'Bu saatte müsait çalışan bulunmuyor';
     }
 
     setErrors(newErrors);
@@ -742,6 +861,15 @@ function ManualAppointmentModal({
       selectedServices: prev.selectedServices.includes(serviceId)
         ? prev.selectedServices.filter(id => id !== serviceId)
         : [...prev.selectedServices, serviceId]
+    }));
+  };
+
+  // Çalışan değiştiğinde seçili hizmetleri temizle ve sadece o çalışanın hizmetlerini göster
+  const handleEmployeeChange = (employeeId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedEmployee: employeeId,
+      selectedServices: [] // Çalışan değiştiğinde hizmet seçimlerini temizle
     }));
   };
 
@@ -840,7 +968,7 @@ function ManualAppointmentModal({
             </h3>
             
             <div className="grid grid-cols-2 gap-2">
-              {services.map((service) => (
+              {availableServices.map((service) => (
                 <button
                   key={service.id}
                   type="button"
@@ -858,6 +986,16 @@ function ManualAppointmentModal({
               ))}
             </div>
             
+            {availableServices.length === 0 && formData.selectedEmployee && (
+              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                ⚠️ Seçili çalışanın verebileceği hizmet bulunmuyor. Lütfen farklı bir çalışan seçin veya önce çalışana hizmet ataması yapın.
+              </p>
+            )}
+            {!formData.selectedEmployee && (
+              <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                💡 Önce bir çalışan seçin, sonra o çalışanın verebileceği hizmetler görünecek.
+              </p>
+            )}
             {errors.selectedServices && (
               <p className="text-xs text-rose-600">{errors.selectedServices}</p>
             )}
@@ -871,19 +1009,24 @@ function ManualAppointmentModal({
             
             <select
               value={formData.selectedEmployee}
-              onChange={(e) => setFormData(prev => ({ ...prev, selectedEmployee: e.target.value }))}
+              onChange={(e) => handleEmployeeChange(e.target.value)}
               className={`w-full px-3 py-2 rounded-lg border text-sm ${
                 errors.selectedEmployee ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
               } focus:outline-none focus:ring-2 focus:ring-rose-200`}
             >
               <option value="">Çalışan seçin</option>
-              {filteredEmployees.map((employee) => (
+              {availableEmployees.map((employee) => (
                 <option key={employee.id} value={employee.id}>
                   {employee.name}
                 </option>
               ))}
             </select>
             
+            {availableEmployees.length === 0 && (
+              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                ⚠️ Bu saatte müsait çalışan bulunmuyor. Lütfen farklı bir saat seçin.
+              </p>
+            )}
             {errors.selectedEmployee && (
               <p className="text-xs text-rose-600">{errors.selectedEmployee}</p>
             )}
