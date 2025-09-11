@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'web',
-      script: 'npm',
-      args: 'start',
+      script: 'node',
+      args: '.next/standalone/server.js',
       cwd: '/var/www/web',
       instances: 1,
       autorestart: true,
