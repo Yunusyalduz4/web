@@ -37,7 +37,6 @@ VAPID_EMAIL=mailto:yalduzbey@gmail.com
 
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 RESEND_API_KEY=your_resend_api_key
-VERCEL=0
 EOF
 
 echo "⚠️  Lütfen .env.local dosyasındaki değerleri güncelleyin!"

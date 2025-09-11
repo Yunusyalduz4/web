@@ -56,19 +56,16 @@ export function RealTimeAppointmentsExample() {
   useEffect(() => {
     setCallbacks({
       onAppointmentCreated: (data) => {
-        console.log('Yeni randevu:', data);
         // Randevu listesini güncelle
         setAppointments(prev => [data, ...prev]);
       },
       onAppointmentUpdated: (data) => {
-        console.log('Randevu güncellendi:', data);
         // Randevu listesini güncelle
         setAppointments(prev => 
           prev.map(apt => apt.id === data.id ? { ...apt, ...data } : apt)
         );
       },
       onAppointmentCancelled: (data) => {
-        console.log('Randevu iptal edildi:', data);
         // Randevu listesinden kaldır
         setAppointments(prev => prev.filter(apt => apt.id !== data.id));
       }
@@ -168,11 +165,9 @@ export function ModalWithWebSocket() {
     if (isOpen) {
       setCallbacks({
         onReviewCreated: (data) => {
-          console.log('Modal - Yeni yorum:', data);
           // Modal içinde yorum listesini güncelle
         },
         onReviewReplied: (data) => {
-          console.log('Modal - Yorum yanıtlandı:', data);
         }
       });
     }

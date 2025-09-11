@@ -31,7 +31,6 @@ export default function SimpleLocationPicker({ onLocationSelect }: LocationPicke
           });
         },
         (error) => {
-          console.error('Konum alınamadı:', error);
           setAddress('Konum alınamadı');
         }
       );

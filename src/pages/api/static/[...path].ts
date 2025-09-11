@@ -22,7 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const safePath = actualPath.replace(/\.\./g, '').replace(/\/+/g, '/');
     const fullPath = join(process.cwd(), 'public', 'uploads', safePath);
     
-    console.log('Static file request:', { actualPath, safePath, fullPath });
 
     // Dosya var mı kontrol et
     try {
@@ -60,7 +59,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).send(fileBuffer);
 
   } catch (error) {
-    console.error('Static file serving error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

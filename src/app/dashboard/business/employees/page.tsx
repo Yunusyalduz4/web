@@ -26,9 +26,6 @@ export default function BusinessEmployeesPage() {
     );
   }
   
-  console.log('🔍 Businesses data:', businesses);
-  console.log('🔍 Selected business:', business);
-  console.log('🔍 BusinessId:', businessId, 'Type:', typeof businessId);
   const employeesQuery = trpc.business.getEmployees.useQuery(businessId ? { businessId } : skipToken);
   const { data: employees, isLoading } = employeesQuery;
   const createEmployee = trpc.business.createEmployee.useMutation();
@@ -124,7 +121,6 @@ export default function BusinessEmployeesPage() {
       };
       
       if (editing) {
-        console.log('🔍 Update employee data:', { ...cleanForm, id: form.id, businessId: businessId! });
         await updateEmployee.mutateAsync({ 
           ...cleanForm, 
           id: form.id,
@@ -132,20 +128,11 @@ export default function BusinessEmployeesPage() {
         });
         setSuccess('Çalışan güncellendi!');
       } else {
-        console.log('🔍 Create employee data:', { ...cleanForm, businessId: businessId! });
         // Önce çalışanı oluştur
         const employeeResult = await createEmployee.mutateAsync({ ...cleanForm, businessId: businessId! });
-        console.log('🔍 Employee created:', employeeResult);
         
         // Eğer hesap oluşturma seçildiyse, hesap oluştur
         if (form.createAccount && employeeResult.id) {
-          console.log('🔍 Create employee account data:', {
-            businessId: businessId!,
-            employeeId: employeeResult.id,
-            email: form.email,
-            password: form.password,
-            permissions: form.permissions
-          });
           await createEmployeeAccount.mutateAsync({
             businessId: businessId!,
             employeeId: employeeResult.id,
@@ -180,7 +167,6 @@ export default function BusinessEmployeesPage() {
       employeesQuery.refetch();
       setTimeout(() => setSuccess(''), 1200);
     } catch (err: any) {
-      console.error('Çalışan ekleme hatası:', err);
       
       // Daha detaylı hata mesajları
       if (err.data?.code === 'BAD_REQUEST') {

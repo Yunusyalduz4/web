@@ -121,13 +121,11 @@ export const reviewRouter = t.router({
           userName
         );
       } catch (error) {
-        console.error('Review notification error:', error);
         // Push notification hatası review oluşturmayı etkilemesin
       }
 
       return result.rows[0];
       } catch (error) {
-        console.error('Review create error:', error);
         throw error;
       }
     }),

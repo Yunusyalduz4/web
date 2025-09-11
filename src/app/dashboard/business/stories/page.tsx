@@ -131,7 +131,6 @@ export default function BusinessStoriesPage() {
         deviceType: 'desktop'
       });
     } catch (error) {
-      console.error('Hikaye görüntüleme hatası:', error);
     }
   };
 
@@ -155,13 +154,9 @@ export default function BusinessStoriesPage() {
 
   const handleStoryLike = async (storyId: string) => {
     try {
-      console.log('Beğeni işlemi başlatılıyor:', storyId);
       const result = await likeStoryMutation.mutateAsync({ storyId });
-      console.log('Beğeni sonucu:', result);
       await refetchStories();
-      console.log('Hikayeler yenilendi');
     } catch (error) {
-      console.error('Hikaye beğeni hatası:', error);
     }
   };
 
@@ -171,7 +166,6 @@ export default function BusinessStoriesPage() {
       try {
         await deleteStoryMutation.mutateAsync({ storyId });
       } catch (error) {
-        console.error('Hikaye silme hatası:', error);
       }
     }
   };

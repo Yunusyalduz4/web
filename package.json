@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "next build",
     "migrate:email-tokens": "node migrate_password_reset.js"
   },
   "dependencies": {
@@ -20,7 +19,6 @@
     "@trpc/react-query": "^11.4.3",
     "@trpc/server": "^11.4.3",
     "@types/node-cron": "^3.0.11",
-    "@vercel/blob": "^0.21.0",
     "bcrypt": "^6.0.0",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.1",

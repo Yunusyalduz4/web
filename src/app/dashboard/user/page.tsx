@@ -5,6 +5,7 @@ import { trpc } from '../../../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
 import { useMemo, useState, useEffect } from 'react';
 import ReviewModal from '../../../components/ReviewModal';
+import RescheduleModal from '../../../components/RescheduleModal';
 import NotificationsButton from '../../../components/NotificationsButton';
 import { useRealTimeAppointments, useRealTimeReviews } from '../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
@@ -25,6 +26,19 @@ export default function UserDashboard() {
   const { data: userReviews } = trpc.review.getByUser.useQuery(userId ? { userId } : skipToken);
   const cancelMutation = trpc.appointment.cancelAppointment.useMutation();
   
+  // Erteleme istekleri
+  const { data: pendingRescheduleRequests, refetch: refetchRescheduleRequests, isLoading: isLoadingRequests } = trpc.reschedule.getPendingRescheduleRequests.useQuery();
+  const approveRescheduleMutation = trpc.reschedule.approveRescheduleRequest.useMutation({
+    onSuccess: () => {
+      refetchRescheduleRequests();
+    }
+  });
+  const rejectRescheduleMutation = trpc.reschedule.approveRescheduleRequest.useMutation({
+    onSuccess: () => {
+      refetchRescheduleRequests();
+    }
+  });
+  
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
   const { setCallbacks: setAppointmentCallbacks } = useRealTimeAppointments(userId);
@@ -43,6 +57,15 @@ export default function UserDashboard() {
     businessName: '',
     serviceName: '',
     employeeName: ''
+  });
+
+  // Reschedule modal state
+  const [rescheduleModal, setRescheduleModal] = useState<{
+    isOpen: boolean;
+    appointment: any;
+  }>({
+    isOpen: false,
+    appointment: null
   });
 
   // History modal state
@@ -84,28 +107,28 @@ export default function UserDashboard() {
   useEffect(() => {
     setAppointmentCallbacks({
       onAppointmentCreated: () => {
-        console.log('🔄 Randevu oluşturuldu - liste güncelleniyor');
+        // Randevu oluşturuldu - liste güncelleniyor
       },
       onAppointmentUpdated: () => {
-        console.log('🔄 Randevu güncellendi - liste güncelleniyor');
+        // Randevu güncellendi - liste güncelleniyor
       },
       onAppointmentCancelled: () => {
-        console.log('🔄 Randevu iptal edildi - liste güncelleniyor');
+        // Randevu iptal edildi - liste güncelleniyor
       },
       onAppointmentCompleted: () => {
-        console.log('🔄 Randevu tamamlandı - liste güncelleniyor');
+        // Randevu tamamlandı - liste güncelleniyor
       }
     });
 
     setReviewCallbacks({
       onReviewCreated: () => {
-        console.log('🔄 Yorum oluşturuldu - liste güncelleniyor');
+        // Yorum oluşturuldu - liste güncelleniyor
       },
       onReviewReplied: () => {
-        console.log('🔄 Yorum yanıtlandı - liste güncelleniyor');
+        // Yorum yanıtlandı - liste güncelleniyor
       },
       onReviewStatusUpdated: () => {
-        console.log('🔄 Yorum durumu güncellendi - liste güncelleniyor');
+        // Yorum durumu güncellendi - liste güncelleniyor
       }
     });
   }, [setAppointmentCallbacks, setReviewCallbacks]);
@@ -142,6 +165,24 @@ export default function UserDashboard() {
     });
     
     // Sayfayı yenile ve review verilerini güncelle
+    router.refresh();
+  };
+
+  const handleRescheduleClick = (appointment: any) => {
+    setRescheduleModal({
+      isOpen: true,
+      appointment: appointment
+    });
+  };
+
+  const handleRescheduleSubmitted = () => {
+    // Reschedule modal'ı kapat
+    setRescheduleModal({
+      isOpen: false,
+      appointment: null
+    });
+    
+    // Sayfayı yenile ve randevu verilerini güncelle
     router.refresh();
   };
 
@@ -182,6 +223,67 @@ export default function UserDashboard() {
       <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 sm:mt-4 mb-4 sm:mb-6 text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none animate-soft-in px-2">
         Merhaba, {profile?.name} 👋
       </h1>
+      {/* Bekleyen Erteleme İstekleri */}
+      {pendingRescheduleRequests && pendingRescheduleRequests.length > 0 && (
+        <div className="mb-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div>
+              <div className="text-sm font-bold text-orange-900">Bekleyen Erteleme İstekleri</div>
+              <div className="text-xs text-orange-700">{pendingRescheduleRequests.length} istek onayınızı bekliyor</div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {pendingRescheduleRequests.map((request: any) => (
+              <div key={request.id} className="bg-white/80 border border-orange-200 rounded-xl p-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {request.business_name || 'İşletme'}
+                  </div>
+                  <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-lg">
+                    Bekliyor
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600 mb-3">
+                  <div>Eski Tarih: {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  }).format(new Date(request.old_appointment_datetime))}</div>
+                  <div>Yeni Tarih: {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  }).format(new Date(request.new_appointment_datetime))}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => approveRescheduleMutation.mutate({ requestId: String(request.id), action: 'approve' })}
+                    disabled={approveRescheduleMutation.isPending || rejectRescheduleMutation.isPending}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-600 active:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Onayla
+                  </button>
+                  <button
+                    onClick={() => rejectRescheduleMutation.mutate({ requestId: String(request.id), action: 'reject' })}
+                    disabled={approveRescheduleMutation.isPending || rejectRescheduleMutation.isPending}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 active:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Reddet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-3 sm:mb-4 px-1">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Randevularım</h2>
       </div>
@@ -262,11 +364,19 @@ export default function UserDashboard() {
                 </button>
               )}
               {a.status === 'confirmed' && (
-                <div className="text-sm text-green-700 flex items-center min-h-[44px]">
-                  <span className="inline-flex items-center gap-1">
-                    <span>✅</span>
-                    <span>Onaylandı</span>
-                  </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    className="text-sm font-medium text-blue-700 hover:text-blue-800 active:text-blue-900 touch-manipulation min-h-[44px] px-2 py-2 -mx-2 -my-2 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-colors"
+                    onClick={() => handleRescheduleClick(a)}
+                  >
+                    📅 Ertele
+                  </button>
+                  <div className="text-sm text-green-700 flex items-center min-h-[44px]">
+                    <span className="inline-flex items-center gap-1">
+                      <span>✅</span>
+                      <span>Onaylandı</span>
+                    </span>
+                  </div>
                 </div>
               )}
               {a.status === 'cancelled' && (
@@ -351,6 +461,15 @@ export default function UserDashboard() {
         serviceName={reviewModal.serviceName}
         employeeName={reviewModal.employeeName}
         onReviewSubmitted={handleReviewSubmitted}
+      />
+
+      {/* Reschedule Modal */}
+      <RescheduleModal
+        isOpen={rescheduleModal.isOpen}
+        onClose={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
+        appointment={rescheduleModal.appointment}
+        userRole="user"
+        onRescheduleSubmitted={handleRescheduleSubmitted}
       />
 
       {/* History Modal - Mobile Optimized */}

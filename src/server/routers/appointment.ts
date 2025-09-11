@@ -183,11 +183,9 @@ export const appointmentRouter = t.router({
             });
           }
         } catch (error) {
-          console.error('Socket.io event error:', error);
           // Socket.io hatası randevu oluşturmayı etkilemesin
         }
       } catch (error) {
-        console.error('Push notification error:', error);
         // Push notification hatası randevu oluşturmayı etkilemesin
       }
 
@@ -259,7 +257,7 @@ export const appointmentRouter = t.router({
           WHERE aps2.appointment_id = a.id 
           AND aps2.employee_id = $2
         )`;
-        params.push(ctx.user.employeeId);
+        params.push(ctx.user.employeeId!);
       }
       
       query += ` GROUP BY a.id, u.name
@@ -337,7 +335,6 @@ export const appointmentRouter = t.router({
           businessName
         );
       } catch (error) {
-        console.error('Cancel appointment push notification error:', error);
         // Push notification hatası randevu iptalını etkilemesin
       }
       
@@ -454,7 +451,6 @@ export const appointmentRouter = t.router({
       notes: z.string().nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Backend\'e gelen veri:', input);
       
       // Employee ise sadece kendi business'ına randevu oluşturabilir
       if (ctx.user.role === 'employee' && ctx.user.businessId !== input.businessId) {
@@ -469,7 +465,6 @@ export const appointmentRouter = t.router({
       try {
         // Tarih ve saat birleştir
         appointmentDatetime = new Date(`${input.appointmentDate}T${input.appointmentTime}:00`);
-        console.log('Oluşturulan datetime:', appointmentDatetime);
         
         // Geçmiş zamana randevu alınamaz
         const nowUTC = new Date();
@@ -477,7 +472,6 @@ export const appointmentRouter = t.router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
         }
       } catch (error) {
-        console.error('Tarih oluşturma hatası:', error);
         throw new TRPCError({ 
           code: 'BAD_REQUEST', 
           message: `Tarih formatı hatası: ${input.appointmentDate} ${input.appointmentTime}` 
@@ -553,8 +547,6 @@ export const appointmentRouter = t.router({
       }
 
       // Slot'ları güncelle - hizmet süresine göre tüm slot'ları doldur
-      console.log(`Randevu oluşturuldu: ${appointmentId}, Toplam süre: ${totalDuration} dakika`);
-      console.log(`Başlangıç: ${start.toISOString()}, Bitiş: ${end.toISOString()}`);
 
       // Socket.io event gönder
       try {
@@ -577,10 +569,9 @@ export const appointmentRouter = t.router({
             totalDuration
           });
         }
-      } catch (error) {
-        console.error('Socket.io event error:', error);
-        // Socket.io hatası randevu oluşturmayı etkilemesin
-      }
+        } catch (error) {
+          // Socket.io hatası randevu oluşturmayı etkilemesin
+        }
 
       return appointmentResult.rows[0];
     }),
@@ -644,7 +635,6 @@ export const appointmentRouter = t.router({
           businessName
         );
       } catch (error) {
-        console.error('Push notification error:', error);
         // Push notification hatası randevu güncellemeyi etkilemesin
       }
 
@@ -663,10 +653,9 @@ export const appointmentRouter = t.router({
             updatedAt: new Date()
           });
         }
-      } catch (error) {
-        console.error('Socket.io event error:', error);
-        // Socket.io hatası randevu güncellemeyi etkilemesin
-      }
+        } catch (error) {
+          // Socket.io hatası randevu güncellemeyi etkilemesin
+        }
 
       return result.rows[0];
     }),

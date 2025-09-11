@@ -395,7 +395,6 @@ export const cleanupExpiredStories = async (): Promise<number> => {
     const result = await response.json();
     return result.archivedCount || 0;
   } catch (error) {
-    console.error('Hikaye temizleme hatası:', error);
     return 0;
   }
 };
@@ -416,7 +415,6 @@ export const cleanupStoryArchive = async (daysToKeep: number = 30): Promise<numb
     const result = await response.json();
     return result.deletedCount || 0;
   } catch (error) {
-    console.error('Hikaye arşiv temizleme hatası:', error);
     return 0;
   }
 };
@@ -450,7 +448,6 @@ export const sendStoryNotification = async (
     
     return response.ok;
   } catch (error) {
-    console.error('Hikaye bildirimi hatası:', error);
     return false;
   }
 };

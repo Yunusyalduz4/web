@@ -30,7 +30,6 @@ export class SocketServer {
           "http://localhost:3002",
           // VPS için ek origin'ler
           ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
-          ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
           // Randevuo.com domain'i
           "https://randevuo.com",
           "http://randevuo.com",
@@ -53,22 +52,16 @@ export class SocketServer {
 
     this.setupMiddleware();
     this.setupEventHandlers();
-    
-    console.log('🚀 Socket.io server başlatıldı');
   }
 
   private setupMiddleware() {
     // Authentication middleware
     this.io.use(async (socket, next) => {
       try {
-        console.log('🔐 Socket middleware çalışıyor...');
-        
         // Auth token'dan user ID'yi al
         const authToken = socket.handshake.auth?.token;
-        console.log('🔐 Auth token:', authToken);
         
         if (!authToken) {
-          console.log('❌ Auth token bulunamadı');
           return next(new Error('No auth token provided'));
         }
 
@@ -82,10 +75,8 @@ export class SocketServer {
         };
 
         socket.data.user = user;
-        console.log(`✅ Socket authenticated: ${authToken}`);
         next();
       } catch (error) {
-        console.error('❌ Socket auth error:', error);
         next(new Error('Authentication failed'));
       }
     });
@@ -93,16 +84,10 @@ export class SocketServer {
 
   private setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log('🔌 Connection event tetiklendi');
-      console.log('🔌 Socket data:', socket.data);
-      
       const user = socket.data.user;
       if (!user) {
-        console.log('❌ User data bulunamadı');
         return;
       }
-      
-      console.log(`✅ Socket bağlandı: ${user.name} (${user.id})`);
 
       // Kullanıcıyı kendi odasına ekle
       socket.join(`user:${user.id}`);
@@ -124,7 +109,6 @@ export class SocketServer {
 
       // Disconnect event
       socket.on('disconnect', () => {
-        console.log(`🔌 Socket ayrıldı: ${user.name} (${user.id})`);
         this.userSockets.delete(user.id);
         if (user.businessId) {
           this.removeBusinessSocket(user.businessId, socket.id);
@@ -136,7 +120,6 @@ export class SocketServer {
         if (user.businessId === businessId || user.role === 'admin') {
           socket.join(`business:${businessId}`);
           this.addBusinessSocket(businessId, socket.id);
-          console.log(`🏢 ${user.name} işletme odasına katıldı: ${businessId}`);
         }
       });
 
@@ -144,26 +127,22 @@ export class SocketServer {
       socket.on('leave:business', (businessId: string) => {
         socket.leave(`business:${businessId}`);
         this.removeBusinessSocket(businessId, socket.id);
-        console.log(`🏢 ${user.name} işletme odasından ayrıldı: ${businessId}`);
       });
 
       // Join employee room
       socket.on('join:employee', async (employeeId: string) => {
         if (user.role === 'admin' || (user.businessId && await this.isEmployeeInBusiness(employeeId, user.businessId))) {
           socket.join(`employee:${employeeId}`);
-          console.log(`👥 ${user.name} çalışan odasına katıldı: ${employeeId}`);
         }
       });
 
       // Leave employee room
       socket.on('leave:employee', (employeeId: string) => {
         socket.leave(`employee:${employeeId}`);
-        console.log(`👥 ${user.name} çalışan odasından ayrıldı: ${employeeId}`);
       });
 
       // Test event
       socket.on('test:message', (message: string) => {
-        console.log(`🧪 Test mesajı: ${message} - ${user.name}`);
         socket.emit('test:response', `Mesaj alındı: ${message}`);
       });
     });
@@ -201,7 +180,6 @@ export class SocketServer {
       );
       return result.rows.length > 0;
     } catch (error) {
-      console.error('Employee business check error:', error);
       return false;
     }
   }
@@ -337,6 +315,58 @@ export class SocketServer {
       this.emitToBusiness(targetId, 'socket:notification:sent', notificationData);
     } else if (type === 'admin') {
       this.emitToAdmin('socket:notification:sent', notificationData);
+    }
+  }
+
+  // Reschedule events
+  public emitRescheduleRequested(rescheduleData: any) {
+    const { businessId, userId, employeeId } = rescheduleData;
+    
+    // İşletmeye bildir
+    this.emitToBusiness(businessId, 'socket:reschedule:requested', rescheduleData);
+    
+    // Müşteriye bildir
+    if (userId) {
+      this.emitToUser(userId, 'socket:reschedule:requested', rescheduleData);
+    }
+    
+    // Çalışana bildir
+    if (employeeId) {
+      this.emitToEmployee(employeeId, 'socket:reschedule:requested', rescheduleData);
+    }
+  }
+
+  public emitRescheduleApproved(rescheduleData: any) {
+    const { businessId, userId, employeeId } = rescheduleData;
+    
+    // İşletmeye bildir
+    this.emitToBusiness(businessId, 'socket:reschedule:approved', rescheduleData);
+    
+    // Müşteriye bildir
+    if (userId) {
+      this.emitToUser(userId, 'socket:reschedule:approved', rescheduleData);
+    }
+    
+    // Çalışana bildir
+    if (employeeId) {
+      this.emitToEmployee(employeeId, 'socket:reschedule:approved', rescheduleData);
+    }
+  }
+
+  public emitRescheduleRejected(rescheduleData: any) {
+    const { businessId, userId, employeeId } = rescheduleData;
+    
+    // İşletmeye bildir
+    this.emitToBusiness(businessId, 'socket:reschedule:rejected', rescheduleData);
+    
+    // Müşteriye bildir
+    if (userId) {
+      this.emitToUser(userId, 'socket:reschedule:rejected', rescheduleData);
+    }
+    
+    // Çalışana bildir
+    if (employeeId) {
+      this.emitToEmployee(employeeId, 'socket:reschedule:rejected', rescheduleData);
     }
   }
 

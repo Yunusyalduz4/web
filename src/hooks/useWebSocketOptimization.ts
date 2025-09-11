@@ -14,7 +14,6 @@ export function useWebSocketOptimization() {
     if (!joinedRooms.current.has(room)) {
       joinRoom(room);
       joinedRooms.current.add(room);
-      console.log(`🔗 Odaya katıldı: ${room}`);
     }
   }, [joinRoom]);
 
@@ -23,7 +22,6 @@ export function useWebSocketOptimization() {
     if (joinedRooms.current.has(room)) {
       leaveRoom(room);
       joinedRooms.current.delete(room);
-      console.log(`🔗 Odadan ayrıldı: ${room}`);
     }
   }, [leaveRoom]);
 
@@ -38,7 +36,6 @@ export function useWebSocketOptimization() {
   useEffect(() => {
     if (socket) {
       const handleDisconnect = () => {
-        console.log('🔌 WebSocket bağlantısı kesildi, yeniden bağlanmaya çalışılıyor...');
         reconnectAttempts.current += 1;
         
         if (reconnectAttempts.current <= maxReconnectAttempts) {
@@ -46,12 +43,10 @@ export function useWebSocketOptimization() {
             socket.connect();
           }, Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000)); // Exponential backoff
         } else {
-          console.error('❌ Maksimum yeniden bağlanma denemesi aşıldı');
         }
       };
 
       const handleConnect = () => {
-        console.log('✅ WebSocket yeniden bağlandı');
         reconnectAttempts.current = 0;
       };
 

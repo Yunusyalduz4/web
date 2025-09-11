@@ -49,7 +49,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.status(200).json({ message: 'Email verified successfully' });
   } catch (error) {
-    console.error('Verify email error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

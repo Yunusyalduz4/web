@@ -251,13 +251,11 @@ function MapInitializer({
 
       // Google Maps API'nin tamamen yüklenmesini bekle
       if (!window.google || !window.google.maps || !window.google.maps.Map) {
-        console.log('Google Maps API not ready, retrying...');
         setTimeout(initializeMap, 100);
         return;
       }
 
       try {
-        console.log('Initializing LocationPicker map...');
         const center = defaultLocation 
           ? { lat: defaultLocation.lat, lng: defaultLocation.lng }
           : { lat: 39.9334, lng: 32.8597 }; // Ankara
@@ -293,9 +291,7 @@ function MapInitializer({
           overlay.remove();
         }
 
-        console.log('LocationPicker map initialized successfully');
       } catch (err) {
-        console.error('Map initialization error:', err);
         // Hata durumunda tekrar dene
         setTimeout(initializeMap, 500);
       }

@@ -53,7 +53,6 @@ export async function getUpcomingAppointmentsForReminder(): Promise<AppointmentR
       serviceNames: row.service_names || []
     }));
   } catch (error) {
-    console.error('Get upcoming appointments for reminder error:', error);
     return [];
   }
 }
@@ -64,7 +63,6 @@ export async function getUpcomingAppointmentsForReminder(): Promise<AppointmentR
 export async function sendAppointmentReminder(appointment: AppointmentReminder): Promise<boolean> {
   try {
     if (!appointment.userId) {
-      console.log(`Appointment ${appointment.id} has no user_id, skipping reminder`);
       return false;
     }
 
@@ -103,14 +101,12 @@ export async function sendAppointmentReminder(appointment: AppointmentReminder):
         [appointment.id]
       );
       
-      console.log(`Reminder sent successfully for appointment ${appointment.id}`);
+      // Reminder sent successfully
       return true;
     } else {
-      console.error(`Failed to send reminder for appointment ${appointment.id}:`, notificationResult.error);
       return false;
     }
   } catch (error) {
-    console.error(`Error sending reminder for appointment ${appointment.id}:`, error);
     return false;
   }
 }
@@ -120,16 +116,16 @@ export async function sendAppointmentReminder(appointment: AppointmentReminder):
  */
 export async function sendAllUpcomingReminders(): Promise<void> {
   try {
-    console.log('Starting appointment reminder check...');
+    // Starting appointment reminder check
     
     const upcomingAppointments = await getUpcomingAppointmentsForReminder();
     
     if (upcomingAppointments.length === 0) {
-      console.log('No upcoming appointments need reminders');
+      // No upcoming appointments need reminders
       return;
     }
 
-    console.log(`Found ${upcomingAppointments.length} appointments that need reminders`);
+    // Found appointments that need reminders
 
     let successCount = 0;
     let failCount = 0;
@@ -143,8 +139,8 @@ export async function sendAllUpcomingReminders(): Promise<void> {
       }
     }
 
-    console.log(`Reminder sending completed. Success: ${successCount}, Failed: ${failCount}`);
+    // Reminder sending completed
   } catch (error) {
-    console.error('Error in sendAllUpcomingReminders:', error);
+    // Silent error handling
   }
 }

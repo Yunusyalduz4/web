@@ -56,17 +56,17 @@ export default function Map(props: MapProps) {
   // Konum takibini başlat - tek sefer guard + iki aşamalı deneme
   const startLocationTracking = async () => {
     if (!navigator.geolocation) {
-      console.log('Geolocation desteklenmiyor');
+      // Geolocation desteklenmiyor
       return;
     }
 
     if (isStartingRef.current || isTrackingLocation) {
-      console.log('Konum takibi zaten başlatılıyor veya aktif');
+      // Konum takibi zaten başlatılıyor veya aktif
       return; // Zaten başlatılıyor veya aktif
     }
     
     isStartingRef.current = true;
-    console.log('Konum takibi başlatılıyor...');
+    // Konum takibi başlatılıyor
 
     // Önce düşük doğruluk (daha hızlı) → başarısız olursa yüksek doğruluk dene
     const tryGetPosition = (opts: PositionOptions) =>
@@ -81,11 +81,11 @@ export default function Map(props: MapProps) {
     try {
       firstFix = await tryGetPosition(lowAccuracy);
     } catch (e1: any) {
-      console.warn('Düşük doğruluk zaman aşımı/başarısızlık, yüksek doğruluk deneniyor...', e1);
+      // Düşük doğruluk zaman aşımı/başarısızlık, yüksek doğruluk deneniyor
       try {
         firstFix = await tryGetPosition(highAccuracy);
       } catch (e2: any) {
-        console.error('İlk konum alınamadı:', e2);
+        // İlk konum alınamadı
         isStartingRef.current = false;
         setIsTrackingLocation(false);
         return;
@@ -150,7 +150,7 @@ export default function Map(props: MapProps) {
         }
       },
       (error) => {
-        console.error('Konum takibi hatası:', error);
+        // Konum takibi hatası
         setIsTrackingLocation(false);
         isStartingRef.current = false;
       },
@@ -168,7 +168,7 @@ export default function Map(props: MapProps) {
 
   // Konum takibini durdur
   const stopLocationTracking = () => {
-    console.log('Konum takibi durduruluyor...');
+    // Konum takibi durduruluyor
     
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -184,7 +184,7 @@ export default function Map(props: MapProps) {
     
     setIsTrackingLocation(false);
     isStartingRef.current = false;
-    console.log('Konum takibi durduruldu');
+    // Konum takibi durduruldu
   };
 
   // Kullanıcı konumunu güncelle ve marker ekle
@@ -286,26 +286,20 @@ export default function Map(props: MapProps) {
     const initializeMap = () => {
       // mapRef'in DOM'a bağlanmasını bekle
       if (!mapRef.current) {
-        console.log('mapRef not ready, retrying...');
+        // mapRef not ready, retrying
         setTimeout(initializeMap, 100);
         return;
       }
 
       // Google Maps API'nin tamamen yüklenmesini bekle
       if (!window.google || !window.google.maps || !window.google.maps.Map) {
-        console.log('Google Maps API not ready, retrying...');
+        // Google Maps API not ready, retrying
         setTimeout(initializeMap, 100);
         return;
       }
 
       try {
-        console.log('Initializing map with center:', mapCenter);
-        console.log('Map container dimensions:', {
-          width: mapRef.current.offsetWidth,
-          height: mapRef.current.offsetHeight,
-          style: mapRef.current.style.cssText
-        });
-        
+        // Initializing map with center
         const mapInstance = new window.google.maps.Map(mapRef.current, {
           center: mapCenter,
           zoom: zoom,
@@ -392,7 +386,7 @@ export default function Map(props: MapProps) {
         });
 
         setMap(mapInstance);
-        console.log('Map initialized successfully');
+        // Map initialized successfully
 
         // Harita tıklama olayı
         if (onMapClick) {
@@ -408,18 +402,18 @@ export default function Map(props: MapProps) {
 
         setIsLoading(false);
       } catch (err) {
-        console.error('Map initialization error:', err);
+        // Map initialization error
         setError('Harita başlatılırken hata oluştu');
         setIsLoading(false);
       }
     };
 
     loadGoogleMaps().then(() => {
-      console.log('Google Maps loaded, initializing map...');
+      // Google Maps loaded, initializing map
       // Script yüklendikten sonra haritayı başlat
       setTimeout(initializeMap, 100);
     }).catch((err) => {
-      console.error('Google Maps loading error:', err);
+      // Google Maps loading error
       setError(err.message);
       setIsLoading(false);
     });
@@ -428,7 +422,7 @@ export default function Map(props: MapProps) {
   // Harita hazır olduğunda otomatik konum takibini başlat
   useEffect(() => {
     if (map && showUserLocation && !isTrackingLocation && !isStartingRef.current) {
-      console.log('Harita hazır, otomatik konum takibi başlatılıyor...');
+      // Harita hazır, otomatik konum takibi başlatılıyor
       // 2 saniye bekle ve sonra konum izni iste
       setTimeout(() => {
         if (!isStartingRef.current && !isTrackingLocation) {
@@ -450,11 +444,11 @@ export default function Map(props: MapProps) {
     if (!map || !window.google) return;
 
     try {
-      console.log('Adding markers:', markers.length);
+      // Adding markers
       // Yeni marker'ları ekle
       markers.forEach(markerData => {
         if (!markerData || !markerData.position || typeof markerData.position.lat !== 'number' || typeof markerData.position.lng !== 'number') {
-          console.warn('Geçersiz marker data:', markerData);
+          // Geçersiz marker data
           return;
         }
 
@@ -503,7 +497,7 @@ export default function Map(props: MapProps) {
         });
       });
     } catch (err) {
-      console.error('Marker eklenirken hata:', err);
+      // Marker eklenirken hata
     }
   }, [map, markers, onMarkerClick]);
 

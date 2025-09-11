@@ -42,7 +42,6 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
         
         try {
-          console.log('🔍 Auth attempt for email:', credentials.email);
           
           // Önce normal users tablosundan kontrol et
           const result = await pool.query(
@@ -52,10 +51,8 @@ export const authOptions: NextAuthOptions = {
           const user = result.rows[0];
           
           if (user) {
-            console.log('🔍 User found in users table:', { id: user.id, role: user.role, email: user.email });
             const valid = await bcrypt.compare(credentials.password, user.password_hash);
             if (!valid) {
-              console.log('❌ Password invalid for user');
               return null;
             }
 
@@ -88,7 +85,6 @@ export const authOptions: NextAuthOptions = {
               }
             }
 
-            console.log('✅ User authenticated successfully:', { id: user.id, role: user.role, businessId, employeeId });
             return {
               id: user.id,
               name: user.name,
@@ -101,7 +97,6 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Eğer users tablosunda yoksa, çalışan tablosundan kontrol et
-          console.log('🔍 Checking employee table for email:', credentials.email);
           const employeeResult = await pool.query(
             `SELECT e.*, u.id as user_id, u.name, u.email, u.role, u.business_id, u.is_employee_active
              FROM employees e
@@ -112,20 +107,16 @@ export const authOptions: NextAuthOptions = {
           const employee = employeeResult.rows[0];
           
           if (employee) {
-            console.log('🔍 Employee found:', { id: employee.id, name: employee.name, login_email: employee.login_email, user_email: employee.email, is_active: employee.is_active, is_employee_active: employee.is_employee_active });
             const valid = await bcrypt.compare(credentials.password, employee.password_hash);
             if (!valid) {
-              console.log('❌ Password invalid for employee');
               return null;
             }
 
             // Çalışan hesabı aktif mi kontrol et
             if (!employee.is_employee_active) {
-              console.log('❌ Employee account is not active');
               return null;
             }
 
-            console.log('✅ Employee authenticated successfully:', { id: employee.user_id || employee.id, name: employee.name, role: 'employee' });
             return {
               id: employee.user_id || employee.id,
               name: employee.name,
@@ -137,11 +128,9 @@ export const authOptions: NextAuthOptions = {
             } as User & { role: string; businessId?: string; employeeId?: string; permissions?: any };
           }
           
-          console.log('❌ No user or employee found for email:', credentials.email);
 
           return null;
         } catch (error) {
-          console.error('Auth error:', error);
           return null;
         }
       },
@@ -154,25 +143,21 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        console.log('🔍 JWT callback - User data:', user);
         token.role = (user as any).role;
         token.id = user.id;
         token.businessId = (user as any).businessId; // İşletme ID'si eklendi
         token.employeeId = (user as any).employeeId; // Çalışan ID'si eklendi
         token.permissions = (user as any).permissions; // Çalışan izinleri eklendi
-        console.log('🔍 JWT callback - Token after update:', { role: token.role, id: token.id, businessId: token.businessId, employeeId: token.employeeId });
       }
       return token;
     },
     async session({ session, token }) {
-      console.log('🔍 Session callback - Token:', { role: token.role, id: token.id, businessId: token.businessId, employeeId: token.employeeId, permissions: token.permissions });
       if (token && session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
         session.user.businessId = token.businessId as string; // İşletme ID'si eklendi
         session.user.employeeId = token.employeeId as string; // Çalışan ID'si eklendi
         session.user.permissions = token.permissions as any; // Çalışan izinleri eklendi
-        console.log('🔍 Session callback - Session after update:', { role: session.user.role, id: session.user.id, businessId: session.user.businessId, employeeId: session.user.employeeId, permissions: session.user.permissions });
       }
       return session;
     },

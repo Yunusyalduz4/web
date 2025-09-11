@@ -16,7 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error initializing cron jobs:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Failed to initialize cron jobs',

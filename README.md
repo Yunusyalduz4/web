@@ -29,37 +29,50 @@ Modern, kullanıcı dostu berber randevu yönetim sistemi. İşletme sahipleri v
 - **Authentication**: NextAuth.js
 - **Email Service**: Resend
 - **Database**: PostgreSQL (Neon)
-- **Deployment**: Vercel
+- **Deployment**: VPS (PM2)
 - **UI Components**: Custom components with modern design
 - **Push Notifications**: Web Push API, Service Workers
 
 ## 🚀 Deployment
 
-### Vercel'e Deploy Etme
+### VPS'e Deploy Etme
 
-1. **Vercel CLI Kurulumu:**
+1. **VPS Kurulumu:**
 ```bash
-npm install -g vercel
+# VPS'de gerekli paketleri yükle
+sudo apt update
+sudo apt install -y nodejs npm nginx certbot python3-certbot-nginx
 ```
 
-2. **Projeyi Deploy Etme:**
+2. **Projeyi VPS'e Yükleme:**
 ```bash
-vercel
+# Proje dosyalarını VPS'e kopyala
+git clone <repository-url> /var/www/kuado
+cd /var/www/kuado
+npm install
 ```
 
 3. **Environment Variables Ayarlama:**
-Vercel dashboard'da aşağıdaki environment variables'ları ekleyin:
+`.env.local` dosyası oluşturun:
 
 ```env
 DATABASE_URL=your-postgresql-connection-string
-NEXTAUTH_URL=https://your-app.vercel.app
+NEXTAUTH_URL=https://randevuo.com
 NEXTAUTH_SECRET=your-secret-key
+NEXT_PUBLIC_APP_URL=https://randevuo.com
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
 VAPID_PRIVATE_KEY=your-vapid-private-key
 VAPID_EMAIL=your-email@example.com
 RESEND_API_KEY=your-resend-api-key
-RANDEVUO_DOMAIN=randevuo.com
+```
+
+4. **PM2 ile Çalıştırma:**
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
 ```
 
 ### Database Setup

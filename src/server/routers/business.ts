@@ -274,8 +274,6 @@ export const businessRouter = t.router({
   createEmployee: t.procedure.use(isApprovedBusiness)
     .input(employeeSchema)
     .mutation(async ({ input }) => {
-      console.log('🔍 createEmployee input:', input);
-      console.log('🔍 businessId type:', typeof input.businessId, 'value:', input.businessId);
       
       // Default permissions if not provided
       const defaultPermissions = {
@@ -374,7 +372,6 @@ export const businessRouter = t.router({
     }))
     .mutation(async ({ input }) => {
       try {
-        console.log('🔄 Update availability input:', JSON.stringify(input, null, 2));
         
         // Aynı gün için başka bir müsaitlik var mı kontrol et (kendi kaydı hariç)
         const existingAvailability = await pool.query(
@@ -394,10 +391,8 @@ export const businessRouter = t.router({
           [input.day_of_week, input.start_time, input.end_time, input.id, input.employeeId]
         );
         
-        console.log('✅ Update successful:', result.rows[0]);
         return result.rows[0];
       } catch (error) {
-        console.error('❌ Update error:', error);
         throw error;
       }
     }),
@@ -505,7 +500,6 @@ export const businessRouter = t.router({
         
         return result.rows[0];
       } catch (error) {
-        console.error('getBusinessByUserId error:', error);
         if (error instanceof TRPCError) {
           throw error;
         }
@@ -534,7 +528,6 @@ export const businessRouter = t.router({
         
         return result.rows[0];
       } catch (error) {
-        console.error('getMyBusiness error:', error);
         if (error instanceof TRPCError) {
           throw error;
         }

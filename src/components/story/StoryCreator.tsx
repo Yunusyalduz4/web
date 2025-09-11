@@ -151,7 +151,6 @@ export default function StoryCreator({
         throw new Error(errorData.error || 'Hikaye yayınlanamadı');
       }
     } catch (error) {
-      console.error('Hikaye yayınlama hatası:', error);
       setUploadError(error instanceof Error ? error.message : 'Hikaye yayınlama hatası');
     } finally {
       setIsPublishing(false);

@@ -28,14 +28,13 @@ export default function NotificationsButton({ userType }: NotificationsButtonPro
         setUnreadCount(data.unreadCount || 0);
       } else {
         const errorData = await response.json();
-        console.error('Notifications API error:', {
+        console.error('Failed to fetch unread count:', {
           status: response.status,
           statusText: response.statusText,
           error: errorData
         });
       }
     } catch (error) {
-      console.error('Unread count fetch error:', error);
     }
   };
 

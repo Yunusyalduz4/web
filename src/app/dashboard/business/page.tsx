@@ -63,32 +63,25 @@ export default function BusinessDashboard() {
   useEffect(() => {
     setAppointmentCallbacks({
       onAppointmentCreated: () => {
-        console.log('🔄 İşletme - Randevu oluşturuldu - liste güncelleniyor');
         refetchAppointments();
       },
       onAppointmentUpdated: () => {
-        console.log('🔄 İşletme - Randevu güncellendi - liste güncelleniyor');
         refetchAppointments();
       },
       onAppointmentCancelled: () => {
-        console.log('🔄 İşletme - Randevu iptal edildi - liste güncelleniyor');
         refetchAppointments();
       },
       onAppointmentCompleted: () => {
-        console.log('🔄 İşletme - Randevu tamamlandı - liste güncelleniyor');
         refetchAppointments();
       }
     });
 
     setBusinessCallbacks({
       onBusinessUpdated: () => {
-        console.log('🔄 İşletme bilgileri güncellendi');
       },
       onServiceUpdated: () => {
-        console.log('🔄 Hizmetler güncellendi');
       },
       onEmployeeUpdated: () => {
-        console.log('🔄 Çalışanlar güncellendi');
       }
     });
   }, [setAppointmentCallbacks, setBusinessCallbacks, refetchAppointments]);

@@ -168,7 +168,6 @@ export default function BusinessDetailPage() {
       await likeStoryMutation.mutateAsync({ storyId });
       refetchStories(); // Hikayeleri yenile
     } catch (error) {
-      console.error('Hikaye beğeni hatası:', error);
     }
   };
 
@@ -180,7 +179,6 @@ export default function BusinessDetailPage() {
         deviceType: 'mobile' // veya cihaz tespiti yapılabilir
       });
     } catch (error) {
-      console.error('Hikaye görüntüleme hatası:', error);
     }
   };
 

@@ -90,7 +90,6 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     const batchRefresh = () => {
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
-        console.log('🔄 Batch refresh yapılıyor...');
         refetchWeeklySlots();
         if (customDate) {
           refetchCustomDate();
@@ -102,7 +101,6 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
     // Randevu durumu güncellendiğinde slot'ları yenile
     const handleAppointmentStatusUpdate = (data: any) => {
-      console.log('🔔 Randevu durumu güncellendi:', data);
       if (data.businessId === businessId) {
         batchRefresh();
       }
@@ -110,7 +108,6 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
     // Randevu oluşturulduğunda slot'ları yenile
     const handleAppointmentCreated = (data: any) => {
-      console.log('🔔 Yeni randevu oluşturuldu:', data);
       if (data.businessId === businessId) {
         batchRefresh();
       }
@@ -145,31 +142,22 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
       setSelectedSlotData(null);
       
       // Slot verilerini yenile
-      console.log('Randevu oluşturuldu, slot verileri yenileniyor...');
       
       // Weekly slots'ı yenile
       if (weeklySlots) {
         refetchWeeklySlots();
-        console.log('Weekly slots yenilendi');
       }
       
       // Özel tarih seçimi varsa onu da yenile
       if (showCustomDate) {
         refetchCustomDate();
-        console.log('Custom date slots yenilendi');
       }
 
       // Parent component'e appointments'ı yenilemesi için event gönder
       window.dispatchEvent(new CustomEvent('refreshAppointments', { detail: { businessId } }));
-      console.log('Appointments yenileme event\'i gönderildi');
     },
     onError: (error) => {
-      console.error('Manuel randevu oluşturma hatası:', error);
-      console.error('Hata detayları:', {
-        code: error.data?.code,
-        message: error.message,
-        data: error.data
-      });
+      // Manuel randevu oluşturma hatası
       alert(`Randevu oluşturulurken hata oluştu:\n\nKod: ${error.data?.code || 'Bilinmiyor'}\nMesaj: ${error.message}`);
     }
   });
@@ -195,7 +183,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         setSelectedDate(null);
       }
     } catch (error) {
-      console.error('Custom date slots fetch error:', error);
+      // Custom date slots fetch error
     }
   };
 
@@ -780,25 +768,18 @@ function ManualAppointmentModal({
 
   // Seçili çalışanın verebileceği hizmetleri filtrele
   const availableServices = useMemo(() => {
-    console.log('🔍 availableServices - services:', services);
-    console.log('🔍 availableServices - selectedEmployee:', formData.selectedEmployee);
-    console.log('🔍 availableServices - employees:', employees);
     
     if (!services || !formData.selectedEmployee) return services;
     
     const selectedEmployee = employees.find((emp: any) => emp.id === formData.selectedEmployee);
-    console.log('🔍 availableServices - selectedEmployee found:', selectedEmployee);
-    console.log('🔍 availableServices - selectedEmployee.services:', selectedEmployee?.services);
     
     if (!selectedEmployee || !selectedEmployee.services) return [];
     
     // Çalışanın verebileceği hizmet ID'lerini al
     const employeeServiceIds = selectedEmployee.services.map((service: any) => service.id);
-    console.log('🔍 availableServices - employeeServiceIds:', employeeServiceIds);
     
     // Sadece çalışanın verebileceği hizmetleri döndür
     const filteredServices = services.filter((service: any) => employeeServiceIds.includes(service.id));
-    console.log('🔍 availableServices - filteredServices:', filteredServices);
     
     return filteredServices;
   }, [services, formData.selectedEmployee, employees]);
@@ -850,7 +831,6 @@ function ManualAppointmentModal({
       notes: formData.notes.trim() || undefined
     };
 
-    console.log('Gönderilen veri:', appointmentData);
     onCreateAppointment(appointmentData);
   };
 

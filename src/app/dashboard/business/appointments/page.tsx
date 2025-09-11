@@ -7,6 +7,7 @@ import { skipToken } from '@tanstack/react-query';
 import { useRealTimeAppointments } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 import { useSocket } from '../../../../hooks/useSocket';
+import RescheduleModal from '../../../../components/RescheduleModal';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -73,6 +74,35 @@ export default function BusinessAppointmentsPage() {
   const [optimisticAppointments, setOptimisticAppointments] = useState<any[]>([]);
   const [updatingAppointmentId, setUpdatingAppointmentId] = useState<string | null>(null);
 
+  // Reschedule modal state
+  const [rescheduleModal, setRescheduleModal] = useState<{
+    isOpen: boolean;
+    appointment: any;
+  }>({
+    isOpen: false,
+    appointment: null
+  });
+
+  // Bekleyen erteleme isteklerini getir
+  const { data: pendingRescheduleRequests, refetch: refetchRescheduleRequests, isLoading: isLoadingRequests, error: requestsError } = trpc.reschedule.getBusinessPendingRescheduleRequests.useQuery();
+  
+  // Debug log'ları kaldırıldı
+  
+  // Erteleme isteği onaylama/reddetme mutations
+  const approveRescheduleMutation = trpc.reschedule.approveRescheduleRequest.useMutation({
+    onSuccess: () => {
+      refetchRescheduleRequests();
+      appointmentsQuery.refetch();
+    }
+  });
+  
+  const rejectRescheduleMutation = trpc.reschedule.approveRescheduleRequest.useMutation({
+    onSuccess: () => {
+      refetchRescheduleRequests();
+      appointmentsQuery.refetch();
+    }
+  });
+
   // Socket.IO hook'u
   const { isConnected, socket } = useSocket();
 
@@ -85,7 +115,6 @@ export default function BusinessAppointmentsPage() {
         // Debouncing - çok sık yenileme yapmasın
         clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => {
-          console.log('🔄 Appointments sayfasında randevular yenileniyor...');
           appointmentsQuery.refetch();
         }, 200); // 200ms debounce
       }
@@ -105,7 +134,6 @@ export default function BusinessAppointmentsPage() {
 
     // Randevu durumu güncellendiğinde UI'ı hemen yenile
     const handleAppointmentStatusUpdate = (data: any) => {
-      console.log('🔔 Randevu durumu güncellendi:', data);
       if (data.businessId === businessId) {
         // Optimistic update varsa temizle
         setOptimisticAppointments([]);
@@ -116,7 +144,6 @@ export default function BusinessAppointmentsPage() {
 
     // Randevu oluşturulduğunda UI'ı hemen yenile
     const handleAppointmentCreated = (data: any) => {
-      console.log('🔔 Yeni randevu oluşturuldu:', data);
       if (data.businessId === businessId) {
         // Optimistic update varsa temizle
         setOptimisticAppointments([]);
@@ -140,7 +167,7 @@ export default function BusinessAppointmentsPage() {
   useEffect(() => {
     if (appointments && appointments.length > 0) {
       // Randevular değiştiğinde UI'ı güncelle
-      console.log('📅 Randevular güncellendi, UI yenileniyor...');
+      // Randevular güncellendi, UI yenileniyor
     }
   }, [appointments]);
 
@@ -176,6 +203,24 @@ export default function BusinessAppointmentsPage() {
       setUpdatingAppointmentId(null);
       setError(err.message || 'Hata oluştu');
     }
+  };
+
+  const handleRescheduleClick = (appointment: any) => {
+    setRescheduleModal({
+      isOpen: true,
+      appointment: appointment
+    });
+  };
+
+  const handleRescheduleSubmitted = () => {
+    // Reschedule modal'ı kapat
+    setRescheduleModal({
+      isOpen: false,
+      appointment: null
+    });
+    
+    // Randevuları yenile
+    appointmentsQuery.refetch();
   };
 
   // Aktif randevuları hesapla (pending + confirmed) ve filtrele
@@ -285,6 +330,97 @@ export default function BusinessAppointmentsPage() {
           </div>
         </div>
         
+        {/* Debug Bilgisi */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-3 p-2 bg-gray-100 rounded text-xs">
+            <div>Loading: {isLoadingRequests ? 'Yes' : 'No'}</div>
+            <div>Error: {requestsError ? 'Yes' : 'No'}</div>
+            <div>Data: {pendingRescheduleRequests ? pendingRescheduleRequests.length : 'null'}</div>
+            <div>Business ID: {businessId}</div>
+            <div>User Role: {session?.user?.role}</div>
+          </div>
+        )}
+
+        {/* Bekleyen Erteleme İstekleri - Mobile Optimized */}
+        {isLoadingRequests && (
+          <div className="mt-3 p-4 bg-gray-50 rounded-2xl text-center">
+            <div className="text-sm text-gray-600">Erteleme istekleri yükleniyor...</div>
+          </div>
+        )}
+        
+        {requestsError && (
+          <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+            <div className="text-sm text-red-800">Hata: {requestsError.message}</div>
+          </div>
+        )}
+        
+        {pendingRescheduleRequests && pendingRescheduleRequests.length > 0 && (
+          <div className="mt-3 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-bold text-orange-900">Bekleyen Erteleme İstekleri</div>
+                <div className="text-[10px] sm:text-xs text-orange-700">{pendingRescheduleRequests.length} istek</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {pendingRescheduleRequests.slice(0, 3).map((request: any) => (
+                <div key={request.id} className="bg-white/80 border border-orange-200 rounded-xl p-2 sm:p-3">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">
+                      {request.user_name || 'Müşteri'}
+                    </div>
+                    <span className="text-[9px] sm:text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-lg">
+                      Bekliyor
+                    </span>
+                  </div>
+                  <div className="text-[9px] sm:text-xs text-gray-600 mb-2">
+                    <div>Eski: {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { 
+                      day: '2-digit', 
+                      month: 'short', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    }).format(new Date(request.old_appointment_datetime))}</div>
+                    <div>Yeni: {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { 
+                      day: '2-digit', 
+                      month: 'short', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    }).format(new Date(request.new_appointment_datetime))}</div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => approveRescheduleMutation.mutate({ requestId: String(request.id), action: 'approve' })}
+                      disabled={approveRescheduleMutation.isPending || rejectRescheduleMutation.isPending}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-green-500 text-white text-[9px] sm:text-xs font-medium hover:bg-green-600 active:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Onayla
+                    </button>
+                    <button
+                      onClick={() => rejectRescheduleMutation.mutate({ requestId: String(request.id), action: 'reject' })}
+                      disabled={approveRescheduleMutation.isPending || rejectRescheduleMutation.isPending}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-red-500 text-white text-[9px] sm:text-xs font-medium hover:bg-red-600 active:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Reddet
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {pendingRescheduleRequests.length > 3 && (
+                <div className="text-center">
+                  <button className="text-[10px] sm:text-xs text-orange-600 font-medium hover:text-orange-700">
+                    +{pendingRescheduleRequests.length - 3} daha fazla istek
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Aktif Randevular Sayısı - Mobile Optimized */}
         <div className="mt-3 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-white/50 text-xs sm:text-sm font-semibold text-gray-900">
@@ -552,28 +688,38 @@ export default function BusinessAppointmentsPage() {
                 </>
               )}
               {a.status === 'confirmed' && (
-                <button 
-                  className={`w-full flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] ${
-                    updatingAppointmentId === a.id 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-indigo-500 text-white hover:bg-indigo-600 active:bg-indigo-700 shadow-md hover:shadow-lg active:shadow-xl'
-                  }`} 
-                  onClick={() => handleStatus(a.id, 'completed')}
-                  disabled={updatingAppointmentId === a.id}
-                >
-                  {updatingAppointmentId === a.id ? (
-                    <>
-                      <span className="inline-block w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Güncelleniyor...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      <span className="hidden xs:inline">Tamamlandı Olarak İşaretle</span>
-                      <span className="xs:hidden">Tamamla</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex gap-1.5 sm:gap-2">
+                  <button 
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] ${
+                      updatingAppointmentId === a.id 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-indigo-500 text-white hover:bg-indigo-600 active:bg-indigo-700 shadow-md hover:shadow-lg active:shadow-xl'
+                    }`} 
+                    onClick={() => handleStatus(a.id, 'completed')}
+                    disabled={updatingAppointmentId === a.id}
+                  >
+                    {updatingAppointmentId === a.id ? (
+                      <>
+                        <span className="inline-block w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span>Güncelleniyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span className="hidden xs:inline">Tamamlandı Olarak İşaretle</span>
+                        <span className="xs:hidden">Tamamla</span>
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg active:shadow-xl"
+                    onClick={() => handleRescheduleClick(a)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span className="hidden xs:inline">Ertele</span>
+                    <span className="xs:hidden">📅</span>
+                  </button>
+                </div>
               )}
               {a.status === 'completed' && (
                 <div className="w-full flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-green-100 text-green-800 text-[10px] sm:text-sm font-semibold">
@@ -857,6 +1003,15 @@ export default function BusinessAppointmentsPage() {
           </div>
         </div>
       )}
+
+      {/* Reschedule Modal */}
+      <RescheduleModal
+        isOpen={rescheduleModal.isOpen}
+        onClose={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
+        appointment={rescheduleModal.appointment}
+        userRole={session?.user?.role === 'business' ? 'business' : 'employee'}
+        onRescheduleSubmitted={handleRescheduleSubmitted}
+      />
     </main>
   );
 }

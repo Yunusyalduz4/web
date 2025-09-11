@@ -40,16 +40,13 @@ export default function UserBusinessesPage() {
   useEffect(() => {
     setBusinessCallbacks({
       onBusinessUpdated: () => {
-        console.log('🔄 İşletme listesi güncellendi');
         // İşletme listesini yenile
         window.location.reload();
       },
       onServiceUpdated: () => {
-        console.log('🔄 Hizmetler güncellendi');
         window.location.reload();
       },
       onEmployeeUpdated: () => {
-        console.log('🔄 Çalışanlar güncellendi');
         window.location.reload();
       }
     });

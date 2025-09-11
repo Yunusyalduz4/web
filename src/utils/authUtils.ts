@@ -19,7 +19,6 @@ export const handleLogout = async () => {
       callbackUrl: '/login'
     });
   } catch (error) {
-    console.error('Logout error:', error);
     // Hata olsa bile local storage'ı temizle
     clearUserCredentials();
   }
@@ -36,7 +35,7 @@ export const hasStoredCredentials = (): boolean => {
       return parsed.rememberMe && parsed.email && parsed.password;
     }
   } catch (error) {
-    console.error('Error checking stored credentials:', error);
+    // Silent error handling
   }
   
   return false;

@@ -35,7 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('Mark notification as read API error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

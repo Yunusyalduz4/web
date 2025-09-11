@@ -9,7 +9,6 @@ export const analyticsRouter = t.router({
     .use(isEmployeeOrBusiness)
     .query(async ({ ctx }) => {
       try {
-        console.log('Analytics getBusinessAnalytics - ctx.user:', ctx.user);
         
         if (!ctx.user || !ctx.user.id) {
           throw new Error('Kullanıcı bilgisi bulunamadı');
@@ -330,7 +329,6 @@ export const analyticsRouter = t.router({
         }
       };
       } catch (error) {
-        console.error('Analytics getBusinessAnalytics error:', error);
         throw new Error(`Analytics verisi alınamadı: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
       }
     }),
@@ -340,7 +338,6 @@ export const analyticsRouter = t.router({
     .use(isEmployeeOrBusiness)
     .query(async ({ ctx }) => {
       try {
-        console.log('Analytics getServiceAnalytics - ctx.user:', ctx.user);
         
         if (!ctx.user || !ctx.user.id) {
           throw new Error('Kullanıcı bilgisi bulunamadı');
@@ -423,7 +420,6 @@ export const analyticsRouter = t.router({
           : '0.0'
       }));
       } catch (error) {
-        console.error('Analytics getServiceAnalytics error:', error);
         throw new Error(`Hizmet analitikleri alınamadı: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
       }
     }),
@@ -433,7 +429,6 @@ export const analyticsRouter = t.router({
     .use(isEmployeeOrBusiness)
     .query(async ({ ctx }) => {
       try {
-        console.log('Analytics getEmployeeAnalytics - ctx.user:', ctx.user);
         
         if (!ctx.user || !ctx.user.id) {
           throw new Error('Kullanıcı bilgisi bulunamadı');
@@ -519,7 +514,6 @@ export const analyticsRouter = t.router({
           : '0.0'
       }));
       } catch (error) {
-        console.error('Analytics getEmployeeAnalytics error:', error);
         throw new Error(`Çalışan analitikleri alınamadı: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
       }
     }),

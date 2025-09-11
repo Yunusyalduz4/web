@@ -24,13 +24,7 @@ export function useUserPushNotifications() {
       'Notification' in window &&
       window.isSecureContext; // PWA için HTTPS gerekli
     
-    console.log('Push notification support check:', {
-      serviceWorker: 'serviceWorker' in navigator,
-      pushManager: 'PushManager' in window,
-      notification: 'Notification' in window,
-      secureContext: window.isSecureContext,
-      isSupported
-    });
+    // Push notification support check
     
     setIsSupported(isSupported);
   }, []);
@@ -47,7 +41,7 @@ export function useUserPushNotifications() {
           setIsSubscribed(!!subscription);
         }
       } catch (err) {
-        console.error('Check subscription status error:', err);
+        // Check subscription status error
       }
     };
 
@@ -70,12 +64,12 @@ export function useUserPushNotifications() {
         return false;
       }
 
-      console.log('Registering service worker for PWA...');
+      // Registering service worker for PWA
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/'
       });
       await navigator.serviceWorker.ready;
-      console.log('Service worker registered successfully:', registration);
+      // Service worker registered successfully
 
       // Convert VAPID public key to Uint8Array
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BG1LYEA21rncGSSNwQGDVz2XJf55gexHy0BIeoUhpXrMwcucDVYI6eBVPqVUvT29I__O7crCYqaXEp4ghNirZeY';
@@ -83,8 +77,7 @@ export function useUserPushNotifications() {
         throw new Error('VAPID public key not found in environment variables');
       }
       
-      console.log('VAPID Public Key:', vapidPublicKey);
-      console.log('VAPID Key Length:', vapidPublicKey.length);
+      // VAPID Public Key processing
 
       const urlBase64ToUint8Array = (base64String: string) => {
         try {
@@ -93,8 +86,7 @@ export function useUserPushNotifications() {
             throw new Error('Invalid VAPID public key format');
           }
 
-          console.log('Original VAPID key:', base64String);
-          console.log('Key length:', base64String.length);
+          // Original VAPID key processing
 
           // String'i temizle - tüm whitespace karakterlerini kaldır
           let cleanKey = base64String.replace(/\s+/g, '').trim();
@@ -109,15 +101,11 @@ export function useUserPushNotifications() {
           const padding = '='.repeat((4 - cleanKey.length % 4) % 4);
           cleanKey = cleanKey + padding;
           
-          console.log('Cleaned VAPID key:', cleanKey);
-          console.log('Cleaned key length:', cleanKey.length);
+          // Cleaned VAPID key processing
           
           // Base64 formatını kontrol et
           if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanKey)) {
-            console.error('Invalid base64 characters found:', cleanKey);
-            console.error('Invalid characters at positions:', 
-              [...cleanKey].map((char, i) => !/^[A-Za-z0-9+/=]$/.test(char) ? `${char}(${i})` : null).filter(Boolean)
-            );
+            // Invalid base64 characters found
             throw new Error('Invalid base64 format in VAPID public key');
           }
 
@@ -128,16 +116,12 @@ export function useUserPushNotifications() {
             for (let i = 0; i < rawData.length; ++i) {
               outputArray[i] = rawData.charCodeAt(i);
             }
-            console.log('VAPID key conversion successful, output length:', outputArray.length);
+            // VAPID key conversion successful
             return outputArray;
           } catch (atobError) {
-            console.error('atob error:', atobError);
-            console.error('Failed to decode key:', cleanKey);
             throw new Error('Failed to decode base64: ' + (atobError instanceof Error ? atobError.message : 'Unknown error'));
           }
         } catch (err) {
-          console.error('VAPID key conversion error:', err);
-          console.error('Original key:', base64String);
           throw new Error('Failed to convert VAPID public key: ' + (err instanceof Error ? err.message : 'Unknown error'));
         }
       };

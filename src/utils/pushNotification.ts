@@ -14,7 +14,7 @@ try {
     vapidKeys.privateKey
   );
 } catch (error) {
-  console.warn('VAPID keys not configured, push notifications disabled:', error);
+  // VAPID keys not configured, push notifications disabled
 }
 
 export interface PushSubscription {
@@ -47,20 +47,16 @@ export async function sendPushNotification(
     await webpush.sendNotification(subscription, pushPayload);
     return { success: true };
   } catch (error: any) {
-    console.error('Push notification error:', error);
-    
     // 410 hatası (expired subscription) ise subscription'ı sil
     if (error?.statusCode === 410) {
-      console.log('🗑️ Removing expired subscription...');
       try {
         const { pool } = await import('../server/db');
         await pool.query(
           'DELETE FROM push_subscriptions WHERE endpoint = $1',
           [subscription.endpoint]
         );
-        console.log('✅ Expired subscription removed');
       } catch (deleteError) {
-        console.error('❌ Error removing expired subscription:', deleteError);
+        // Expired subscription silme hatası
       }
     }
     
@@ -107,7 +103,6 @@ export async function sendNotificationToBusiness(
     // İşletme bildirimlerini veritabanına kaydet
     try {
       // Önce business_id'ye karşılık gelen owner_user_id'yi bul
-      console.log('Looking for business owner for businessId:', businessId);
       const businessUser = await pool.query(
         'SELECT owner_user_id FROM businesses WHERE id = $1',
         [businessId]
@@ -115,14 +110,11 @@ export async function sendNotificationToBusiness(
       
       if (businessUser.rows.length > 0) {
         const userId = businessUser.rows[0].owner_user_id;
-        console.log('Found business owner userId:', userId);
-        console.log('Saving notification:', { userId, body, type: data?.type || 'system' });
         
         await pool.query(
           'INSERT INTO notifications (user_id, message, read, type) VALUES ($1, $2, false, $3)',
           [userId, body, data?.type || 'system']
         );
-        console.log('Notification saved successfully');
         
         // WebSocket ile real-time bildirim gönder
         try {
@@ -140,12 +132,10 @@ export async function sendNotificationToBusiness(
             });
           }
         } catch (wsError) {
-          console.error('WebSocket business notification error:', wsError);
           // WebSocket hatası push notification'ı etkilemesin
         }
       }
     } catch (dbError) {
-      console.error('Database business notification save error:', dbError);
       // Push notification başarılı olsa bile veritabanı hatası loglanır
     }
 
@@ -156,7 +146,6 @@ export async function sendNotificationToBusiness(
       total: results.length
     };
   } catch (error) {
-    console.error('Send notification to business error:', error);
     return { success: false, error };
   }
 }
@@ -221,11 +210,9 @@ export async function sendNotificationToUser(
           });
         }
       } catch (wsError) {
-        console.error('WebSocket notification error:', wsError);
         // WebSocket hatası push notification'ı etkilemesin
       }
     } catch (dbError) {
-      console.error('Database user notification save error:', dbError);
       // Push notification başarılı olsa bile veritabanı hatası loglanır
     }
 
@@ -236,20 +223,16 @@ export async function sendNotificationToUser(
       total: results.length
     };
   } catch (error: any) {
-    console.error('Send notification to user error:', error);
-    
     // 410 hatası (expired subscription) ise subscription'ları temizle
     if (error?.statusCode === 410) {
-      console.log('🗑️ Cleaning up expired user subscriptions...');
       try {
         const { pool } = await import('../server/db');
         await pool.query(
           'DELETE FROM user_push_subscriptions WHERE user_id = $1',
           [userId]
         );
-        console.log('✅ Expired user subscriptions removed');
       } catch (deleteError) {
-        console.error('❌ Error removing expired user subscriptions:', deleteError);
+        // Expired user subscriptions silme hatası
       }
     }
     
@@ -332,7 +315,6 @@ export async function sendAppointmentStatusUpdateNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Appointment status update notification error:', error);
     return { success: false, error };
   }
 }
@@ -399,7 +381,6 @@ export async function sendNewAppointmentNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('New appointment notification error:', error);
     return { success: false, error };
   }
 }
@@ -438,7 +419,6 @@ export async function sendReviewNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Review notification error:', error);
     return { success: false, error };
   }
 }
@@ -497,7 +477,6 @@ export async function sendBusinessApprovalNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Business approval notification error:', error);
     return { success: false, error };
   }
 }
@@ -514,7 +493,6 @@ export async function sendEmployeeAppointmentNotification(
 ) {
   try {
     // Çalışanlar için ayrı user_id sistemi yok, bu yüzden sadece işletme sahibine bildirim gönder
-    console.log('Employee notification skipped - no user_id in employees table');
     
     // İşletme sahibine bildirim gönder
     const { pool } = await import('../server/db');
@@ -556,7 +534,6 @@ export async function sendEmployeeAppointmentNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Employee appointment notification error:', error);
     return { success: false, error };
   }
 }
@@ -583,7 +560,6 @@ export async function sendFavoriteBusinessNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Favorite business notification error:', error);
     return { success: false, error };
   }
 }
@@ -608,7 +584,317 @@ export async function sendSystemNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('System notification error:', error);
+    return { success: false, error };
+  }
+}
+
+// ===== RANDEVU ERTELEME BİLDİRİMLERİ =====
+
+// Randevu erteleme isteği bildirimi
+export async function sendRescheduleRequestNotification(
+  appointmentId: number,
+  businessId: number,
+  userId: number | null,
+  employeeId: number | null,
+  requestedBy: 'user' | 'business' | 'employee',
+  oldDateTime: string,
+  newDateTime: string,
+  businessName: string,
+  customerName?: string,
+  employeeName?: string,
+  requestReason?: string
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    // Tarihleri formatla
+    const oldDate = new Date(oldDateTime);
+    const newDate = new Date(newDateTime);
+    const formattedOldDate = oldDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const formattedNewDate = newDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Müşteri isteği yaptıysa işletme ve çalışana bildir
+    if (requestedBy === 'user') {
+      // İşletmeye bildirim
+      await sendNotificationToBusiness(
+        businessId.toString(),
+        '📅 Randevu Erteleme İsteği',
+        `${customerName || 'Müşteri'} adlı müşteri randevusunu ${formattedOldDate} tarihinden ${formattedNewDate} tarihine ertelemek istiyor.${requestReason ? ` Sebep: ${requestReason}` : ''}`,
+        {
+          type: 'reschedule_request',
+          appointmentId,
+          businessId,
+          requestedBy,
+          oldDateTime: formattedOldDate,
+          newDateTime: formattedNewDate,
+          requestReason
+        }
+      );
+
+      // Çalışana bildirim (eğer varsa)
+      if (employeeId) {
+        // Çalışan için user_id bul
+        const employeeRes = await pool.query(
+          'SELECT user_id FROM employees WHERE id = $1',
+          [employeeId]
+        );
+        
+        if (employeeRes.rows.length > 0 && employeeRes.rows[0].user_id) {
+          await sendNotificationToUser(
+            employeeRes.rows[0].user_id.toString(),
+            '📅 Randevu Erteleme İsteği',
+            `${customerName || 'Müşteri'} adlı müşteri randevusunu ${formattedOldDate} tarihinden ${formattedNewDate} tarihine ertelemek istiyor.${requestReason ? ` Sebep: ${requestReason}` : ''}`,
+            {
+              type: 'reschedule_request',
+              appointmentId,
+              businessId,
+              requestedBy,
+              oldDateTime: formattedOldDate,
+              newDateTime: formattedNewDate,
+              requestReason
+            }
+          );
+        }
+      }
+    }
+    // İşletme/Çalışan isteği yaptıysa müşteriye bildir
+    else {
+      if (userId) {
+        await sendNotificationToUser(
+          userId.toString(),
+          '📅 Randevu Erteleme İsteği',
+          `${businessName} adlı işletme randevunuzu ${formattedOldDate} tarihinden ${formattedNewDate} tarihine ertelemek istiyor.${requestReason ? ` Sebep: ${requestReason}` : ''}`,
+          {
+            type: 'reschedule_request',
+            appointmentId,
+            businessId,
+            requestedBy,
+            oldDateTime: formattedOldDate,
+            newDateTime: formattedNewDate,
+            requestReason
+          }
+        );
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error };
+  }
+}
+
+// Randevu erteleme onaylandı bildirimi
+export async function sendRescheduleApprovedNotification(
+  appointmentId: number,
+  businessId: number,
+  userId: number | null,
+  employeeId: number | null,
+  approvedBy: 'user' | 'business' | 'employee',
+  oldDateTime: string,
+  newDateTime: string,
+  businessName: string,
+  customerName?: string,
+  employeeName?: string
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    // Tarihleri formatla
+    const oldDate = new Date(oldDateTime);
+    const newDate = new Date(newDateTime);
+    const formattedOldDate = oldDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const formattedNewDate = newDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Müşteri onayladıysa işletme ve çalışana bildir
+    if (approvedBy === 'user') {
+      // İşletmeye bildirim
+      await sendNotificationToBusiness(
+        businessId.toString(),
+        '✅ Randevu Erteleme Onaylandı',
+        `${customerName || 'Müşteri'} adlı müşteri randevu erteleme isteğinizi onayladı. Randevu ${formattedOldDate} tarihinden ${formattedNewDate} tarihine ertelendi.`,
+        {
+          type: 'reschedule_approved',
+          appointmentId,
+          businessId,
+          approvedBy,
+          oldDateTime: formattedOldDate,
+          newDateTime: formattedNewDate
+        }
+      );
+
+      // Çalışana bildirim (eğer varsa)
+      if (employeeId) {
+        const employeeRes = await pool.query(
+          'SELECT user_id FROM employees WHERE id = $1',
+          [employeeId]
+        );
+        
+        if (employeeRes.rows.length > 0 && employeeRes.rows[0].user_id) {
+          await sendNotificationToUser(
+            employeeRes.rows[0].user_id.toString(),
+            '✅ Randevu Erteleme Onaylandı',
+            `${customerName || 'Müşteri'} adlı müşteri randevu erteleme isteğinizi onayladı. Randevu ${formattedOldDate} tarihinden ${formattedNewDate} tarihine ertelendi.`,
+            {
+              type: 'reschedule_approved',
+              appointmentId,
+              businessId,
+              approvedBy,
+              oldDateTime: formattedOldDate,
+              newDateTime: formattedNewDate
+            }
+          );
+        }
+      }
+    }
+    // İşletme/Çalışan onayladıysa müşteriye bildir
+    else {
+      if (userId) {
+        await sendNotificationToUser(
+          userId.toString(),
+          '✅ Randevu Erteleme Onaylandı',
+          `${businessName} adlı işletme randevu erteleme isteğinizi onayladı. Randevunuz ${formattedOldDate} tarihinden ${formattedNewDate} tarihine ertelendi.`,
+          {
+            type: 'reschedule_approved',
+            appointmentId,
+            businessId,
+            approvedBy,
+            oldDateTime: formattedOldDate,
+            newDateTime: formattedNewDate
+          }
+        );
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error };
+  }
+}
+
+// Randevu erteleme reddedildi bildirimi
+export async function sendRescheduleRejectedNotification(
+  appointmentId: number,
+  businessId: number,
+  userId: number | null,
+  employeeId: number | null,
+  rejectedBy: 'user' | 'business' | 'employee',
+  oldDateTime: string,
+  newDateTime: string,
+  businessName: string,
+  customerName?: string,
+  employeeName?: string,
+  rejectionReason?: string
+) {
+  try {
+    const { pool } = await import('../server/db');
+    
+    // Tarihleri formatla
+    const oldDate = new Date(oldDateTime);
+    const newDate = new Date(newDateTime);
+    const formattedOldDate = oldDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const formattedNewDate = newDate.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Müşteri reddettiyse işletme ve çalışana bildir
+    if (rejectedBy === 'user') {
+      // İşletmeye bildirim
+      await sendNotificationToBusiness(
+        businessId.toString(),
+        '❌ Randevu Erteleme Reddedildi',
+        `${customerName || 'Müşteri'} adlı müşteri randevu erteleme isteğinizi reddetti. Randevu ${formattedOldDate} tarihinde kalacak.${rejectionReason ? ` Sebep: ${rejectionReason}` : ''}`,
+        {
+          type: 'reschedule_rejected',
+          appointmentId,
+          businessId,
+          rejectedBy,
+          oldDateTime: formattedOldDate,
+          newDateTime: formattedNewDate,
+          rejectionReason
+        }
+      );
+
+      // Çalışana bildirim (eğer varsa)
+      if (employeeId) {
+        const employeeRes = await pool.query(
+          'SELECT user_id FROM employees WHERE id = $1',
+          [employeeId]
+        );
+        
+        if (employeeRes.rows.length > 0 && employeeRes.rows[0].user_id) {
+          await sendNotificationToUser(
+            employeeRes.rows[0].user_id.toString(),
+            '❌ Randevu Erteleme Reddedildi',
+            `${customerName || 'Müşteri'} adlı müşteri randevu erteleme isteğinizi reddetti. Randevu ${formattedOldDate} tarihinde kalacak.${rejectionReason ? ` Sebep: ${rejectionReason}` : ''}`,
+            {
+              type: 'reschedule_rejected',
+              appointmentId,
+              businessId,
+              rejectedBy,
+              oldDateTime: formattedOldDate,
+              newDateTime: formattedNewDate,
+              rejectionReason
+            }
+          );
+        }
+      }
+    }
+    // İşletme/Çalışan reddettiyse müşteriye bildir
+    else {
+      if (userId) {
+        await sendNotificationToUser(
+          userId.toString(),
+          '❌ Randevu Erteleme Reddedildi',
+          `${businessName} adlı işletme randevu erteleme isteğinizi reddetti. Randevunuz ${formattedOldDate} tarihinde kalacak.${rejectionReason ? ` Sebep: ${rejectionReason}` : ''}`,
+          {
+            type: 'reschedule_rejected',
+            appointmentId,
+            businessId,
+            rejectedBy,
+            oldDateTime: formattedOldDate,
+            newDateTime: formattedNewDate,
+            rejectionReason
+          }
+        );
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
     return { success: false, error };
   }
 }

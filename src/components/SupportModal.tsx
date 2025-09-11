@@ -55,7 +55,6 @@ export default function SupportModal({ isOpen, onClose, userType }: SupportModal
         setSubmitStatus('error');
       }
     } catch (error) {
-      console.error('Support form error:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

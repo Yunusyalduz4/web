@@ -103,7 +103,6 @@ export default function StoryViewer({
       const data = await response.json();
       setIsLiked(data.result?.data?.isLiked || false);
     } catch (error) {
-      console.error('Beğeni durumu kontrol hatası:', error);
     } finally {
       setIsCheckingLike(false);
     }
@@ -117,7 +116,6 @@ export default function StoryViewer({
     } catch (error) {
       // Hata durumunda state'i geri al
       setIsLiked(!isLiked);
-      console.error('Beğeni hatası:', error);
     }
   };
 
