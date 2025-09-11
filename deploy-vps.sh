@@ -49,9 +49,20 @@ npm run build
 # PM2 ile uygulamayı başlat
 echo "🔄 PM2 ile uygulama başlatılıyor..."
 npm install -g pm2
-pm2 start npm --name "kuado" -- start
+
+# Eski process'leri durdur
+pm2 stop randevuo 2>/dev/null || true
+pm2 delete randevuo 2>/dev/null || true
+
+# Yeni process'i başlat
+pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
+
+# Cron job'ları başlat (server hazır olduktan sonra)
+echo "⏰ Cron job'ları başlatılıyor..."
+sleep 15
+curl -X GET http://localhost:3000/api/startup || echo "⚠️ Cron job başlatma hatası (normal olabilir)"
 
 # Nginx konfigürasyonu
 echo "🌐 Nginx konfigürasyonu oluşturuluyor..."
