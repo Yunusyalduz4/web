@@ -59,49 +59,40 @@ export default function AdminDashboard() {
   useEffect(() => {
     setAppointmentCallbacks({
       onAppointmentCreated: () => {
-        console.log('🔄 Admin - Randevu oluşturuldu - veriler güncelleniyor');
         // Tüm admin verilerini yenile
         window.location.reload(); // Admin için basit yenileme
       },
       onAppointmentUpdated: () => {
-        console.log('🔄 Admin - Randevu güncellendi - veriler güncelleniyor');
         window.location.reload();
       },
       onAppointmentCancelled: () => {
-        console.log('🔄 Admin - Randevu iptal edildi - veriler güncelleniyor');
         window.location.reload();
       }
     });
 
     setReviewCallbacks({
       onReviewCreated: () => {
-        console.log('🔄 Admin - Yorum oluşturuldu - veriler güncelleniyor');
         window.location.reload();
       },
       onReviewReplied: () => {
-        console.log('🔄 Admin - Yorum yanıtlandı - veriler güncelleniyor');
         window.location.reload();
       }
     });
 
     setBusinessCallbacks({
       onBusinessUpdated: () => {
-        console.log('🔄 Admin - İşletme güncellendi - veriler güncelleniyor');
         window.location.reload();
       },
       onServiceUpdated: () => {
-        console.log('🔄 Admin - Hizmet güncellendi - veriler güncelleniyor');
         window.location.reload();
       },
       onEmployeeUpdated: () => {
-        console.log('🔄 Admin - Çalışan güncellendi - veriler güncelleniyor');
         window.location.reload();
       }
     });
 
     setNotificationCallbacks({
       onNotificationSent: () => {
-        console.log('🔄 Admin - Bildirim gönderildi - veriler güncelleniyor');
         window.location.reload();
       }
     });
@@ -1060,7 +1051,6 @@ function PendingApprovalsPanel({ data, isLoading }: { data: any[] | undefined; i
       utils.admin.getPendingApprovals.invalidate();
       utils.admin.listBusinesses.invalidate();
     } catch (error) {
-      console.error('Approval error:', error);
     }
   };
 
@@ -1337,7 +1327,6 @@ function SliderApprovalPanel({ pendingBusinessImages, isLoading }: { pendingBusi
       utils.admin.getStats.invalidate();
       setApprovalNote('');
     } catch (error) {
-      console.error('Business image approval error:', error);
     }
   };
 
@@ -1450,7 +1439,6 @@ function ReviewApprovalPanel({ pendingReviews, pendingReplies, isLoading }: { pe
       utils.admin.getStats.invalidate();
       setApprovalNote('');
     } catch (error) {
-      console.error('Review approval error:', error);
     }
   };
 
@@ -1461,7 +1449,6 @@ function ReviewApprovalPanel({ pendingReviews, pendingReplies, isLoading }: { pe
       utils.admin.getStats.invalidate();
       setApprovalNote('');
     } catch (error) {
-      console.error('Reply approval error:', error);
     }
   };
 

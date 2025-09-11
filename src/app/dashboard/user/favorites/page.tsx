@@ -58,13 +58,9 @@ export default function FavoritesPage() {
 
   const handleStoryLike = async (storyId: string) => {
     try {
-      console.log('Favorites: Beğeni işlemi başlatılıyor:', storyId);
       const result = await likeStoryMutation.mutateAsync({ storyId });
-      console.log('Favorites: Beğeni sonucu:', result);
       await refetchStories();
-      console.log('Favorites: Hikayeler yenilendi');
     } catch (error) {
-      console.error('Favorites: Hikaye beğeni hatası:', error);
     }
   };
 
@@ -75,7 +71,6 @@ export default function FavoritesPage() {
         deviceType: 'mobile'
       });
     } catch (error) {
-      console.error('Hikaye görüntüleme hatası:', error);
     }
   };
 

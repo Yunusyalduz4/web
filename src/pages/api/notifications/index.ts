@@ -17,10 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { userType, userId } = req.query;
     
-    console.log('Notifications API called:', { userType, userId, sessionUserId: session.user.id });
-    
     if (!userType || !userId || userId !== session.user.id) {
-      console.log('Invalid parameters:', { userType, userId, sessionUserId: session.user.id });
       return res.status(400).json({ error: 'Invalid parameters' });
     }
 
@@ -52,10 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid user type' });
     }
 
-    console.log('Executing query:', { query, params });
     const result = await pool.query(query, params);
     const notifications = result.rows;
-    console.log('Found notifications:', notifications.length);
 
     // Okunmamış bildirim sayısını hesapla
     const unreadResult = await pool.query(
@@ -63,7 +58,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       [userId]
     );
     const unreadCount = parseInt(unreadResult.rows[0].count);
-    console.log('Unread count:', unreadCount);
 
     res.status(200).json({
       notifications,
@@ -72,13 +66,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('Notifications API error:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      query: req.query,
-      session: session?.user?.id
-    });
     res.status(500).json({ 
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? 

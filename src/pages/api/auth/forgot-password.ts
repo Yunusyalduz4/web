@@ -78,12 +78,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `
     });
 
-    console.log('Password reset email sent successfully');
 
     res.status(200).json({ message: 'Şifre sıfırlama bağlantısı gönderildi' });
   } catch (error: any) {
-    console.error('Forgot password error:', error);
-    console.error('Error details:', {
+    console.error('Forgot password error:', {
       message: error?.message,
       name: error?.name,
       stack: error?.stack

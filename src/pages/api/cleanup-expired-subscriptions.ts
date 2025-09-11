@@ -7,7 +7,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('🧹 Cleaning up expired push subscriptions...');
 
     // Expired subscription'ları temizle
     const result = await pool.query(`
@@ -29,7 +28,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const deletedUserCount = userResult.rowCount || 0;
 
-    console.log(`✅ Cleaned up ${deletedCount} business subscriptions and ${deletedUserCount} user subscriptions`);
 
     res.status(200).json({
       success: true,
@@ -40,7 +38,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('❌ Error cleaning up expired subscriptions:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to clean up expired subscriptions',

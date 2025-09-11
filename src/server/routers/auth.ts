@@ -46,7 +46,6 @@ export const authRouter = t.router({
           postgresVersion: result.rows[0].postgres_version
         };
       } catch (error) {
-        console.error('Database connection test failed:', error);
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -67,7 +66,6 @@ export const authRouter = t.router({
           columns: result.rows
         };
       } catch (error) {
-        console.error('Users table test failed:', error);
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -78,8 +76,6 @@ export const authRouter = t.router({
     .input(registerSchema)
     .mutation(async ({ input }) => {
       try {
-        console.log('Registration attempt for:', input.email);
-        
         // Şifre hashle
         const password_hash = await bcrypt.hash(input.password, 10);
         
@@ -101,12 +97,10 @@ export const authRouter = t.router({
         );
         
         const user = result.rows[0];
-        console.log('User created:', user.id);
       
         // Eğer business ise, işletme bilgileriyle birlikte oluştur
         if (input.role === 'business') {
           try {
-            console.log('Creating business for user:', user.id);
             await pool.query(
               `INSERT INTO businesses (owner_user_id, name, description, address, latitude, longitude, phone, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
               [
@@ -120,17 +114,12 @@ export const authRouter = t.router({
                 input.businessEmail || input.email
               ]
             );
-            console.log('Business created successfully');
           } catch (businessError) {
-            console.error('Business creation error:', businessError);
             // Business oluşturulamazsa bile user'ı döndür
           }
         }
-      
-        console.log('Registration completed successfully');
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       } catch (error) {
-        console.error('Registration error:', error);
         if (error instanceof Error) {
           if (error.message.includes('duplicate key')) {
             throw new Error('Bu e-posta adresi zaten kullanılıyor.');
@@ -190,7 +179,6 @@ export const authRouter = t.router({
           [employee.id]
         );
       } catch (logError) {
-        console.error('Login log error:', logError);
         // Log hatası girişi engellemez
       }
 
@@ -306,7 +294,6 @@ export const authRouter = t.router({
           message: 'Çalışan hesabı başarıyla oluşturuldu' 
         };
       } catch (error) {
-        console.error('Employee account creation error:', error);
         throw new Error(error instanceof Error ? error.message : 'Çalışan hesabı oluşturulamadı');
       }
     }),

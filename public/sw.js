@@ -94,5 +94,4 @@ self.addEventListener('sync', (event) => {
 
 async function doBackgroundSync() {
   // Background sync logic here
-  console.log('Background sync triggered');
 }

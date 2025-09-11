@@ -87,7 +87,6 @@ export default function UserProfilePage() {
       // Sayfayı yenile
       router.refresh();
     } catch (error: any) {
-      console.error('Review silme hatası:', error);
       alert('Değerlendirme silinirken bir hata oluştu: ' + error.message);
     }
   };

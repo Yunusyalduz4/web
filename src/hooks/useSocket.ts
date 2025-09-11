@@ -63,30 +63,25 @@ export function useSocket(): UseSocketReturn {
 
       // Connection events
       newSocket.on('connect', () => {
-        console.log('🔌 Socket.io bağlandı');
         setIsConnected(true);
         setIsConnecting(false);
         setError(null);
       });
 
       newSocket.on('disconnect', () => {
-        console.log('🔌 Socket.io bağlantısı kesildi');
         setIsConnected(false);
       });
 
       newSocket.on('connect_error', (err: any) => {
-        console.error('Socket connection error:', err);
         setError(`Bağlantı hatası: ${err.message || 'Bilinmeyen hata'}`);
         setIsConnecting(false);
       });
 
       newSocket.on('error', (err: any) => {
-        console.error('Socket error:', err);
         setError(`Socket hatası: ${err.message || 'Bilinmeyen hata'}`);
       });
 
       newSocket.on('disconnect', (reason: string) => {
-        console.log('Socket disconnected:', reason);
         setIsConnected(false);
         if (reason === 'io server disconnect') {
           // Server tarafından bağlantı kesildi, yeniden bağlan
@@ -98,126 +93,116 @@ export function useSocket(): UseSocketReturn {
 
       // Test events
       newSocket.on('test:response', (data: any) => {
-        console.log('🧪 Test response:', data);
         addEvent('test:response', data);
       });
 
       // Appointment events
       newSocket.on('socket:appointment:created', (data: any) => {
-        console.log('📅 Randevu oluşturuldu:', data);
         addEvent('appointment:created', data);
       });
 
       newSocket.on('socket:appointment:status_updated', (data: any) => {
-        console.log('📅 Randevu durumu güncellendi:', data);
         addEvent('appointment:status_updated', data);
       });
 
       newSocket.on('socket:appointment:cancelled', (data: any) => {
-        console.log('📅 Randevu iptal edildi:', data);
         addEvent('appointment:cancelled', data);
       });
 
       newSocket.on('socket:appointment:completed', (data: any) => {
-        console.log('📅 Randevu tamamlandı:', data);
         addEvent('appointment:completed', data);
       });
 
       newSocket.on('socket:appointment:manual_created', (data: any) => {
-        console.log('📅 Manuel randevu oluşturuldu:', data);
         addEvent('appointment:manual_created', data);
       });
 
       newSocket.on('socket:appointment:assigned', (data: any) => {
-        console.log('📅 Randevu atandı:', data);
         addEvent('appointment:assigned', data);
       });
 
       newSocket.on('socket:appointment:reminder', (data: any) => {
-        console.log('⏰ Randevu hatırlatması:', data);
         addEvent('appointment:reminder', data);
       });
 
       // Review events
       newSocket.on('socket:review:created', (data: any) => {
-        console.log('⭐ Yeni yorum:', data);
         addEvent('review:created', data);
       });
 
       newSocket.on('socket:review:replied', (data: any) => {
-        console.log('💬 Yorum yanıtı:', data);
         addEvent('review:status_updated', data);
       });
 
       newSocket.on('socket:review:status_updated', (data: any) => {
-        console.log('⭐ Yorum durumu güncellendi:', data);
         addEvent('review:status_updated', data);
       });
 
       // Business events
       newSocket.on('socket:business:updated', (data: any) => {
-        console.log('🏢 İşletme güncellendi:', data);
         addEvent('business:updated', data);
       });
 
       newSocket.on('socket:business:approval_updated', (data: any) => {
-        console.log('🏢 İşletme onay durumu güncellendi:', data);
         addEvent('business:approval_updated', data);
       });
 
       // Service events
       newSocket.on('socket:service:created', (data: any) => {
-        console.log('🔧 Yeni hizmet:', data);
         addEvent('service:created', data);
       });
 
       newSocket.on('socket:service:updated', (data: any) => {
-        console.log('🔧 Hizmet güncellendi:', data);
         addEvent('service:updated', data);
       });
 
       newSocket.on('socket:service:deleted', (data: any) => {
-        console.log('🔧 Hizmet silindi:', data);
         addEvent('service:deleted', data);
       });
 
       // Employee events
       newSocket.on('socket:employee:created', (data: any) => {
-        console.log('👥 Yeni çalışan:', data);
         addEvent('employee:created', data);
       });
 
       newSocket.on('socket:employee:updated', (data: any) => {
-        console.log('👥 Çalışan güncellendi:', data);
         addEvent('employee:updated', data);
       });
 
       newSocket.on('socket:employee:deleted', (data: any) => {
-        console.log('👥 Çalışan silindi:', data);
         addEvent('employee:deleted', data);
       });
 
       newSocket.on('socket:employee:availability_updated', (data: any) => {
-        console.log('👥 Çalışan müsaitlik güncellendi:', data);
         addEvent('employee:availability_updated', data);
       });
 
       // Notification events
       newSocket.on('socket:notification:sent', (data: any) => {
-        console.log('🔔 Bildirim gönderildi:', data);
         addEvent('notification:sent', data);
       });
 
       newSocket.on('socket:notification:read', (data: any) => {
-        console.log('🔔 Bildirim okundu:', data);
         addEvent('notification:read', data);
+      });
+
+      // Reschedule events
+      newSocket.on('socket:reschedule:requested', (data: any) => {
+        addEvent('reschedule:requested', data);
+      });
+
+      newSocket.on('socket:reschedule:approved', (data: any) => {
+        addEvent('reschedule:approved', data);
+      });
+
+      newSocket.on('socket:reschedule:rejected', (data: any) => {
+        addEvent('reschedule:rejected', data);
       });
 
       socketRef.current = newSocket;
       setSocket(newSocket);
 
     } catch (err: any) {
-      console.error('Socket initialization error:', err);
       setError(err.message || 'Socket başlatılamadı');
       setIsConnecting(false);
     }

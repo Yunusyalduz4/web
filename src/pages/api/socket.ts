@@ -12,9 +12,6 @@ interface SocketApiRequest extends NextApiRequest {
 
 export default function handler(req: SocketApiRequest, res: NextApiResponse) {
   try {
-    console.log('🔌 Socket.io API endpoint çağrıldı');
-    console.log('🔌 Request method:', req.method);
-    console.log('🔌 Request URL:', req.url);
     
     // Sadece GET isteklerini kabul et
     if (req.method !== 'GET') {
@@ -23,13 +20,9 @@ export default function handler(req: SocketApiRequest, res: NextApiResponse) {
     }
     
     if (req.socket.server.io) {
-      console.log('✅ Socket.io zaten çalışıyor');
       res.json({ status: 'Socket.io already running' });
       return;
     }
-
-    console.log('🚀 Socket.io server başlatılıyor...');
-    console.log('🚀 Server type:', typeof req.socket.server);
     
     // Socket.io server'ı başlat
     const socketServer = new SocketServer(req.socket.server);
@@ -37,14 +30,8 @@ export default function handler(req: SocketApiRequest, res: NextApiResponse) {
     
     setSocketServer(socketServer);
     
-    console.log('✅ Socket.io server başarıyla başlatıldı');
     res.json({ status: 'Socket.io server started successfully' });
   } catch (error: any) {
-    console.error('❌ Socket.io server başlatma hatası:', error);
-    console.error('❌ Error name:', error?.name);
-    console.error('❌ Error message:', error?.message);
-    console.error('❌ Error stack:', error?.stack);
-    console.error('❌ Full error object:', error);
     res.status(500).json({ 
       error: 'Socket.io server başlatılamadı',
       details: {

@@ -1,5 +1,6 @@
 -- Tables
 appointment_notes
+appointment_reschedule_requests
 appointment_services
 appointments
 audit_logs
@@ -47,6 +48,21 @@ appointment_notes	note	text	NO
 appointment_notes	created_by	uuid	NO	
 appointment_notes	created_at	timestamp with time zone	NO	now()
 appointment_notes	updated_at	timestamp with time zone	NO	now()
+appointment_reschedule_requests	id	uuid	NO	gen_random_uuid()
+appointment_reschedule_requests	appointment_id	integer	NO	
+appointment_reschedule_requests	requested_by_user_id	integer	NO	
+appointment_reschedule_requests	requested_by_role	text	NO	
+appointment_reschedule_requests	old_appointment_datetime	timestamp with time zone	NO	
+appointment_reschedule_requests	old_employee_id	integer	YES	
+appointment_reschedule_requests	new_appointment_datetime	timestamp with time zone	NO	
+appointment_reschedule_requests	new_employee_id	integer	YES	
+appointment_reschedule_requests	status	text	NO	pending
+appointment_reschedule_requests	approved_by_user_id	integer	YES	
+appointment_reschedule_requests	approved_at	timestamp with time zone	YES	
+appointment_reschedule_requests	rejection_reason	text	YES	
+appointment_reschedule_requests	request_reason	text	YES	
+appointment_reschedule_requests	created_at	timestamp with time zone	NO	now()
+appointment_reschedule_requests	updated_at	timestamp with time zone	NO	now()
 appointment_services	id	uuid	NO	gen_random_uuid()
 appointment_services	appointment_id	uuid	NO	
 appointment_services	service_id	uuid	NO	
@@ -68,6 +84,7 @@ appointments	is_manual	boolean	YES	false
 appointments	notes	text	YES	
 appointments	reminder_sent	boolean	YES	false
 appointments	employee_id	uuid	YES	
+appointments	reschedule_status	text	YES	none
 audit_logs	id	uuid	NO	gen_random_uuid()
 audit_logs	user_id	uuid	YES	
 audit_logs	action	text	NO	
@@ -394,9 +411,18 @@ users	is_employee_active	boolean	YES	true
 appointment_notes	appointment_notes_appointment_id_fkey	FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
 appointment_notes	appointment_notes_created_by_fkey	FOREIGN KEY (created_by) REFERENCES users(id)
 appointment_notes	appointment_notes_pkey	PRIMARY KEY (id)
+appointment_reschedule_requests	appointment_reschedule_requests_appointment_id_fkey	FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
+appointment_reschedule_requests	appointment_reschedule_requests_approved_by_user_id_fkey	FOREIGN KEY (approved_by_user_id) REFERENCES users(id)
+appointment_reschedule_requests	appointment_reschedule_requests_new_employee_id_fkey	FOREIGN KEY (new_employee_id) REFERENCES employees(id)
+appointment_reschedule_requests	appointment_reschedule_requests_old_employee_id_fkey	FOREIGN KEY (old_employee_id) REFERENCES employees(id)
+appointment_reschedule_requests	appointment_reschedule_requests_pkey	PRIMARY KEY (id)
+appointment_reschedule_requests	appointment_reschedule_requests_requested_by_role_check	CHECK ((requested_by_role = ANY (ARRAY['user'::text, 'business'::text, 'employee'::text])))
+appointment_reschedule_requests	appointment_reschedule_requests_requested_by_user_id_fkey	FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+appointment_reschedule_requests	appointment_reschedule_requests_status_check	CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'cancelled'::text])))
 appointments	appointments_business_id_fkey	FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
 appointments	appointments_employee_id_fkey	FOREIGN KEY (employee_id) REFERENCES employees(id)
 appointments	appointments_pkey	PRIMARY KEY (id)
+appointments	appointments_reschedule_status_check	CHECK ((reschedule_status = ANY (ARRAY['none'::text, 'pending'::text, 'approved'::text, 'rejected'::text])))
 appointments	appointments_status_check	CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text, 'completed'::text])))
 appointment_services	appointment_services_appointment_id_fkey	FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
 appointment_services	appointment_services_employee_id_fkey	FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
@@ -540,10 +566,16 @@ users	users_role_check	CHECK ((role = ANY (ARRAY['user'::text, 'business'::text,
 -- Indexes
 appointment_notes	appointment_notes_pkey	CREATE UNIQUE INDEX appointment_notes_pkey ON public.appointment_notes USING btree (id)
 appointment_notes	idx_appointment_notes_appointment_id	CREATE INDEX idx_appointment_notes_appointment_id ON public.appointment_notes USING btree (appointment_id)
+appointment_reschedule_requests	appointment_reschedule_requests_pkey	CREATE UNIQUE INDEX appointment_reschedule_requests_pkey ON public.appointment_reschedule_requests USING btree (id)
+appointment_reschedule_requests	idx_appointment_reschedule_requests_appointment_id	CREATE INDEX idx_appointment_reschedule_requests_appointment_id ON public.appointment_reschedule_requests USING btree (appointment_id)
+appointment_reschedule_requests	idx_appointment_reschedule_requests_created_at	CREATE INDEX idx_appointment_reschedule_requests_created_at ON public.appointment_reschedule_requests USING btree (created_at)
+appointment_reschedule_requests	idx_appointment_reschedule_requests_requested_by	CREATE INDEX idx_appointment_reschedule_requests_requested_by ON public.appointment_reschedule_requests USING btree (requested_by_user_id)
+appointment_reschedule_requests	idx_appointment_reschedule_requests_status	CREATE INDEX idx_appointment_reschedule_requests_status ON public.appointment_reschedule_requests USING btree (status)
 appointment_services	appointment_services_pkey	CREATE UNIQUE INDEX appointment_services_pkey ON public.appointment_services USING btree (id)
 appointment_services	idx_appointment_services_employee_id	CREATE INDEX idx_appointment_services_employee_id ON public.appointment_services USING btree (employee_id)
 appointments	appointments_pkey	CREATE UNIQUE INDEX appointments_pkey ON public.appointments USING btree (id)
 appointments	idx_appointments_business_id	CREATE INDEX idx_appointments_business_id ON public.appointments USING btree (business_id)
+appointments	idx_appointments_reschedule_status	CREATE INDEX idx_appointments_reschedule_status ON public.appointments USING btree (reschedule_status)
 appointments	idx_appointments_user_id	CREATE INDEX idx_appointments_user_id ON public.appointments USING btree (user_id)
 audit_logs	audit_logs_pkey	CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 audit_logs	idx_audit_logs_user_id	CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id)

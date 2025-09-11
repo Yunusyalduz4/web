@@ -180,7 +180,6 @@ export const adminRouter = t.router({
           businessName
         );
       } catch (error) {
-        console.error('Admin push notification error:', error);
         // Push notification hatası randevu güncellemeyi etkilemesin
       }
 
@@ -433,7 +432,6 @@ export const adminRouter = t.router({
           note
         );
       } catch (error) {
-        console.error('Business approval notification error:', error);
         // Push notification hatası onay işlemini etkilemesin
       }
 

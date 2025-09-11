@@ -61,14 +61,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await mkdir(uploadDir, { recursive: true });
     } catch (mkdirError) {
-      console.error('Directory creation error:', mkdirError);
+      // Silent error handling
     }
 
     // Dosyayı local storage'a yaz
     try {
       await writeFile(filePath, buffer);
     } catch (writeError) {
-      console.error('File write error:', writeError);
       return res.status(500).json({ 
         error: 'File write failed',
         details: writeError instanceof Error ? writeError.message : 'Unknown write error'
@@ -94,7 +93,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('File upload error:', error);
     return res.status(500).json({ 
       error: 'File upload failed',
       details: error instanceof Error ? error.message : 'Unknown error'

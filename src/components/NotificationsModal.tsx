@@ -39,11 +39,9 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
   useEffect(() => {
     setNotificationCallbacks({
       onNotificationSent: () => {
-        console.log('🔄 Yeni bildirim geldi - liste güncelleniyor');
         fetchNotifications();
       },
       onNotificationRead: () => {
-        console.log('🔄 Bildirim okundu - liste güncelleniyor');
         fetchNotifications();
       }
     });
@@ -61,7 +59,6 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
         setUnreadCount(data.unreadCount || 0);
       }
     } catch (error) {
-      console.error('Bildirimler yüklenirken hata:', error);
     } finally {
       setLoading(false);
     }
@@ -85,7 +82,6 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
-      console.error('Bildirim okundu olarak işaretlenirken hata:', error);
     }
   };
 
@@ -102,7 +98,6 @@ export default function NotificationsModal({ isOpen, onClose, userType }: Notifi
         setUnreadCount(0);
       }
     } catch (error) {
-      console.error('Tüm bildirimler okundu olarak işaretlenirken hata:', error);
     }
   };
 

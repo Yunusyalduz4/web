@@ -16,7 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('Starting story cleanup cron job...');
 
     // Süresi dolmuş hikayeleri arşivle
     const archiveResult = await pool.query(`
@@ -39,8 +38,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const deletedArchiveCount = cleanupResult.rows.length;
 
-    console.log(`Story cleanup completed: ${archivedCount} stories archived, ${deletedArchiveCount} old archive records deleted`);
-
     return res.status(200).json({
       success: true,
       timestamp: new Date().toISOString(),
@@ -52,7 +49,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('Story cleanup cron job error:', error);
     return res.status(500).json({ 
       error: 'Story cleanup failed',
       details: error instanceof Error ? error.message : 'Unknown error',

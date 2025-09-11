@@ -51,8 +51,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Send email notification to support team
     try {
-      console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
-      console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length);
       
       const resend = new Resend(process.env.RESEND_API_KEY);
       
@@ -71,15 +69,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const userTypeText = userType === 'business' ? 'İşletme' : 'Kullanıcı';
 
-      console.log('Sending email to:', 'yalduzbey@gmail.com');
-      console.log('Email subject:', `[${priorityEmoji[priority]}] Yeni Destek Talebi - ${subject}`);
-
       // Try with a verified domain first, fallback to onboarding email
       const fromEmail = process.env.NODE_ENV === 'production' 
         ? 'Randevuo Destek <noreply@randevuo.com>'
         : 'onboarding@resend.dev';
-
-      console.log('Using from email:', fromEmail);
 
       // First try a simple test email
       const testResult = await resend.emails.send({
@@ -96,8 +89,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <p><strong>Tarih:</strong> ${new Date(ticket.created_at).toLocaleString('tr-TR')}</p>
         `,
       });
-
-      console.log('Test email result:', testResult);
 
       const emailResult = await resend.emails.send({
         from: fromEmail,
@@ -166,15 +157,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `,
       });
 
-      console.log('Email send result:', emailResult);
-      console.log('Support ticket email sent successfully:', ticket.id);
     } catch (emailError: any) {
-      console.error('Email notification error:', emailError);
-      console.error('Email error details:', {
-        message: emailError?.message,
-        name: emailError?.name,
-        stack: emailError?.stack
-      });
       // Don't fail the request if email fails
     }
 
@@ -184,7 +167,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: 'Support ticket created successfully' 
     });
   } catch (error) {
-    console.error('Support ticket creation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

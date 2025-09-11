@@ -207,7 +207,6 @@ export default function BusinessEditPage() {
       try {
         dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
       } catch (resizeError) {
-        console.warn('Resize başarısız, basit yükleme yapılıyor:', resizeError);
         dataUrl = await uploadFileSimple(file);
       }
 
@@ -225,7 +224,6 @@ export default function BusinessEditPage() {
         try {
           dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
         } catch (resizeError) {
-          console.warn('İkinci resize denemesi başarısız:', resizeError);
           dataUrl = await uploadFileSimple(file);
         }
         
@@ -252,7 +250,6 @@ export default function BusinessEditPage() {
       });
       getBusinessImagesQuery.refetch();
     } catch (e: any) {
-      console.error('Dosya yükleme hatası:', e);
       const errorMessage = e.message || 'Dosya yüklenemedi';
       setUploadError(errorMessage);
       alert(errorMessage);
@@ -273,7 +270,6 @@ export default function BusinessEditPage() {
       try {
         dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
       } catch (resizeError) {
-        console.warn('Profil resmi resize başarısız, basit yükleme yapılıyor:', resizeError);
         dataUrl = await uploadFileSimple(file);
       }
 
@@ -289,7 +285,6 @@ export default function BusinessEditPage() {
         try {
           dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
         } catch (resizeError) {
-          console.warn('Profil resmi ikinci resize denemesi başarısız:', resizeError);
           dataUrl = await uploadFileSimple(file);
         }
         
@@ -308,7 +303,6 @@ export default function BusinessEditPage() {
       const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
       setFormData(prev => ({ ...prev, profileImageUrl: absoluteUrl }));
     } catch (e: any) {
-      console.error('Profil resmi yükleme hatası:', e);
       const errorMessage = e.message || 'Profil fotoğrafı yüklenemedi';
       setUploadError(errorMessage);
       alert(errorMessage);

@@ -166,7 +166,7 @@ export default function BusinessReviewsPage() {
   }
 
   // Debug bilgisi
-  console.log('Business Reviews Debug:', {
+  console.log('Reviews page debug:', {
     businessId,
     session: session?.user,
     reviewsData,

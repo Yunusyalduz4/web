@@ -9,20 +9,16 @@ let cronJobs: any[] = [];
  */
 export function initializeCronJobs(): void {
   if (isInitialized) {
-    console.log('Cron jobs already initialized');
     return;
   }
-
-  console.log('Initializing cron jobs...');
 
   // Her 15 dakikada bir randevu hatırlatma kontrolü yap
   // Bu şekilde randevu saatinden 2 saat önce ±15 dakika içinde hatırlatma gönderilir
   const reminderJob = cron.schedule('*/15 * * * *', async () => {
-    console.log('⏰ Running appointment reminder check...');
     try {
       await sendAllUpcomingReminders();
     } catch (error) {
-      console.error('❌ Error in appointment reminder cron job:', error);
+      // Randevu hatırlatma hatası
     }
   }, {
     timezone: 'Europe/Istanbul' // Türkiye saati
@@ -32,7 +28,6 @@ export function initializeCronJobs(): void {
 
   // Her gün gece yarısı eski hatırlatma kayıtlarını temizle (opsiyonel)
   const cleanupJob = cron.schedule('0 0 * * *', async () => {
-    console.log('🧹 Cleaning up old reminder records...');
     try {
       const { pool } = await import('../server/db');
       
@@ -48,10 +43,8 @@ export function initializeCronJobs(): void {
           AND appointment_datetime < $1
           AND reminder_sent = true
       `, [sevenDaysAgo.toISOString()]);
-      
-      console.log('✅ Old reminder records cleaned up');
     } catch (error) {
-      console.error('❌ Error cleaning up old reminder records:', error);
+      // Eski hatırlatma kayıtları temizleme hatası
     }
   }, {
     timezone: 'Europe/Istanbul'
@@ -60,7 +53,6 @@ export function initializeCronJobs(): void {
   cronJobs.push(cleanupJob);
 
   isInitialized = true;
-  console.log('Cron jobs initialized successfully');
 }
 
 /**
@@ -68,11 +60,8 @@ export function initializeCronJobs(): void {
  */
 export function stopCronJobs(): void {
   if (!isInitialized) {
-    console.log('⚠️ Cron jobs not initialized');
     return;
   }
-
-  console.log('🛑 Stopping cron jobs...');
   
   // Kayıtlı job'ları durdur
   cronJobs.forEach(job => {
@@ -86,18 +75,15 @@ export function stopCronJobs(): void {
   
   cronJobs = [];
   isInitialized = false;
-  console.log('✅ Cron jobs stopped');
 }
 
 /**
  * Manuel olarak randevu hatırlatma kontrolü çalıştır (test için)
  */
 export async function runManualReminderCheck(): Promise<void> {
-  console.log('Running manual reminder check...');
   try {
     await sendAllUpcomingReminders();
-    console.log('Manual reminder check completed');
   } catch (error) {
-    console.error('Error in manual reminder check:', error);
+    // Manuel hatırlatma kontrolü hatası
   }
 }

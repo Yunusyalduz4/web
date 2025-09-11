@@ -1,12 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import path from 'path';
 import fs from 'fs';
-import { put } from '@vercel/blob';
 
 export const config = {
   api: {
     bodyParser: {
-      // Keep under Vercel's request limit; we still compress client-side
+      // VPS için request limit
       sizeLimit: '6mb',
     },
   },
@@ -44,24 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const ext = mime.split('/')[1] || 'bin';
     const safeName = (filename || `upload_${Date.now()}.${ext}`).replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    // VPS'de Vercel Blob kullanma, direkt local file system kullan
-    // Vercel Blob sadece gerçek Vercel production'da kullan
-    if (false) { // Vercel Blob'u devre dışı bırak
-      try {
-        const fileName = `uploads/${Date.now()}_${safeName}`;
-        // Convert Buffer to ArrayBuffer for @vercel/blob
-        const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-        const blob = await put(fileName, arrayBuffer, {
-          access: 'public',
-          contentType: mime,
-        });
-        return res.status(200).json({ url: blob.url });
-      } catch (blobErr: any) {
-        console.error('upload_base64 blob error:', blobErr?.message || blobErr);
-        // Fallback: return data URL so UI can continue without hard failure
-        return res.status(200).json({ url: dataUrl });
-      }
-    }
+    // VPS'de local file system kullanıyoruz
 
     // Local/dev: write into public/uploads
     const publicDir = path.join(process.cwd(), 'public', 'uploads');
@@ -74,11 +56,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const urlPath = `/uploads/${safeName}`;
       return res.status(200).json({ url: urlPath });
     } catch (writeErr: any) {
-      console.error('upload_base64 write error:', writeErr);
       return res.status(500).json({ error: 'Upload failed (write error)' });
     }
   } catch (err: any) {
-    console.error('upload_base64 error:', err);
     return res.status(500).json({ error: 'Upload failed' });
   }
 }

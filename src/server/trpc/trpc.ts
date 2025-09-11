@@ -123,9 +123,7 @@ export const isEmployee = t.middleware(async ({ ctx, next }) => {
 });
 
 export const isEmployeeOrBusiness = t.middleware(async ({ ctx, next }) => {
-  console.log('🔍 isEmployeeOrBusiness middleware - Session user:', ctx.session?.user);
   if (!ctx.session?.user || !['employee', 'business'].includes(ctx.session.user.role as string)) {
-    console.log('❌ isEmployeeOrBusiness - Role not allowed:', ctx.session?.user?.role);
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece çalışanlar ve işletme sahipleri erişebilir' });
   }
   
