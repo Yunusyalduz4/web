@@ -46,8 +46,24 @@ export async function sendPushNotification(
 
     await webpush.sendNotification(subscription, pushPayload);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Push notification error:', error);
+    
+    // 410 hatası (expired subscription) ise subscription'ı sil
+    if (error?.statusCode === 410) {
+      console.log('🗑️ Removing expired subscription...');
+      try {
+        const { pool } = await import('../server/db');
+        await pool.query(
+          'DELETE FROM push_subscriptions WHERE endpoint = $1',
+          [subscription.endpoint]
+        );
+        console.log('✅ Expired subscription removed');
+      } catch (deleteError) {
+        console.error('❌ Error removing expired subscription:', deleteError);
+      }
+    }
+    
     return { success: false, error };
   }
 }
@@ -219,8 +235,24 @@ export async function sendNotificationToUser(
       failed,
       total: results.length
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Send notification to user error:', error);
+    
+    // 410 hatası (expired subscription) ise subscription'ları temizle
+    if (error?.statusCode === 410) {
+      console.log('🗑️ Cleaning up expired user subscriptions...');
+      try {
+        const { pool } = await import('../server/db');
+        await pool.query(
+          'DELETE FROM user_push_subscriptions WHERE user_id = $1',
+          [userId]
+        );
+        console.log('✅ Expired user subscriptions removed');
+      } catch (deleteError) {
+        console.error('❌ Error removing expired user subscriptions:', deleteError);
+      }
+    }
+    
     return { success: false, error };
   }
 }
