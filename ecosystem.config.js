@@ -1,10 +1,10 @@
 module.exports = {
   apps: [
     {
-      name: 'randevuo',
+      name: 'web',
       script: 'npm',
       args: 'start',
-      cwd: '/var/www/kuado',
+      cwd: '/var/www/web',
       instances: 1,
       autorestart: true,
       watch: false,
