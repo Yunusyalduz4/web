@@ -2,11 +2,67 @@ import { t, isUser, isBusiness, isEmployee, isEmployeeOrBusiness, isAuthed } fro
 import { z } from 'zod';
 import { pool } from '../db';
 import { getSocketServer } from '../socket';
+import { TRPCError } from '@trpc/server';
 import { 
   sendRescheduleRequestNotification, 
   sendRescheduleApprovedNotification, 
   sendRescheduleRejectedNotification 
 } from '../../utils/pushNotification';
+
+// Müsaitlik kontrol fonksiyonu
+async function checkRescheduleAvailability(
+  newAppointmentDatetime: string, 
+  employeeId: string, 
+  appointmentId: string
+): Promise<{ isAvailable: boolean; reason?: string }> {
+  const newDate = new Date(newAppointmentDatetime);
+  
+  // 1. Geçmiş tarih kontrolü
+  if (newDate <= new Date()) {
+    return { isAvailable: false, reason: 'Yeni randevu tarihi geçmişte olamaz' };
+  }
+
+  // 2. Çalışanın o gün müsaitlik durumunu kontrol et
+  const dayOfWeek = newDate.getDay();
+  const availabilityRes = await pool.query(
+    `SELECT start_time, end_time FROM employee_availability 
+     WHERE employee_id = $1 AND day_of_week = $2`,
+    [employeeId, dayOfWeek]
+  );
+
+  if (availabilityRes.rows.length === 0) {
+    return { isAvailable: false, reason: 'Çalışan bu gün müsait değil' };
+  }
+
+  // 3. Seçilen saat çalışanın müsaitlik saatleri içinde mi?
+  const appointmentTime = newDate.toTimeString().slice(0, 5); // HH:MM formatında
+  const isWithinAvailability = availabilityRes.rows.some((slot: any) => {
+    return appointmentTime >= slot.start_time && appointmentTime <= slot.end_time;
+  });
+
+  if (!isWithinAvailability) {
+    return { isAvailable: false, reason: 'Seçilen saat çalışanın müsaitlik saatleri dışında' };
+  }
+
+  // 4. Çakışma kontrolü - mevcut randevu hariç
+  const conflictRes = await pool.query(
+    `SELECT a.id
+     FROM appointments a
+     JOIN appointment_services aps ON a.id = aps.appointment_id
+     WHERE a.status IN ('pending','confirmed') 
+     AND aps.employee_id = $1
+     AND a.id != $2
+     GROUP BY a.id, a.appointment_datetime
+     HAVING a.appointment_datetime < $4 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $3`,
+    [employeeId, appointmentId, newDate.toISOString(), newDate.toISOString()]
+  );
+
+  if (conflictRes.rows.length > 0) {
+    return { isAvailable: false, reason: 'Bu saatte çakışan randevu var' };
+  }
+
+  return { isAvailable: true };
+}
 
 // Randevu erteleme isteği şeması
 const rescheduleRequestSchema = z.object({
@@ -41,7 +97,7 @@ export const rescheduleRouter = t.router({
     .input(rescheduleRequestSchema)
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) {
-        throw new Error('Kullanıcı bilgileri bulunamadı');
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Kullanıcı bilgileri bulunamadı' });
       }
       
       const { appointmentId, newAppointmentDatetime, newEmployeeId, requestReason } = input;
@@ -58,28 +114,28 @@ export const rescheduleRouter = t.router({
       `, [appointmentId]);
 
       if (appointmentResult.rows.length === 0) {
-        throw new Error('Randevu bulunamadı');
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
       }
 
       const appointment = appointmentResult.rows[0];
 
       // Yetki kontrolü
       if (userRole === 'user' && appointment.user_id !== userId) {
-        throw new Error('Bu randevuyu erteleyemezsiniz');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu randevuyu erteleyemezsiniz' });
       }
 
       if (userRole === 'business' && appointment.owner_user_id !== userId) {
-        throw new Error('Bu randevuyu erteleyemezsiniz');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu randevuyu erteleyemezsiniz' });
       }
 
       if (userRole === 'employee' && appointment.employee_id !== ctx.user.employeeId) {
-        throw new Error('Bu randevuyu erteleyemezsiniz');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu randevuyu erteleyemezsiniz' });
       }
 
       // Yeni tarih geçmişte mi kontrol et
       const newDate = new Date(newAppointmentDatetime);
       if (newDate <= new Date()) {
-        throw new Error('Yeni randevu tarihi geçmişte olamaz');
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Yeni randevu tarihi geçmişte olamaz' });
       }
 
       // Mevcut aktif erteleme isteği var mı kontrol et
@@ -89,7 +145,26 @@ export const rescheduleRouter = t.router({
       `, [appointmentId]);
 
       if (existingRequest.rows.length > 0) {
-        throw new Error('Bu randevu için zaten bekleyen bir erteleme isteği var');
+        throw new TRPCError({ code: 'CONFLICT', message: 'Bu randevu için zaten bekleyen bir erteleme isteği var' });
+      }
+
+      // Müsaitlik kontrolü - yeni çalışan ID'si varsa onu kullan, yoksa mevcut çalışanı kullan
+      const targetEmployeeId = newEmployeeId || appointment.employee_id;
+      if (!targetEmployeeId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bilgisi bulunamadı' });
+      }
+
+      const availabilityCheck = await checkRescheduleAvailability(
+        newAppointmentDatetime, 
+        targetEmployeeId, 
+        appointmentId
+      );
+
+      if (!availabilityCheck.isAvailable) {
+        throw new TRPCError({ 
+          code: 'CONFLICT', 
+          message: `Müsaitlik kontrolü başarısız: ${availabilityCheck.reason}` 
+        });
       }
 
       // Erteleme isteği oluştur
@@ -192,7 +267,7 @@ export const rescheduleRouter = t.router({
       `, [requestId]);
 
       if (requestResult.rows.length === 0) {
-        throw new Error('Erteleme isteği bulunamadı');
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Erteleme isteği bulunamadı' });
       }
 
       const request = requestResult.rows[0];
@@ -204,15 +279,49 @@ export const rescheduleRouter = t.router({
         (userRole === 'employee' && request.employee_id === ctx.user.employeeId);
 
       if (!canApprove) {
-        throw new Error('Bu isteği onaylayamazsınız');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu isteği onaylayamazsınız' });
       }
 
       if (request.status !== 'pending') {
-        throw new Error('Bu istek zaten işlenmiş');
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Bu istek zaten işlenmiş' });
       }
 
       // Onay/Red işlemi
       if (action === 'approve') {
+        // Onay anında tekrar müsaitlik kontrolü yap
+        const targetEmployeeId = request.new_employee_id || request.employee_id;
+        if (!targetEmployeeId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bilgisi bulunamadı' });
+        }
+
+        const availabilityCheck = await checkRescheduleAvailability(
+          request.new_appointment_datetime, 
+          targetEmployeeId, 
+          request.appointment_id
+        );
+
+        if (!availabilityCheck.isAvailable) {
+          // Müsait değilse isteği otomatik reddet
+          await pool.query(`
+            UPDATE appointment_reschedule_requests 
+            SET status = 'rejected', approved_by_user_id = $1, approved_at = NOW(), 
+                rejection_reason = $2, updated_at = NOW()
+            WHERE id = $3
+          `, [userId, `Otomatik red: ${availabilityCheck.reason}`, requestId]);
+
+          // Randevu durumunu sıfırla
+          await pool.query(`
+            UPDATE appointments 
+            SET reschedule_status = 'rejected', updated_at = NOW()
+            WHERE id = $1
+          `, [request.appointment_id]);
+
+          throw new TRPCError({ 
+            code: 'CONFLICT', 
+            message: `Onay başarısız: ${availabilityCheck.reason}. İstek otomatik olarak reddedildi.` 
+          });
+        }
+
         // Randevuyu güncelle
         await pool.query(`
           UPDATE appointments 
@@ -360,7 +469,7 @@ export const rescheduleRouter = t.router({
 
       // Sadece müşteriler erişebilir
       if (userRole !== 'user') {
-        throw new Error('Sadece müşteriler erişebilir');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece müşteriler erişebilir' });
       }
 
       const query = `
@@ -413,7 +522,7 @@ export const rescheduleRouter = t.router({
         );
         
         if (businessResult.rows.length === 0) {
-          throw new Error('İşletme bulunamadı');
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'İşletme bulunamadı' });
         }
         
         const businessOwnerId = businessResult.rows[0].owner_user_id;
@@ -445,7 +554,7 @@ export const rescheduleRouter = t.router({
       `, [appointmentId]);
 
       if (appointmentResult.rows.length === 0) {
-        throw new Error('Randevu bulunamadı');
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
       }
 
       const appointment = appointmentResult.rows[0];
@@ -455,7 +564,7 @@ export const rescheduleRouter = t.router({
         (userRole === 'employee' && appointment.employee_id === ctx.user.employeeId);
 
       if (!canView) {
-        throw new Error('Bu randevunun geçmişini görüntüleyemezsiniz');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu randevunun geçmişini görüntüleyemezsiniz' });
       }
 
       const result = await pool.query(`
@@ -488,18 +597,18 @@ export const rescheduleRouter = t.router({
       `, [requestId]);
 
       if (requestResult.rows.length === 0) {
-        throw new Error('Erteleme isteği bulunamadı');
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Erteleme isteği bulunamadı' });
       }
 
       const request = requestResult.rows[0];
 
       // Yetki kontrolü - sadece isteği yapan iptal edebilir
       if (request.requested_by_user_id !== userId) {
-        throw new Error('Bu isteği iptal edemezsiniz');
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu isteği iptal edemezsiniz' });
       }
 
       if (request.status !== 'pending') {
-        throw new Error('Bu istek zaten işlenmiş');
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Bu istek zaten işlenmiş' });
       }
 
       // İsteği iptal et
