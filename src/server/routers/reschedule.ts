@@ -9,7 +9,7 @@ import {
   sendRescheduleRejectedNotification 
 } from '../../utils/pushNotification';
 
-// Müsaitlik kontrol fonksiyonu
+// Müsaitlik kontrol fonksiyonu - Slot sistemi ile uyumlu
 async function checkRescheduleAvailability(
   newAppointmentDatetime: string, 
   employeeId: string, 
@@ -22,8 +22,11 @@ async function checkRescheduleAvailability(
     return { isAvailable: false, reason: 'Yeni randevu tarihi geçmişte olamaz' };
   }
 
-  // 2. Çalışanın o gün müsaitlik durumunu kontrol et
+  // 2. Slot sistemi ile uyumlu kontrol - 15 dakikalık slot kontrolü
+  const appointmentTime = newDate.toTimeString().slice(0, 5); // HH:MM formatında
   const dayOfWeek = newDate.getDay();
+  
+  // Çalışanın o gün müsaitlik durumunu kontrol et
   const availabilityRes = await pool.query(
     `SELECT start_time, end_time FROM employee_availability 
      WHERE employee_id = $1 AND day_of_week = $2`,
@@ -35,7 +38,6 @@ async function checkRescheduleAvailability(
   }
 
   // 3. Seçilen saat çalışanın müsaitlik saatleri içinde mi?
-  const appointmentTime = newDate.toTimeString().slice(0, 5); // HH:MM formatında
   const isWithinAvailability = availabilityRes.rows.some((slot: any) => {
     return appointmentTime >= slot.start_time && appointmentTime <= slot.end_time;
   });
@@ -44,7 +46,11 @@ async function checkRescheduleAvailability(
     return { isAvailable: false, reason: 'Seçilen saat çalışanın müsaitlik saatleri dışında' };
   }
 
-  // 4. Çakışma kontrolü - mevcut randevu hariç
+  // 4. 15 dakikalık slot kontrolü - Slot sistemi ile aynı mantık
+  const slotStart = new Date(newDate);
+  const slotEnd = new Date(slotStart.getTime() + 15 * 60000); // 15 dakika
+
+  // Çakışan randevuları kontrol et - mevcut randevu hariç
   const conflictRes = await pool.query(
     `SELECT a.id
      FROM appointments a
@@ -54,7 +60,7 @@ async function checkRescheduleAvailability(
      AND a.id != $2
      GROUP BY a.id, a.appointment_datetime
      HAVING a.appointment_datetime < $4 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $3`,
-    [employeeId, appointmentId, newDate.toISOString(), newDate.toISOString()]
+    [employeeId, appointmentId, slotStart.toISOString(), slotEnd.toISOString()]
   );
 
   if (conflictRes.rows.length > 0) {
@@ -104,13 +110,17 @@ export const rescheduleRouter = t.router({
       const userId = ctx.user.id;
       const userRole = ctx.user.role;
 
-      // Randevu bilgilerini al
+      // Randevu bilgilerini al - appointment_services tablosundan çalışan bilgisini al
       const appointmentResult = await pool.query(`
-        SELECT a.*, b.owner_user_id, b.name as business_name, e.name as employee_name
+        SELECT a.*, b.owner_user_id, b.name as business_name, 
+               COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
+               COALESCE(array_agg(DISTINCT e.id) FILTER (WHERE e.id IS NOT NULL), ARRAY[]::uuid[]) as employee_ids
         FROM appointments a
         LEFT JOIN businesses b ON a.business_id = b.id
-        LEFT JOIN employees e ON a.employee_id = e.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN employees e ON aps.employee_id = e.id
         WHERE a.id = $1
+        GROUP BY a.id, b.owner_user_id, b.name
       `, [appointmentId]);
 
       if (appointmentResult.rows.length === 0) {
@@ -118,6 +128,12 @@ export const rescheduleRouter = t.router({
       }
 
       const appointment = appointmentResult.rows[0];
+      
+      // Çalışan ID'sini al - ilk çalışanı kullan
+      const currentEmployeeId = appointment.employee_ids?.[0];
+      if (!currentEmployeeId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bilgisi bulunamadı' });
+      }
 
       // Yetki kontrolü
       if (userRole === 'user' && appointment.user_id !== userId) {
@@ -128,7 +144,7 @@ export const rescheduleRouter = t.router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu randevuyu erteleyemezsiniz' });
       }
 
-      if (userRole === 'employee' && appointment.employee_id !== ctx.user.employeeId) {
+      if (userRole === 'employee' && currentEmployeeId !== ctx.user.employeeId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu randevuyu erteleyemezsiniz' });
       }
 
@@ -149,7 +165,7 @@ export const rescheduleRouter = t.router({
       }
 
       // Müsaitlik kontrolü - yeni çalışan ID'si varsa onu kullan, yoksa mevcut çalışanı kullan
-      const targetEmployeeId = newEmployeeId || appointment.employee_id;
+      const targetEmployeeId = newEmployeeId || currentEmployeeId;
       if (!targetEmployeeId) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bilgisi bulunamadı' });
       }
@@ -173,9 +189,9 @@ export const rescheduleRouter = t.router({
         userId,
         userRole,
         appointment.appointment_datetime,
-        appointment.employee_id,
+        currentEmployeeId,
         newAppointmentDatetime,
-        newEmployeeId || appointment.employee_id,
+        newEmployeeId || currentEmployeeId,
         requestReason || null
       ];
       

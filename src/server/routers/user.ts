@@ -80,7 +80,16 @@ export const userRouter = t.router({
           COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
           COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
           COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
-          COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations
+          COALESCE(array_agg(aps.duration_minutes) FILTER (WHERE aps.duration_minutes IS NOT NULL), ARRAY[]::integer[]) as durations,
+          COALESCE(array_agg(
+            json_build_object(
+              'service_id', s.id,
+              'service_name', s.name,
+              'duration_minutes', aps.duration_minutes,
+              'price', aps.price,
+              'employee_id', aps.employee_id
+            )
+          ) FILTER (WHERE s.id IS NOT NULL), ARRAY[]::json[]) as services
         FROM appointments a
         LEFT JOIN businesses b ON a.business_id = b.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id

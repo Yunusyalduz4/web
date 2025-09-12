@@ -7,7 +7,7 @@ import { skipToken } from '@tanstack/react-query';
 import { useRealTimeAppointments } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 import { useSocket } from '../../../../hooks/useSocket';
-import RescheduleModal from '../../../../components/RescheduleModal';
+import BusinessRescheduleModal from '../../../../components/BusinessRescheduleModal';
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -1005,11 +1005,10 @@ export default function BusinessAppointmentsPage() {
       )}
 
       {/* Reschedule Modal */}
-      <RescheduleModal
+      <BusinessRescheduleModal
         isOpen={rescheduleModal.isOpen}
         onClose={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
         appointment={rescheduleModal.appointment}
-        userRole={session?.user?.role === 'business' ? 'business' : 'employee'}
         onRescheduleSubmitted={handleRescheduleSubmitted}
       />
     </main>
