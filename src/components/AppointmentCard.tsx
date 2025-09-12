@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { trpc } from '../utils/trpcClient';
 import { useSession } from 'next-auth/react';
-import RescheduleModal from './RescheduleModal';
+import UserRescheduleModal from './UserRescheduleModal';
+import BusinessRescheduleModal from './BusinessRescheduleModal';
 import RescheduleApprovalModal from './RescheduleApprovalModal';
 
 interface AppointmentCardProps {
@@ -19,9 +20,11 @@ interface AppointmentCardProps {
     employee_id?: string;
     employee_name?: string;
     services?: Array<{
-      name: string;
-      price: number;
+      service_id: string;
+      service_name: string;
       duration_minutes: number;
+      price: number;
+      employee_id: string;
     }>;
   };
   userRole: 'user' | 'business' | 'employee' | 'admin';
@@ -136,7 +139,7 @@ export default function AppointmentCard({ appointment, userRole, onUpdate }: App
             <div className="space-y-1">
               {appointment.services.map((service, index) => (
                 <div key={index} className="flex justify-between text-sm text-gray-600">
-                  <span>{service.name}</span>
+                  <span>{service.service_name}</span>
                   <span>{service.price}₺ ({service.duration_minutes}dk)</span>
                 </div>
               ))}
@@ -171,12 +174,22 @@ export default function AppointmentCard({ appointment, userRole, onUpdate }: App
         </div>
       </div>
 
-      <RescheduleModal
-        isOpen={showRescheduleModal}
-        onClose={() => setShowRescheduleModal(false)}
-        appointment={appointment}
-        userRole={userRole}
-      />
+      {/* Role-based modals */}
+      {userRole === 'user' ? (
+        <UserRescheduleModal
+          isOpen={showRescheduleModal}
+          onClose={() => setShowRescheduleModal(false)}
+          appointment={appointment}
+          onRescheduleSubmitted={onUpdate}
+        />
+      ) : (
+        <BusinessRescheduleModal
+          isOpen={showRescheduleModal}
+          onClose={() => setShowRescheduleModal(false)}
+          appointment={appointment}
+          onRescheduleSubmitted={onUpdate}
+        />
+      )}
 
       {selectedRequest && (
         <RescheduleApprovalModal

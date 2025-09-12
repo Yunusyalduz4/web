@@ -5,7 +5,7 @@ import { trpc } from '../../../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
 import { useMemo, useState, useEffect } from 'react';
 import ReviewModal from '../../../components/ReviewModal';
-import RescheduleModal from '../../../components/RescheduleModal';
+import UserRescheduleModal from '../../../components/UserRescheduleModal';
 import NotificationsButton from '../../../components/NotificationsButton';
 import { useRealTimeAppointments, useRealTimeReviews } from '../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
@@ -463,12 +463,11 @@ export default function UserDashboard() {
         onReviewSubmitted={handleReviewSubmitted}
       />
 
-      {/* Reschedule Modal */}
-      <RescheduleModal
+      {/* User Reschedule Modal */}
+      <UserRescheduleModal
         isOpen={rescheduleModal.isOpen}
         onClose={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
         appointment={rescheduleModal.appointment}
-        userRole="user"
         onRescheduleSubmitted={handleRescheduleSubmitted}
       />
 

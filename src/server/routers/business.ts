@@ -670,4 +670,48 @@ export const businessRouter = t.router({
 
       return result.rows[0];
     }),
+
+  // Çalışan için meşgul slotları getir
+  getBusySlots: t.procedure.use(isEmployeeOrBusiness)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      businessId: z.string().uuid(),
+      startDate: z.string(), // YYYY-MM-DD formatında
+      endDate: z.string(), // YYYY-MM-DD formatında
+    }))
+    .query(async ({ input }) => {
+      const startDateTime = new Date(input.startDate + 'T00:00:00');
+      const endDateTime = new Date(input.endDate + 'T23:59:59');
+
+      const result = await pool.query(
+        `SELECT 
+          a.id as appointmentId,
+          a.appointment_datetime,
+          SUM(aps.duration_minutes) as total_duration
+        FROM appointments a
+        JOIN appointment_services aps ON a.id = aps.appointment_id
+        WHERE a.status IN ('pending', 'confirmed')
+          AND aps.employee_id = $1
+          AND a.business_id = $2
+          AND a.appointment_datetime >= $3
+          AND a.appointment_datetime <= $4
+        GROUP BY a.id, a.appointment_datetime
+        ORDER BY a.appointment_datetime`,
+        [input.employeeId, input.businessId, startDateTime.toISOString(), endDateTime.toISOString()]
+      );
+
+      const busySlots = result.rows.map(row => {
+        const startTime = new Date(row.appointment_datetime);
+        const endTime = new Date(startTime.getTime() + (row.total_duration * 60000));
+        
+        return {
+          appointmentId: row.appointmentId,
+          startTime: startTime.toTimeString().slice(0, 5), // HH:MM formatında
+          endTime: endTime.toTimeString().slice(0, 5), // HH:MM formatında
+          date: startTime.toISOString().split('T')[0] // YYYY-MM-DD formatında
+        };
+      });
+
+      return busySlots;
+    }),
 });
