@@ -24,6 +24,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="theme-color" content="#3b82f6" />
 
+        {/* FontAwesome CDN */}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
         {/* Apple Touch Icons */}
         <link rel="apple-touch-icon" href="/icons/logo.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/logo.png" />

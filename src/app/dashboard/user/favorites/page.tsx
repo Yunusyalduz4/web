@@ -100,9 +100,17 @@ export default function FavoritesPage() {
           <div className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
           <button
             onClick={() => router.push('/dashboard/user/businesses')}
-            className="px-3 py-2 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 border border-white/40 text-gray-900 text-sm shadow-sm transition touch-manipulation min-h-[44px]"
+            className="w-10 h-10 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 text-gray-900 shadow-sm transition touch-manipulation flex items-center justify-center relative"
+            style={{
+              border: '2px solid transparent',
+              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #3b82f6, #ef4444, #ffffff) border-box',
+              borderRadius: '12px'
+            }}
+            title="İşletmeler"
           >
-            İşletmeler
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-gray-700">
+              <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -111,7 +119,7 @@ export default function FavoritesPage() {
       <div className="mt-2">
         <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">Favoriler</h1>
         
-        {/* Hikayeler Bölümü - Mobile Optimized */}
+        {/* Minimal Hikayeler Bölümü */}
         {favoritesStories && favoritesStories.length > 0 && (
           <div className="mt-4 sm:mt-6 mb-4">
             <div className="flex items-center justify-center mb-3 sm:mb-4">
@@ -120,11 +128,41 @@ export default function FavoritesPage() {
                 <span className="text-white text-xs sm:text-sm">📱</span>
               </div>
             </div>
-            <StoryGrid 
-              stories={favoritesStories} 
-              onStoryClick={handleStoryClick}
-              className="justify-center"
-            />
+            <div className="flex justify-center gap-3 overflow-x-auto no-scrollbar pb-2">
+              {favoritesStories.map((story, index) => (
+                <div
+                  key={story.id}
+                  onClick={() => handleStoryClick(story, index)}
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden cursor-pointer touch-manipulation shrink-0"
+                  style={{
+                    border: '2px solid transparent',
+                    background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #8b5cf6, #ec4899) border-box',
+                    borderRadius: '50%'
+                  }}
+                >
+                  {/* Hikaye Resmi Önizlemesi */}
+                  {story.image_url ? (
+                    <img 
+                      src={story.image_url} 
+                      alt={story.business_name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-purple-400">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Hikaye Durumu Göstergesi */}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         
@@ -164,10 +202,19 @@ export default function FavoritesPage() {
       {/* Cards - Mobile Optimized */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-4">
         {list.map((b: any) => (
-          <div key={b.id} className="group bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow hover:shadow-lg active:shadow-xl transition cursor-pointer touch-manipulation" onClick={() => router.push(`/dashboard/user/businesses/${b.id}`)}>
-            <div className="p-3 sm:p-4">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex items-center gap-3 min-w-0">
+          <div
+            key={b.id}
+            className="group relative bg-white/60 backdrop-blur-md rounded-2xl shadow-sm hover:shadow-lg transition-all overflow-hidden border border-white/40 hover:border-rose-300 cursor-pointer touch-manipulation"
+            onClick={() => router.push(`/dashboard/user/businesses/${b.id}`)}
+          >
+            {/* Degrade Border - Sol Kenar */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-red-500 to-white rounded-l-2xl"></div>
+            
+            {/* Main Content - Mobile Optimized */}
+            <div className="relative p-3 sm:p-4">
+              {/* Top: Avatar + Name + Rating, Right: Favorited Date */}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-white/70 border border-white/50 shrink-0">
                     {b.profile_image_url ? (
                       <img src={b.profile_image_url} alt={b.name} className="w-full h-full object-cover" />
@@ -176,22 +223,29 @@ export default function FavoritesPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">{b.name}</h3>
-                      <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-gray-700 shrink-0">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    <div className="flex items-center gap-2 min-w-0 mb-1">
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{b.name}</h3>
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-700 shrink-0">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                         {parseFloat(b.overall_rating || 0).toFixed(1)}
                       </span>
                     </div>
-                    <div className="text-[10px] sm:text-[11px] text-gray-600 truncate">{new Date(b.favorited_at).toLocaleDateString('tr-TR')}</div>
                   </div>
                 </div>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-white/60 backdrop-blur-md border border-white/40 text-gray-700 shrink-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  {new Date(b.favorited_at).toLocaleDateString('tr-TR')}
+                </span>
               </div>
-              <div className="flex items-center gap-2 text-gray-700 text-[11px] sm:text-[12px] mb-2">
-                <span>📍</span>
+
+              {/* Address */}
+              <div className="flex items-center gap-2 text-gray-700 text-xs sm:text-sm mb-3">
+                <span className="text-sm">📍</span>
                 <span className="truncate">{b.address}</span>
               </div>
-              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-gray-700">
+
+              {/* Meta chips - Mobile Optimized */}
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-700">
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/60 border border-white/40">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="#e11d48"><path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z"/></svg>
                   {b.favorites_count || 0}

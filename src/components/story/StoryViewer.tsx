@@ -135,7 +135,7 @@ export default function StoryViewer({
   const isVideo = currentStory.media_type === 'video';
 
   return (
-    <div className={`fixed inset-0 z-50 bg-black ${className}`}>
+    <div className={`fixed inset-0 z-[9999] bg-black ${className}`}>
       {/* Üst Bar - Progress ve Kapatma */}
       <div className="absolute top-0 left-0 right-0 z-10 p-4">
         {/* Progress Bar */}
@@ -173,11 +173,22 @@ export default function StoryViewer({
           
           <div className="flex items-center space-x-2 text-white text-sm">
             <span>{currentStoryIndex + 1} / {stories.length}</span>
-            {status.timeRemaining && status.timeRemaining > 0 && (
-              <span className="text-gray-300">
-                {formatTimeRemaining(status.timeRemaining)}
-              </span>
-            )}
+            <span className="text-gray-300">
+              {(() => {
+                const now = new Date();
+                const storyDate = new Date(currentStory.created_at);
+                const diffInHours = Math.floor((now.getTime() - storyDate.getTime()) / (1000 * 60 * 60));
+                
+                if (diffInHours < 1) {
+                  return 'Az önce';
+                } else if (diffInHours < 24) {
+                  return `${diffInHours} saat önce`;
+                } else {
+                  const diffInDays = Math.floor(diffInHours / 24);
+                  return `${diffInDays} gün önce`;
+                }
+              })()}
+            </span>
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ import { handleLogout } from '../../../../utils/authUtils';
 import { useUserPushNotifications } from '../../../../hooks/useUserPushNotifications';
 import NotificationsButton from '../../../../components/NotificationsButton';
 import SupportButton from '../../../../components/SupportButton';
+import SupportModal from '../../../../components/SupportModal';
+import NotificationsModal from '../../../../components/NotificationsModal';
 import { useRealTimeReviews } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -36,6 +38,14 @@ export default function UserProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [passwordUpdateOpen, setPasswordUpdateOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -64,9 +74,8 @@ export default function UserProfilePage() {
     setSuccess('');
     if (!userId) return;
     try {
-      await updateMutation.mutateAsync({ userId, name, email, password: password || undefined, phone, address });
+      await updateMutation.mutateAsync({ name, email, phone });
       setSuccess('Profil başarıyla güncellendi!');
-      setPassword('');
       setTimeout(() => router.refresh(), 1200);
     } catch (err: any) {
       setError(err.message || 'Profil güncellenemedi');
@@ -102,17 +111,9 @@ export default function UserProfilePage() {
   return (
     <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar - Mobile Optimized */}
-      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/70 backdrop-blur-md border-b border-white/40">
-        <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs sm:text-sm hover:bg-white/80 active:bg-white/90 transition touch-manipulation min-h-[44px]">
-            <span>←</span>
-            <span className="hidden xs:inline">Geri</span>
-          </button>
-          <div className="text-sm sm:text-base font-bold tracking-tight text-gray-800">Profil</div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <SupportButton userType="user" />
-            <NotificationsButton userType="user" />
-          </div>
+      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
+        <div className="flex items-center justify-center">
+          <div className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none">randevuo</div>
         </div>
       </div>
 
@@ -129,46 +130,50 @@ export default function UserProfilePage() {
         </div>
       </section>
 
-      {/* Tab Navigation - Mobile Optimized */}
+
+      {/* Profil Bilgileri Butonu */}
       <section className="mt-3 sm:mt-4">
-        <div className="flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex-1 px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] ${
-              activeTab === 'profile'
-                ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-white/70 active:bg-white/80'
-            }`}
-          >
-            <span className="hidden xs:inline">Profil Bilgileri</span>
-            <span className="xs:hidden">Profil</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`flex-1 px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] ${
-              activeTab === 'reviews'
-                ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-white/70 active:bg-white/80'
-            }`}
-          >
-            <span className="hidden xs:inline">Değerlendirmelerim</span>
-            <span className="xs:hidden">Yorumlar</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setProfileOpen(!profileOpen)}
+          className="w-full bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-4 hover:bg-white/70 active:bg-white/80 transition-all touch-manipulation"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+              <div className="text-left">
+                <h3 className="text-sm font-semibold text-gray-900">Profil Bilgileri</h3>
+                <p className="text-xs text-gray-600">Kişisel bilgilerinizi düzenleyin</p>
+              </div>
+            </div>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              className={`text-gray-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+            >
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </button>
       </section>
 
-      {/* Tab Content - Mobile Optimized */}
-      {activeTab === 'profile' && (
-        <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4">
+      {/* Profil Bilgileri İçeriği - Collapsible */}
+      {profileOpen && (
+        <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4 animate-fade-in">
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
               <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Ad Soyad</label>
               <input
                 type="text"
                 value={name}
-                onChange={e => setName(e.target.value)}
-                required
-                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 touch-manipulation min-h-[44px]"
+                readOnly
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-gray-100 border border-gray-200 text-gray-600 cursor-not-allowed touch-manipulation min-h-[44px]"
                 autoComplete="name"
                 placeholder="Adınız ve soyadınız"
               />
@@ -178,9 +183,8 @@ export default function UserProfilePage() {
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 touch-manipulation min-h-[44px]"
+                readOnly
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-gray-100 border border-gray-200 text-gray-600 cursor-not-allowed touch-manipulation min-h-[44px]"
                 autoComplete="email"
                 placeholder="E-posta adresiniz"
               />
@@ -190,32 +194,25 @@ export default function UserProfilePage() {
               <input
                 type="tel"
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
-                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200 touch-manipulation min-h-[44px]"
+                readOnly
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-gray-100 border border-gray-200 text-gray-600 cursor-not-allowed touch-manipulation min-h-[44px]"
                 autoComplete="tel"
                 placeholder="05xx xxx xx xx"
               />
             </div>
-            <div>
-              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Adres</label>
-              <textarea
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-200 touch-manipulation resize-none"
-                placeholder="Adresiniz"
-              />
-            </div>
-            <div>
-              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Yeni Şifre (opsiyonel)</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white/80 border border-white/50 text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-200 touch-manipulation min-h-[44px]"
-                autoComplete="new-password"
-                placeholder="Yeni şifreniz"
-              />
+            {/* Şifre Güncelleme Butonu */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setPasswordUpdateOpen(!passwordUpdateOpen)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation min-h-[44px]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M12 1l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 2l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6z" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="text-sm">Şifre Güncelle</span>
+              </button>
             </div>
 
             {error && (
@@ -225,20 +222,168 @@ export default function UserProfilePage() {
               <div className="px-3 py-2 rounded-lg border border-green-200 bg-green-50 text-xs sm:text-sm text-green-700">{success}</div>
             )}
 
-            <button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-sm sm:text-base font-semibold shadow-md hover:shadow-lg active:shadow-xl transition disabled:opacity-60 touch-manipulation min-h-[44px]"
-            >
-              {updateMutation.isPending ? 'Güncelleniyor…' : 'Kaydet'}
-            </button>
           </form>
         </section>
       )}
 
-      {/* Değerlendirmelerim Tab - Mobile Optimized */}
-      {activeTab === 'reviews' && (
-        <section className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
+      {/* Şifre Güncelleme Formu - Collapsible */}
+      {passwordUpdateOpen && (
+        <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4 animate-fade-in">
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M12 1l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Şifre Güncelle</h3>
+                <p className="text-xs text-gray-600">Güvenliğiniz için mevcut şifrenizi girin</p>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form className="space-y-4">
+              {/* Mevcut Şifre */}
+              <div>
+                <label className="block text-xs sm:text-sm text-gray-700 mb-2 font-medium">Mevcut Şifre</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all touch-manipulation min-h-[44px]"
+                    placeholder="Mevcut şifrenizi girin"
+                    required
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                      <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Yeni Şifre */}
+              <div>
+                <label className="block text-xs sm:text-sm text-gray-700 mb-2 font-medium">Yeni Şifre</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all touch-manipulation min-h-[44px]"
+                    placeholder="Yeni şifrenizi girin"
+                    required
+                    minLength={6}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                      <path d="M12 1l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Şifre Onayı */}
+              <div>
+                <label className="block text-xs sm:text-sm text-gray-700 mb-2 font-medium">Yeni Şifre Onayı</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-xl px-4 py-3 text-sm bg-white/80 border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all touch-manipulation min-h-[44px]"
+                    placeholder="Yeni şifrenizi tekrar girin"
+                    required
+                    minLength={6}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                      <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Şifre Kuralları */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <div className="flex items-start gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500 mt-0.5">
+                    <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div className="text-xs text-blue-700">
+                    <p className="font-medium mb-1">Şifre Kuralları:</p>
+                    <ul className="space-y-1 text-blue-600">
+                      <li>• En az 6 karakter olmalı</li>
+                      <li>• Güçlü bir şifre seçin</li>
+                      <li>• Mevcut şifrenizden farklı olmalı</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Butonlar */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPasswordUpdateOpen(false);
+                    setCurrentPassword('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all touch-manipulation min-h-[44px]"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation min-h-[44px]"
+                >
+                  Şifre Güncelle
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      )}
+
+      {/* Değerlendirmelerim Butonu */}
+      <section className="mt-3 sm:mt-4">
+        <button
+          onClick={() => setReviewsOpen(!reviewsOpen)}
+          className="w-full bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-4 hover:bg-white/70 active:bg-white/80 transition-all touch-manipulation"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="text-left">
+                <h3 className="text-sm font-semibold text-gray-900">Değerlendirmelerim</h3>
+                <p className="text-xs text-gray-600">Yaptığınız değerlendirmeleri görüntüleyin</p>
+              </div>
+            </div>
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              className={`text-gray-500 transition-transform ${reviewsOpen ? 'rotate-180' : ''}`}
+            >
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </button>
+      </section>
+
+      {/* Değerlendirmelerim İçeriği - Collapsible */}
+      {reviewsOpen && (
+        <section className="mt-3 sm:mt-4 space-y-3 sm:space-y-4 animate-fade-in">
           {/* Header Stats - Mobile Optimized */}
           {userReviews?.reviews && userReviews.reviews.length > 0 && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3 sm:p-4">
@@ -530,12 +675,53 @@ export default function UserProfilePage() {
         </section>
       )}
 
+      {/* Destek Butonu */}
+      <section className="mt-3 sm:mt-4">
+        <button
+          onClick={() => setSupportOpen(true)}
+          className="w-full bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-4 hover:bg-white/70 active:bg-white/80 transition-all touch-manipulation"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="text-left">
+              <h3 className="text-sm font-semibold text-gray-900">Destek</h3>
+              <p className="text-xs text-gray-600">Yardım ve destek alın</p>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      {/* Bildirimler Butonu */}
+      <section className="mt-3 sm:mt-4">
+        <button
+          onClick={() => setNotificationsOpen(true)}
+          className="w-full bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-4 hover:bg-white/70 active:bg-white/80 transition-all touch-manipulation"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="text-left">
+              <h3 className="text-sm font-semibold text-gray-900">Bildirimler</h3>
+              <p className="text-xs text-gray-600">Bildirim ayarlarını yönetin</p>
+            </div>
+          </div>
+        </button>
+      </section>
+
       {/* Push Notification - Kullanıcı - Mobile Optimized */}
       {isSupported && (
         <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <div className="text-xs sm:text-sm font-semibold text-gray-800">Push Bildirimleri</div>
+              <div className="text-xs sm:text-sm font-semibold text-gray-800">Bildirimlere izin ver</div>
               <div className="text-[10px] sm:text-xs text-gray-600">
                 {isSubscribed 
                   ? 'Randevu güncellemeleri için bildirim alınıyor' 
@@ -667,6 +853,21 @@ export default function UserProfilePage() {
           </div>
         </div>
       )}
+
+
+      {/* Destek Modal */}
+      <SupportModal
+        isOpen={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        userType="user"
+      />
+
+      {/* Bildirimler Modal */}
+      <NotificationsModal
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        userType="user"
+      />
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
