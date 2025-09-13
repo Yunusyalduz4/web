@@ -7,6 +7,8 @@ import Map from '../../../../components/Map';
 import Hero from '../../../../components/ui/Hero';
 import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faVenusMars, faMars, faVenus } from '@fortawesome/free-solid-svg-icons';
 
 export default function UserBusinessesPage() {
   const [view, setView] = useState<'list' | 'map'>('list');
@@ -150,7 +152,12 @@ export default function UserBusinessesPage() {
           </div>
           <button
             onClick={() => router.push('/dashboard/user/favorites')}
-            className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 border border-white/40 text-gray-900 text-xs sm:text-sm shadow-sm touch-manipulation min-h-[44px] transition-all"
+            className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 text-gray-900 text-xs sm:text-sm shadow-sm touch-manipulation min-h-[44px] transition-all relative"
+            style={{
+              border: '2px solid transparent',
+              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #3b82f6, #ef4444, #ffffff) border-box',
+              borderRadius: '12px'
+            }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#e11d48"><path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z"/></svg>
             <span className="hidden xs:inline">Favoriler</span>
@@ -172,7 +179,12 @@ export default function UserBusinessesPage() {
             onClick={() => setFilterOpen(true)} 
             className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs shadow hover:shadow-lg active:scale-95 touch-manipulation min-h-[44px] transition-all"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M7 7v10M17 7v10M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-white">
+              <path d="M3 6h18M8 12h8M5 18h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="18" cy="6" r="3" fill="currentColor"/>
+              <circle cx="6" cy="12" r="3" fill="currentColor"/>
+              <circle cx="18" cy="18" r="3" fill="currentColor"/>
+            </svg>
             <span className="hidden xs:inline">Filtre</span>
           </button>
         </div>
@@ -182,89 +194,114 @@ export default function UserBusinessesPage() {
       <div className="mt-3 space-y-3">
         {/* Cinsiyet Filtresi */}
         <div className="space-y-2">
-          <span className="text-xs font-medium text-gray-700">Cinsiyet:</span>
+          <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-600">
+              <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V9.5L21 9ZM3 9L9 9.5V7.5L3 7V9ZM12 8C15.3 8 18 10.7 18 14V16H6V14C6 10.7 8.7 8 12 8Z" fill="currentColor"/>
+            </svg>
+            Cinsiyet
+          </span>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 genderFilter === 'all' 
-                  ? 'border-purple-500 bg-purple-50 text-purple-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setGenderFilter('all')}
             >
-              <span>👥 Tümü</span>
+              <FontAwesomeIcon icon={faVenusMars} className={`text-sm ${genderFilter === 'all' ? 'text-purple-600' : 'text-gray-600'}`} />
+              Tümü
             </button>
             
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 genderFilter === 'male' 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setGenderFilter(genderFilter === 'male' ? 'all' : 'male')}
             >
-              <span>👨 Erkek</span>
+              <FontAwesomeIcon icon={faMars} className={`text-sm ${genderFilter === 'male' ? 'text-blue-600' : 'text-gray-600'}`} />
+              Erkek
             </button>
             
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 genderFilter === 'female' 
-                  ? 'border-pink-500 bg-pink-50 text-pink-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setGenderFilter(genderFilter === 'female' ? 'all' : 'female')}
             >
-              <span>👩 Kadın</span>
+              <FontAwesomeIcon icon={faVenus} className={`text-sm ${genderFilter === 'female' ? 'text-pink-600' : 'text-gray-600'}`} />
+              Kadın
             </button>
           </div>
         </div>
 
         {/* Mesafe Filtresi */}
         <div className="space-y-2">
-          <span className="text-xs font-medium text-gray-700">Mesafe:</span>
+          <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-gray-600">
+              <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5S14.5 7.62 14.5 9S13.38 11.5 12 11.5Z" fill="currentColor"/>
+            </svg>
+            Mesafe
+          </span>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 maxDistanceKm === 2
-                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setMaxDistanceKm(maxDistanceKm === 2 ? null : 2)}
             >
-              <span>📍 2 km</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={maxDistanceKm === 2 ? 'text-rose-600' : 'text-gray-600'}>
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5S14.5 7.62 14.5 9S13.38 11.5 12 11.5Z" fill="currentColor"/>
+              </svg>
+              2 km
             </button>
             
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 maxDistanceKm === 5
-                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setMaxDistanceKm(maxDistanceKm === 5 ? null : 5)}
             >
-              <span>📍 5 km</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={maxDistanceKm === 5 ? 'text-rose-600' : 'text-gray-600'}>
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5S14.5 7.62 14.5 9S13.38 11.5 12 11.5Z" fill="currentColor"/>
+              </svg>
+              5 km
             </button>
             
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 maxDistanceKm === 10
-                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setMaxDistanceKm(maxDistanceKm === 10 ? null : 10)}
             >
-              <span>📍 10 km</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={maxDistanceKm === 10 ? 'text-rose-600' : 'text-gray-600'}>
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5S14.5 7.62 14.5 9S13.38 11.5 12 11.5Z" fill="currentColor"/>
+              </svg>
+              10 km
             </button>
             
             <button
-              className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-medium touch-manipulation min-h-[44px] shrink-0 ${
                 maxDistanceKm === 20
-                  ? 'border-rose-500 bg-rose-50 text-rose-700' 
-                  : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                  ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' 
+                  : 'border-gray-200 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90 hover:border-gray-300'
               }`}
               onClick={() => setMaxDistanceKm(maxDistanceKm === 20 ? null : 20)}
             >
-              <span>📍 20 km</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={maxDistanceKm === 20 ? 'text-rose-600' : 'text-gray-600'}>
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5S14.5 7.62 14.5 9S13.38 11.5 12 11.5Z" fill="currentColor"/>
+              </svg>
+              20 km
             </button>
           </div>
         </div>
@@ -274,20 +311,20 @@ export default function UserBusinessesPage() {
       <div className="flex items-center justify-center mb-3 mt-4">
         <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
           <button
-            className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${view === 'list' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${view === 'list' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
             onClick={() => setView('list')}
             aria-pressed={view === 'list'}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z"/></svg>
-            <span className="hidden xs:inline">Liste</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+            <span>Liste</span>
           </button>
           <button
-            className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${view === 'map' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${view === 'map' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
             onClick={() => setView('map')}
             aria-pressed={view === 'map'}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4l6 2 6-2v16l-6 2-6-2-6 2V6l6-2zM9 6v12l6 2V8L9 6z"/></svg>
-            <span className="hidden xs:inline">Harita</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4l6 2 6-2v16l-6 2-6-2-6 2V6l6-2zM9 6v12l6 2V8L9 6z"/></svg>
+            <span>Harita</span>
           </button>
         </div>
       </div>
@@ -308,6 +345,8 @@ export default function UserBusinessesPage() {
                 className="group relative bg-white/60 backdrop-blur-md rounded-2xl shadow-sm hover:shadow-lg transition-all overflow-hidden border border-white/40 hover:border-rose-300 cursor-pointer touch-manipulation"
                 onClick={() => router.push(`/dashboard/user/businesses/${b.id}`)}
               >
+                {/* Degrade Border - Sol Kenar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-red-500 to-white rounded-l-2xl"></div>
                 {/* Main Content - Mobile Optimized */}
                 <div className="relative p-3 sm:p-4">
                   {/* Top: Avatar + Name + Rating, Right: Distance */}
@@ -361,9 +400,24 @@ export default function UserBusinessesPage() {
                         ? 'bg-pink-50 text-pink-700 border-pink-200'
                         : 'bg-purple-50 text-purple-700 border-purple-200'
                     }`}>
-                      {b.gender_service === 'male' && '👨 Erkek'}
-                      {b.gender_service === 'female' && '👩 Kadın'}
-                      {b.gender_service === 'unisex' && '👥 Unisex'}
+                      {b.gender_service === 'male' && (
+                        <>
+                          <FontAwesomeIcon icon={faMars} className="text-xs" />
+                          Erkek
+                        </>
+                      )}
+                      {b.gender_service === 'female' && (
+                        <>
+                          <FontAwesomeIcon icon={faVenus} className="text-xs" />
+                          Kadın
+                        </>
+                      )}
+                      {b.gender_service === 'unisex' && (
+                        <>
+                          <FontAwesomeIcon icon={faVenusMars} className="text-xs" />
+                          Unisex
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -372,15 +426,40 @@ export default function UserBusinessesPage() {
           </div>
         )}
         {view === 'map' && (
-          <div className="w-full h-[60vh] sm:h-[55vh] min-h-[300px] sm:min-h-[400px] rounded-2xl overflow-hidden animate-fade-in">
-            <Map
-              center={{ lat: 39.9334, lng: 32.8597 }} // Ankara merkez
-              zoom={10}
-              markers={mapMarkers.map(m => ({ ...m, color: '#ef476f' }))}
-              onMarkerClick={handleMarkerClick}
-              showUserLocation={true}
-              className="w-full h-full"
-            />
+          <div className="w-full h-[60vh] sm:h-[55vh] min-h-[300px] sm:min-h-[400px] rounded-2xl overflow-hidden animate-fade-in relative">
+            {/* Harita Header */}
+            <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-r from-rose-500/90 via-fuchsia-500/90 to-indigo-500/90 backdrop-blur-md px-4 py-3 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-sm">İşletme Haritası</h3>
+                    <p className="text-white/80 text-xs">{businessesWithDistance?.length || 0} işletme bulundu</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-white/80 text-xs">Canlı</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Harita Container */}
+            <div className="w-full h-full pt-16">
+              <Map
+                center={{ lat: 39.9334, lng: 32.8597 }} // Ankara merkez
+                zoom={10}
+                markers={mapMarkers.map(m => ({ ...m, color: '#ef476f' }))}
+                onMarkerClick={handleMarkerClick}
+                showUserLocation={true}
+                className="w-full h-full"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -457,43 +536,77 @@ export default function UserBusinessesPage() {
       `}</style>
     </main>
 
-    {/* Filters Modal - Mobile Optimized */}
+    {/* Modern Filters Modal */}
     {filterOpen && (
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pb-20 sm:pb-0">
+        {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setFilterOpen(false)} />
-        <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:m-auto sm:max-w-2xl sm:h-[80vh] bg-white/70 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40">
-          {/* Mobile drag handle */}
-          <div className="py-2 flex items-center justify-center sm:hidden">
-            <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+        
+        {/* Modal */}
+        <div className="relative w-full sm:max-w-2xl h-[85vh] sm:h-[80vh] bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/40">
+          {/* Header */}
+          <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-white/40">
+            {/* Mobile drag handle */}
+            <div className="py-2 flex items-center justify-center sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+            </div>
+            
+            <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-rose-500 to-fuchsia-500 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M3 6h18M8 12h8M5 18h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="18" cy="6" r="3" fill="currentColor"/>
+                    <circle cx="6" cy="12" r="3" fill="currentColor"/>
+                    <circle cx="18" cy="18" r="3" fill="currentColor"/>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Filtreler</h3>
+              </div>
+              
+              <button 
+                className="w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center transition-all shadow-sm"
+                onClick={() => setFilterOpen(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className="px-3 sm:px-4 pb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-lg">Filtreler</h3>
-            <button 
-              className="px-3 py-2 rounded-xl bg-rose-600 text-white border border-transparent hover:bg-rose-700 active:bg-rose-800 text-sm inline-flex items-center gap-2 transition-all touch-manipulation min-h-[44px]" 
-              onClick={() => setFilterOpen(false)}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              Kapat
-            </button>
-          </div>
-          <div className="px-3 sm:px-4 space-y-4 overflow-auto flex-1 pb-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Minimum Puan</label>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
+            {/* Rating Filter */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-amber-500">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <label className="text-sm font-semibold text-gray-900">Minimum Puan</label>
+              </div>
               <select 
-                className="w-full border border-white/40 rounded-xl px-3 py-3 text-sm bg-white/60 backdrop-blur-md text-gray-900 touch-manipulation" 
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm bg-white text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all"
                 value={minRating} 
                 onChange={(e) => setMinRating(Number(e.target.value))}
               >
                 <option value={0}>Tümü</option>
-                <option value={3}>3+</option>
-                <option value={4}>4+</option>
-                <option value={4.5}>4.5+</option>
+                <option value={3}>3+ Yıldız</option>
+                <option value={4}>4+ Yıldız</option>
+                <option value={4.5}>4.5+ Yıldız</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Maksimum Mesafe</label>
+
+            {/* Distance Filter */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+                  <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5S14.5 7.62 14.5 9S13.38 11.5 12 11.5Z" fill="currentColor"/>
+                </svg>
+                <label className="text-sm font-semibold text-gray-900">Maksimum Mesafe</label>
+              </div>
               <select 
-                className="w-full border border-white/40 rounded-xl px-3 py-3 text-sm bg-white/60 backdrop-blur-md text-gray-900 touch-manipulation" 
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm bg-white text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all"
                 value={maxDistanceKm ?? ''} 
                 onChange={(e) => setMaxDistanceKm(e.target.value ? Number(e.target.value) : null)}
               >
@@ -504,48 +617,83 @@ export default function UserBusinessesPage() {
                 <option value={20}>20 km</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Sırala</label>
+
+            {/* Sort Filter */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-green-500">
+                  <path d="M3 6h18M7 12h10M5 18h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <label className="text-sm font-semibold text-gray-900">Sıralama</label>
+              </div>
               <select 
-                className="w-full border border-white/40 rounded-xl px-3 py-3 text-sm bg-white/60 backdrop-blur-md text-gray-900 touch-manipulation" 
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm bg-white text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all"
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value as any)}
               >
-                <option value="distance">Mesafe</option>
-                <option value="rating">Puan</option>
-                <option value="favorites">Favori</option>
+                <option value="distance">Mesafeye Göre</option>
+                <option value="rating">Puana Göre</option>
+                <option value="favorites">Favori Sayısına Göre</option>
               </select>
             </div>
-            
-            {/* Checkbox options - Mobile optimized */}
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 text-sm text-gray-900 touch-manipulation min-h-[44px] p-2 -m-2 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={hasPhone} 
-                  onChange={(e) => setHasPhone(e.target.checked)} 
-                  className="w-4 h-4 text-rose-600 bg-gray-100 border-gray-300 rounded focus:ring-rose-500"
-                />
-                <span>📞 Telefonu olanlar</span>
-              </label>
-              <label className="flex items-center gap-3 text-sm text-gray-900 touch-manipulation min-h-[44px] p-2 -m-2 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={hasEmail} 
-                  onChange={(e) => setHasEmail(e.target.checked)} 
-                  className="w-4 h-4 text-rose-600 bg-gray-100 border-gray-300 rounded focus:ring-rose-500"
-                />
-                <span>📧 E-postası olanlar</span>
-              </label>
+
+            {/* Contact Options */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-purple-500">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <label className="text-sm font-semibold text-gray-900">İletişim Bilgileri</label>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-gray-200 hover:border-rose-300 hover:bg-rose-50 cursor-pointer transition-all">
+                  <input 
+                    type="checkbox" 
+                    checked={hasPhone} 
+                    onChange={(e) => setHasPhone(e.target.checked)} 
+                    className="w-5 h-5 text-rose-600 bg-gray-100 border-gray-300 rounded focus:ring-rose-500"
+                  />
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-green-500">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">Telefonu olanlar</span>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-gray-200 hover:border-rose-300 hover:bg-rose-50 cursor-pointer transition-all">
+                  <input 
+                    type="checkbox" 
+                    checked={hasEmail} 
+                    onChange={(e) => setHasEmail(e.target.checked)} 
+                    className="w-5 h-5 text-rose-600 bg-gray-100 border-gray-300 rounded focus:ring-rose-500"
+                  />
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">E-postası olanlar</span>
+                  </div>
+                </label>
+              </div>
             </div>
-            
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-3 block">Cinsiyet Filtresi</label>
-              <div className="grid grid-cols-3 gap-2">
-                <label className={`flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all touch-manipulation min-h-[60px] ${
+
+            {/* Gender Filter */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-pink-500">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V9.5L21 9ZM3 9L9 9.5V7.5L3 7V9ZM12 8C15.3 8 18 10.7 18 14V16H6V14C6 10.7 8.7 8 12 8Z" fill="currentColor"/>
+                </svg>
+                <label className="text-sm font-semibold text-gray-900">Cinsiyet Filtresi</label>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   genderFilter === 'all' 
                     ? 'border-purple-500 bg-purple-50 text-purple-700' 
-                    : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50'
                 }`}>
                   <input
                     type="radio"
@@ -555,16 +703,14 @@ export default function UserBusinessesPage() {
                     onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
                     className="hidden"
                   />
-                  <div className="text-center">
-                    <div className="text-lg mb-1">👥</div>
-                    <div className="text-xs font-medium">Tümü</div>
-                  </div>
+                  <FontAwesomeIcon icon={faVenusMars} className="text-2xl mb-2 text-purple-600" />
+                  <div className="text-xs font-semibold">Tümü</div>
                 </label>
                 
-                <label className={`flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all touch-manipulation min-h-[60px] ${
+                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   genderFilter === 'male' 
                     ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                    : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
                 }`}>
                   <input
                     type="radio"
@@ -574,16 +720,14 @@ export default function UserBusinessesPage() {
                     onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
                     className="hidden"
                   />
-                  <div className="text-center">
-                    <div className="text-lg mb-1">👨</div>
-                    <div className="text-xs font-medium">Erkek</div>
-                  </div>
+                  <FontAwesomeIcon icon={faMars} className="text-2xl mb-2 text-blue-600" />
+                  <div className="text-xs font-semibold">Erkek</div>
                 </label>
                 
-                <label className={`flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all touch-manipulation min-h-[60px] ${
+                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   genderFilter === 'female' 
                     ? 'border-pink-500 bg-pink-50 text-pink-700' 
-                    : 'border-white/50 bg-white/60 text-gray-700 hover:bg-white/80 active:bg-white/90'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-pink-300 hover:bg-pink-50'
                 }`}>
                   <input
                     type="radio"
@@ -593,25 +737,40 @@ export default function UserBusinessesPage() {
                     onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
                     className="hidden"
                   />
-                  <div className="text-center">
-                    <div className="text-lg mb-1">👩</div>
-                    <div className="text-xs font-medium">Kadın</div>
-                  </div>
+                  <FontAwesomeIcon icon={faVenus} className="text-2xl mb-2 text-pink-600" />
+                  <div className="text-xs font-semibold">Kadın</div>
                 </label>
               </div>
-              <div className="text-xs text-gray-500 mt-2 text-center px-2">
+              
+              <div className="text-xs text-gray-500 text-center px-2 py-2 bg-gray-50 rounded-lg">
                 {genderFilter === 'male' && 'Sadece erkek ve unisex işletmeler gösterilecek'}
                 {genderFilter === 'female' && 'Sadece kadın ve unisex işletmeler gösterilecek'}
                 {genderFilter === 'all' && 'Tüm işletmeler gösterilecek'}
               </div>
             </div>
-            
-            <div className="pt-2">
+          </div>
+
+          {/* Footer */}
+          <div className="sticky bottom-0 bg-white/80 backdrop-blur-md border-t border-white/40 p-4 sm:p-6">
+            <div className="flex gap-3">
               <button
-                className="w-full py-3 px-4 rounded-xl text-sm font-semibold active:scale-95 transition-all bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md hover:shadow-lg touch-manipulation min-h-[44px]"
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-all"
+                onClick={() => {
+                  setMinRating(0);
+                  setMaxDistanceKm(null);
+                  setSortBy('distance');
+                  setHasPhone(false);
+                  setHasEmail(false);
+                  setGenderFilter('all');
+                }}
+              >
+                Temizle
+              </button>
+              <button
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white shadow-md hover:shadow-lg active:scale-95 transition-all"
                 onClick={() => setFilterOpen(false)}
               >
-                ✅ Filtreleri Uygula
+                Filtreleri Uygula
               </button>
             </div>
           </div>
