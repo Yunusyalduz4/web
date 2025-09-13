@@ -516,10 +516,9 @@ export default function Map(props: MapProps) {
         }}
       />
       
-      {/* Modern Harita Kontrolleri */}
+      {/* Mevcut Konuma Git Butonu - Sağa Yaslanmış */}
       {map && (
-        <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
-          {/* Mevcut Konuma Git Butonu */}
+        <div className="absolute right-2 top-15 z-10">
           <button
             onClick={() => {
               if (userLocation) {
@@ -539,49 +538,6 @@ export default function Map(props: MapProps) {
               <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="currentColor"/>
             </svg>
           </button>
-
-          {/* Zoom Butonları */}
-          <div className="flex flex-col gap-1 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-            <button
-              onClick={() => {
-                if (map) {
-                  const currentZoom = map.getZoom();
-                  map.setZoom(currentZoom + 1);
-                }
-              }}
-              className="w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
-              title="Yakınlaştır"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <div className="h-px bg-gray-200"></div>
-            <button
-              onClick={() => {
-                if (map) {
-                  const currentZoom = map.getZoom();
-                  map.setZoom(currentZoom - 1);
-                }
-              }}
-              className="w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
-              title="Uzaklaştır"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Konum Durumu Göstergesi */}
-          {isTrackingLocation && (
-            <div className="bg-green-500 text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                Konum Takibi Aktif
-              </div>
-            </div>
-          )}
         </div>
       )}
       
