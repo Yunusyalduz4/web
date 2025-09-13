@@ -119,7 +119,7 @@ export default function FavoritesPage() {
       <div className="mt-2">
         <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">Favoriler</h1>
         
-        {/* Minimal Hikayeler Bölümü */}
+        {/* Hikayeler Bölümü - Mobile Optimized */}
         {favoritesStories && favoritesStories.length > 0 && (
           <div className="mt-4 sm:mt-6 mb-4">
             <div className="flex items-center justify-center mb-3 sm:mb-4">
@@ -128,41 +128,11 @@ export default function FavoritesPage() {
                 <span className="text-white text-xs sm:text-sm">📱</span>
               </div>
             </div>
-            <div className="flex justify-center gap-3 overflow-x-auto no-scrollbar pb-2">
-              {favoritesStories.map((story, index) => (
-                <div
-                  key={story.id}
-                  onClick={() => handleStoryClick(story, index)}
-                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden cursor-pointer touch-manipulation shrink-0"
-                  style={{
-                    border: '2px solid transparent',
-                    background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #8b5cf6, #ec4899) border-box',
-                    borderRadius: '50%'
-                  }}
-                >
-                  {/* Hikaye Resmi Önizlemesi */}
-                  {story.image_url ? (
-                    <img 
-                      src={story.image_url} 
-                      alt={story.business_name}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-purple-400">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Hikaye Durumu Göstergesi */}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <StoryGrid 
+              stories={favoritesStories} 
+              onStoryClick={handleStoryClick}
+              className="justify-center"
+            />
           </div>
         )}
         

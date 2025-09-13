@@ -169,10 +169,33 @@ export default function UserDashboard() {
   };
 
   const handleRescheduleClick = (appointment: any) => {
-    setRescheduleModal({
-      isOpen: true,
-      appointment: appointment
+    // Bu randevu için erteleme isteği var mı kontrol et
+    const existingRequest = pendingRescheduleRequests?.find((req: any) => req.appointment_id === appointment.id);
+    
+    console.log('🔍 Reschedule Click Debug:', {
+      appointmentId: appointment.id,
+      pendingRescheduleRequests: pendingRescheduleRequests,
+      foundRequest: existingRequest
     });
+    
+    if (existingRequest) {
+      // Eğer erteleme isteği varsa, mevcut istek bilgisini göster
+      console.log('✅ Existing request found, showing info');
+      setRescheduleModal({
+        isOpen: true,
+        appointment: {
+          ...appointment,
+          existingRescheduleRequest: existingRequest
+        }
+      });
+    } else {
+      // Eğer erteleme isteği yoksa, normal modal aç
+      console.log('❌ No existing request, opening form');
+      setRescheduleModal({
+        isOpen: true,
+        appointment: appointment
+      });
+    }
   };
 
   const handleRescheduleSubmitted = () => {
