@@ -498,7 +498,6 @@ export const rescheduleRouter = t.router({
         LEFT JOIN users u ON r.requested_by_user_id = u.id
         WHERE r.status = 'pending' 
         AND a.user_id = $1
-        AND r.requested_by_role IN ('business', 'employee')
         ORDER BY r.created_at DESC
       `;
 

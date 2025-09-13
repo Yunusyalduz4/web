@@ -37,6 +37,7 @@ interface UserRescheduleModalProps {
     business_id: string | number;
     business_name?: string;
     employee_name?: string;
+    existingRescheduleRequest?: any; // Mevcut erteleme isteği
     services?: Array<{
       service_id: string;
       service_name: string;
@@ -69,10 +70,33 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
   });
 
   // Mevcut erteleme isteklerini getir
-  const { data: existingRequests } = trpc.reschedule.getPendingRescheduleRequests.useQuery(
+  const { data: existingRequests, refetch: refetchExistingRequests } = trpc.reschedule.getPendingRescheduleRequests.useQuery(
     undefined,
     { enabled: isOpen }
   );
+  
+  // Erteleme isteğini iptal et
+  const cancelRescheduleMutation = trpc.reschedule.cancelRescheduleRequest.useMutation({
+    onSuccess: () => {
+      setToast({
+        open: true,
+        message: '✅ Erteleme isteğiniz iptal edildi!',
+        type: 'success'
+      });
+      refetchExistingRequests();
+      setTimeout(() => {
+        onClose();
+        onRescheduleSubmitted?.();
+      }, 1500);
+    },
+    onError: (error) => {
+      setToast({
+        open: true,
+        message: `❌ İptal işlemi başarısız: ${error.message}`,
+        type: 'error'
+      });
+    }
+  });
 
   // Çalışan ID'sini al - services array'inden
   const getEmployeeId = () => {
@@ -188,8 +212,8 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
     return busySlots?.[timeSlot] || false;
   };
 
-  // Mevcut erteleme isteğini bul
-  const existingRequest = existingRequests?.find(req => req.appointment_id === appointment?.id);
+  // Mevcut erteleme isteğini bul (prop'tan veya query'den)
+  const existingRequest = appointment?.existingRescheduleRequest || existingRequests?.find(req => req.appointment_id === appointment?.id);
 
   // Haftalık tarihleri hesapla
   const weekDates = useMemo(() => getWeekDates(currentWeekStart), [currentWeekStart]);
@@ -253,27 +277,6 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
     }
   });
 
-  // Erteleme isteğini iptal et
-  const cancelRescheduleMutation = trpc.reschedule.cancelRescheduleRequest.useMutation({
-    onSuccess: () => {
-      setToast({
-        open: true,
-        message: '✅ Erteleme isteğiniz iptal edildi!',
-        type: 'success'
-      });
-      setTimeout(() => {
-        onClose();
-        onRescheduleSubmitted?.();
-      }, 1500);
-    },
-    onError: (error) => {
-      setToast({
-        open: true,
-        message: `❌ İptal işlemi başarısız: ${error.message}`,
-        type: 'error'
-      });
-    }
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,80 +313,150 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
   if (!isOpen || !appointment) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md mx-auto shadow-2xl overflow-hidden">
-        {/* Modern Header with Gradient */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-5 relative">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-sm sm:max-w-md mx-auto shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+        {/* Modern Header with Gradient - Mobil Optimized */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 sm:px-6 py-4 sm:py-5 relative flex-shrink-0">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/20"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h2 className="text-xl font-bold text-white pr-8">📅 Randevu Erteleme</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-white pr-12 sm:pr-8">📅 Randevu Erteleme</h2>
         </div>
         
-        <div className="p-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
 
-          {/* Modern Current Appointment Card */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl border border-gray-100">
+          {/* Modern Current Appointment Card - Mobil Optimized */}
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl sm:rounded-2xl border border-gray-100">
             <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900">Mevcut Randevu</h3>
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Mevcut Randevu</h3>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                <span className="font-medium">İşletme:</span>
-                <span className="ml-2">{appointment?.business_name || 'Bilinmiyor'}</span>
+              <div className="flex items-start text-xs sm:text-sm text-gray-600">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium">İşletme:</span>
+                  <span className="ml-1 break-words">{appointment?.business_name || 'Bilinmiyor'}</span>
+                </div>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                <span className="font-medium">Çalışan:</span>
-                <span className="ml-2">{getEmployeeName()}</span>
+              <div className="flex items-start text-xs sm:text-sm text-gray-600">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium">Çalışan:</span>
+                  <span className="ml-1 break-words">{getEmployeeName()}</span>
+                </div>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                <span className="font-medium">Tarih:</span>
-                <span className="ml-2">{appointment?.appointment_datetime ? new Date(appointment.appointment_datetime).toLocaleString('tr-TR') : 'Bilinmiyor'}</span>
+              <div className="flex items-start text-xs sm:text-sm text-gray-600">
+                <span className="w-2 h-2 bg-purple-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium">Tarih:</span>
+                  <span className="ml-1 break-words">{appointment?.appointment_datetime ? new Date(appointment.appointment_datetime).toLocaleString('tr-TR') : 'Bilinmiyor'}</span>
+                </div>
               </div>
             </div>
           </div>
 
-        {/* Mevcut Erteleme İsteği */}
+        {/* Mevcut Erteleme İsteği - Geliştirilmiş */}
         {existingRequest && (
-          <div className="mb-4 p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="font-medium text-orange-900 text-sm sm:text-base">Bekleyen Erteleme İsteği</h3>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs sm:text-sm text-orange-800">
-                <strong>Yeni Tarih:</strong> {new Date(existingRequest.new_appointment_datetime).toLocaleString('tr-TR')}
-              </p>
-              {existingRequest.request_reason && (
-                <p className="text-xs sm:text-sm text-orange-800">
-                  <strong>Sebep:</strong> {existingRequest.request_reason}
+          <div className="mb-4 p-4 sm:p-5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-900 text-base sm:text-lg">Bekleyen Erteleme İsteği</h3>
+                <p className="text-xs sm:text-sm text-orange-700 mt-0.5">
+                  İsteğiniz işletme tarafından onay bekliyor
                 </p>
-              )}
-              <p className="text-xs text-orange-700">
-                İsteğiniz işletme tarafından onay bekliyor.
-              </p>
+              </div>
+              <div className="px-3 py-1 bg-orange-200 rounded-full">
+                <span className="text-xs font-medium text-orange-800">Bekliyor</span>
+              </div>
             </div>
+            
+            <div className="space-y-3">
+              {/* Mevcut Randevu Bilgisi */}
+              <div className="bg-white/70 rounded-xl p-4 border border-orange-100">
+                <h4 className="text-sm font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Mevcut Randevu
+                </h4>
+                <p className="text-sm text-gray-700">
+                  {appointment?.appointment_datetime ? new Date(appointment.appointment_datetime).toLocaleString('tr-TR') : 'Bilinmiyor'}
+                </p>
+              </div>
+
+              {/* Yeni Randevu Bilgisi */}
+              <div className="bg-white/70 rounded-xl p-4 border border-orange-100">
+                <h4 className="text-sm font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  İstenen Yeni Tarih
+                </h4>
+                <p className="text-sm text-gray-700">
+                  {new Date(existingRequest.new_appointment_datetime).toLocaleString('tr-TR')}
+                </p>
+              </div>
+
+              {/* Sebep Bilgisi */}
+              {existingRequest.request_reason && (
+                <div className="bg-white/70 rounded-xl p-4 border border-orange-100">
+                  <h4 className="text-sm font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Erteleme Sebebi
+                  </h4>
+                  <p className="text-sm text-gray-700 break-words">
+                    {existingRequest.request_reason}
+                  </p>
+                </div>
+              )}
+
+              {/* Durum Bilgisi */}
+              <div className="bg-gradient-to-r from-orange-100 to-amber-100 rounded-xl p-4 border border-orange-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-medium text-orange-800">
+                    İşletme onayı bekleniyor. Onaylandığında size bildirim gönderilecek.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* İptal Butonu */}
             <button
               onClick={handleCancelRequest}
               disabled={cancelRescheduleMutation.isPending}
-              className="w-full mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base touch-manipulation min-h-[44px]"
+              className="w-full mt-4 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm sm:text-base touch-manipulation min-h-[48px] font-semibold shadow-sm hover:shadow-md"
             >
-              {cancelRescheduleMutation.isPending ? 'İptal Ediliyor...' : 'İsteği İptal Et'}
+              {cancelRescheduleMutation.isPending ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  İptal Ediliyor...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  İsteği İptal Et
+                </div>
+              )}
             </button>
           </div>
         )}
@@ -391,16 +464,16 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
         {/* Yeni Erteleme İsteği Formu - Sadece mevcut istek yoksa göster */}
         {!existingRequest && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Modern Date Picker Section */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
+            {/* Modern Date Picker Section - Mobil Optimized */}
+            <div className="mb-4 sm:mb-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 rounded-full flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <label className="text-sm font-semibold text-gray-900">Yeni Randevu Tarihi</label>
+                  <label className="text-xs sm:text-sm font-semibold text-gray-900">Yeni Randevu Tarihi</label>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -410,7 +483,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                       newWeekStart.setDate(currentWeekStart.getDate() - 7);
                       setCurrentWeekStart(newWeekStart);
                     }}
-                    className="p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    className="p-2 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors touch-manipulation min-h-[40px] min-w-[40px] flex items-center justify-center"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -423,7 +496,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                       newWeekStart.setDate(currentWeekStart.getDate() + 7);
                       setCurrentWeekStart(newWeekStart);
                     }}
-                    className="p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    className="p-2 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors touch-manipulation min-h-[40px] min-w-[40px] flex items-center justify-center"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -432,8 +505,8 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                 </div>
               </div>
             
-            {/* Haftalık Tarih Grid */}
-            <div className="grid grid-cols-7 gap-2 mb-3">
+            {/* Haftalık Tarih Grid - Mobil Optimized */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-3">
               {weekDates.map((date, index) => {
                 const dateStr = date.toISOString().split('T')[0];
                 const isSelected = selectedDate === dateStr;
@@ -454,7 +527,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                       setError('');
                     }}
                     disabled={isPast}
-                    className={`p-3 rounded-2xl text-center transition-all duration-200 min-h-[70px] ${
+                    className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl text-center transition-all duration-200 min-h-[60px] sm:min-h-[70px] touch-manipulation ${
                       isSelected 
                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105' 
                         : isToday 
@@ -465,7 +538,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                     }`}
                   >
                     <div className="text-xs font-medium">{dayNamesShort[index]}</div>
-                    <div className="text-sm font-bold mt-1">{date.getDate()}</div>
+                    <div className="text-sm sm:text-base font-bold mt-1">{date.getDate()}</div>
                     {isToday && (
                       <div className="text-xs mt-1 opacity-75">Bugün</div>
                     )}
@@ -475,28 +548,28 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
             </div>
           </div>
 
-            {/* Modern Time Picker Section */}
+            {/* Modern Time Picker Section - Mobil Optimized */}
             {selectedDate && (
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 sm:mb-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="flex items-center">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded-full flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <label className="text-sm font-semibold text-gray-900">Müsait Saatler</label>
+                    <label className="text-xs sm:text-sm font-semibold text-gray-900">Müsait Saatler</label>
                   </div>
                   {availableTimes.length > 0 && (
-                    <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full font-medium">
+                    <span className="text-xs text-green-600 bg-green-100 px-2 sm:px-3 py-1 rounded-full font-medium">
                       {availableTimes.filter(t => !isSlotBusy(t)).length} müsait
                     </span>
                   )}
                 </div>
               
               {availableTimes.length > 0 ? (
-                <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3">
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-2 sm:p-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5 sm:gap-2">
                     {availableTimes.map((time) => {
                       const selected = selectedTime === time;
                       const isBusy = isSlotBusy(time);
@@ -534,7 +607,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                             }
                             setError(''); // Hata mesajını temizle
                           }}
-                          className={`px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 border-2 touch-manipulation min-h-[56px] ${
+                          className={`px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 border-2 touch-manipulation min-h-[48px] sm:min-h-[56px] ${
                             selected 
                               ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white border-transparent shadow-lg transform scale-105' 
                               : isPastSlot 
@@ -552,9 +625,9 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                           }
                         >
                           <div className="flex flex-col items-center">
-                            <span className="font-semibold">{time}</span>
+                            <span className="font-semibold text-xs sm:text-sm">{time}</span>
                             {isPastSlot && (
-                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" className="text-orange-500 mt-1">
+                              <svg width="6" height="6" viewBox="0 0 24 24" fill="none" className="text-orange-500 mt-0.5 sm:mt-1">
                                 <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                               </svg>
                             )}
@@ -565,9 +638,9 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center">
-                  <div className="text-2xl mb-2">📅</div>
-                  <p className="text-sm text-gray-600">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 text-center">
+                  <div className="text-xl sm:text-2xl mb-2">📅</div>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     {selectedDate === new Date().toISOString().split('T')[0] 
                       ? 'Bugün için müsait saat bulunmuyor.' 
                       : 'Seçilen gün için müsait saat bulunmuyor.'}
@@ -580,40 +653,40 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
             </div>
           )}
 
-                {/* Modern Error Message */}
+                {/* Modern Error Message - Mobil Optimized */}
                 {error && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
-                    <div className="flex items-center">
-                      <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                        <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl">
+                    <div className="flex items-start">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 bg-red-100 rounded-full flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 mt-0.5">
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-sm text-red-600 font-medium">{error}</p>
+                      <p className="text-xs sm:text-sm text-red-600 font-medium break-words">{error}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Modern Reason Section */}
-                <div className="mb-6">
+                {/* Modern Reason Section - Mobil Optimized */}
+                <div className="mb-4 sm:mb-6">
                   <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                    <label className="text-sm font-semibold text-gray-900">Erteleme Sebebi (Opsiyonel)</label>
+                    <label className="text-xs sm:text-sm font-semibold text-gray-900">Erteleme Sebebi (Opsiyonel)</label>
                   </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                     <textarea
                       value={requestReason}
                       onChange={(e) => setRequestReason(e.target.value)}
                       placeholder="Erteleme sebebinizi belirtin..."
-                      className="w-full px-0 py-0 bg-transparent border-0 focus:ring-0 focus:outline-none text-sm resize-none placeholder-gray-500"
+                      className="w-full px-0 py-0 bg-transparent border-0 focus:ring-0 focus:outline-none text-xs sm:text-sm resize-none placeholder-gray-500"
                       rows={3}
                       maxLength={500}
                     />
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-3 pt-3 border-t border-gray-200 gap-2">
                       <p className="text-xs text-gray-500">
                         {requestReason.length}/500 karakter
                       </p>
@@ -624,31 +697,31 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                   </div>
                 </div>
 
-                {/* Modern Action Buttons */}
-                <div className="flex flex-col gap-3 pt-4">
+                {/* Modern Action Buttons - Mobil Optimized */}
+                <div className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-4">
                   <button
                     type="submit"
                     disabled={isSubmitting || !selectedDate || !selectedTime}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base shadow-lg disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl sm:rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm sm:text-base shadow-lg disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation min-h-[48px]"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Gönderiliyor...
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm sm:text-base">Gönderiliyor...</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
-                        Erteleme İsteği Gönder
+                        <span className="text-sm sm:text-base">Erteleme İsteği Gönder</span>
                       </div>
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full px-6 py-3 text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-medium text-base"
+                    className="w-full px-4 sm:px-6 py-3 text-gray-600 bg-gray-100 rounded-xl sm:rounded-2xl hover:bg-gray-200 transition-all duration-200 font-medium text-sm sm:text-base touch-manipulation min-h-[48px]"
                   >
                     İptal
                   </button>
@@ -656,20 +729,20 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
         </form>
         )}
 
-        {/* Bilgi Kutusu - Sadece mevcut istek yoksa göster */}
+        {/* Bilgi Kutusu - Mobil Optimized */}
         {!existingRequest && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <div className="flex items-start gap-3">
-              <div className="text-blue-500 mt-0.5">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="text-blue-500 mt-0.5 flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm font-medium text-blue-900 mb-1">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-blue-900 mb-1">
                   Erteleme Süreci
                 </p>
-                <p className="text-xs text-blue-800">
+                <p className="text-xs text-blue-800 break-words">
                   Erteleme isteğiniz ilgili taraflara bildirilecek ve onay bekleyecektir. 
                   İşletme onayladıktan sonra randevunuz yeni tarihe taşınacaktır.
                 </p>

@@ -35,7 +35,7 @@ export default function Toast({
 
   return (
     <div
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-toast-in ${colorMap[type]}`}
+      className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-toast-in ${colorMap[type]}`}
       role="alert"
       aria-live="assertive"
     >

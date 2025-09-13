@@ -254,6 +254,13 @@ export default function BookAppointmentPage() {
       return;
     }
 
+    // Çalışan seçim kontrolü
+    const hasUnselectedEmployee = selectedServices.some(service => !service.employeeId);
+    if (hasUnselectedEmployee) {
+      setError('Lütfen tüm hizmetler için çalışan seçiniz.');
+      return;
+    }
+
     // Seçilen saat meşgul mu kontrol et
     if (isSlotBusy(time)) {
       setError('Seçilen saat dolu. Lütfen başka bir saat seçiniz.');
@@ -470,86 +477,102 @@ export default function BookAppointmentPage() {
           )}
         </div>
 
-        {/* Hizmet Seçim Modal - Mobile Optimized */}
+        {/* Hizmet Seçim Modal - Yeni Tasarım */}
         {showServiceModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
-              {/* Modal Header - Mobile Optimized */}
-              <div className="p-4 sm:p-6 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">Hizmet Seçin</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowServiceModal(false)}
-                    className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition touch-manipulation min-h-[44px]"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <div className="fixed inset-0 z-[9999] bg-white">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-rose-500 to-fuchsia-600 px-4 py-6 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mr-4">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                  </button>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Hizmet Seçin</h2>
+                    <p className="text-rose-100 text-sm">İstediğiniz hizmetleri seçin</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">İstediğiniz hizmetleri seçin (çoklu seçim yapabilirsiniz)</p>
+                <button
+                  onClick={() => setShowServiceModal(false)}
+                  className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
+            </div>
 
-              {/* Modal Body - Mobile Optimized */}
-              <div className="p-4 sm:p-6 max-h-96 overflow-y-auto overscroll-contain">
-                <div className="space-y-3">
-                  {services?.map((service: any) => (
-                    <label key={service.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-fuchsia-300 hover:bg-fuchsia-50 active:bg-fuchsia-100 transition cursor-pointer group touch-manipulation min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={selectedServiceIds.includes(service.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedServiceIds([...selectedServiceIds, service.id]);
-                          } else {
-                            setSelectedServiceIds(selectedServiceIds.filter(id => id !== service.id));
-                          }
-                        }}
-                        className="mt-1 w-4 h-4 text-fuchsia-600 border-gray-300 rounded focus:ring-fuchsia-500"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 group-hover:text-fuchsia-700 transition truncate">{service.name}</h4>
-                        <div className="flex items-center gap-2 sm:gap-4 text-sm text-gray-600 mt-1">
-                          <span className="flex items-center gap-1">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-rose-500">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-3 bg-gray-50">
+              <div className="space-y-2">
+                {services?.map((service: any) => (
+                  <div
+                    key={service.id}
+                    onClick={() => {
+                      if (selectedServiceIds.includes(service.id)) {
+                        setSelectedServiceIds(selectedServiceIds.filter(id => id !== service.id));
+                      } else {
+                        setSelectedServiceIds([...selectedServiceIds, service.id]);
+                      }
+                    }}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      selectedServiceIds.includes(service.id)
+                        ? 'border-rose-500 bg-rose-50 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-rose-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">{service.name}</h3>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1.5">
+                            <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
                               <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                             </svg>
-                            {service.duration_minutes} dk
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-fuchsia-500">
-                              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                            ₺{service.price}
-                          </span>
+                            <span className="text-sm text-gray-600 font-medium">{service.duration_minutes} dk</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-fuchsia-600 font-bold text-base">₺{String(service.price).replace(/[$,]/g, '')}</span>
+                          </div>
                         </div>
                       </div>
-                    </label>
-                  ))}
-                </div>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                        selectedServiceIds.includes(service.id)
+                          ? 'bg-rose-500 border-rose-500'
+                          : 'border-gray-300'
+                      }`}>
+                        {selectedServiceIds.includes(service.id) && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
 
-              {/* Modal Footer - Mobile Optimized */}
-              <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50">
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowServiceModal(false)}
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 active:bg-gray-200 transition touch-manipulation min-h-[44px]"
-                  >
-                    İptal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={addSelectedServices}
-                    disabled={selectedServiceIds.length === 0}
-                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:shadow-xl transition touch-manipulation min-h-[44px]"
-                  >
-                    {selectedServiceIds.length > 0 ? `${selectedServiceIds.length} Hizmet Ekle` : 'Hizmet Ekle'}
-                  </button>
-                </div>
+            {/* Footer */}
+            <div className="bg-white border-t border-gray-200 p-4">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowServiceModal(false)}
+                  className="flex-1 py-4 px-6 bg-gray-100 text-gray-700 rounded-2xl font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={addSelectedServices}
+                  disabled={selectedServiceIds.length === 0}
+                  className="flex-1 py-4 px-6 bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+                >
+                  {selectedServiceIds.length > 0 ? `${selectedServiceIds.length} Hizmet Ekle` : 'Hizmet Ekle'}
+                </button>
               </div>
             </div>
           </div>
@@ -648,8 +671,27 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
+        {/* Çalışan Seçimi Uyarısı */}
+        {selectedServices.length > 0 && !selectedServices.every(service => service.employeeId) && (
+          <div className="p-4 rounded-xl bg-orange-50 border border-orange-200">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-orange-900">Çalışan Seçimi Gerekli</h3>
+                <p className="text-xs text-orange-800 mt-1">
+                  Tarih seçebilmek için önce tüm hizmetler için çalışan seçiniz.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tarih ve Saat Seçimi - Mobile Optimized */}
-        {selectedServices.length > 0 && (
+        {selectedServices.length > 0 && selectedServices.every(service => service.employeeId) && (
           <div className="space-y-4">
             <h2 className="text-base sm:text-lg font-semibold text-gray-800">Tarih ve Saat</h2>
             
@@ -741,7 +783,18 @@ export default function BookAppointmentPage() {
                     <button
                       key={d.dateStr}
                       type="button"
-                      onClick={() => { if (enabled) { setDate(d.dateStr); setTime(''); } }}
+                      onClick={() => { 
+                        if (enabled) {
+                          // Çalışan seçim kontrolü
+                          const hasUnselectedEmployee = selectedServices.some(service => !service.employeeId);
+                          if (hasUnselectedEmployee) {
+                            setError('Lütfen önce tüm hizmetler için çalışan seçiniz.');
+                            return;
+                          }
+                          setDate(d.dateStr); 
+                          setTime(''); 
+                        } 
+                      }}
                       className={`shrink-0 px-3 py-2 rounded-xl text-sm transition border relative touch-manipulation min-h-[44px] ${
                         selected 
                           ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white border-transparent shadow' 
