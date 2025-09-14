@@ -71,6 +71,13 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     return employees;
   }, [employees, isEmployee, currentEmployeeId]);
 
+  // Business owner ise ilk çalışanı otomatik seç
+  useEffect(() => {
+    if (!isEmployee && filteredEmployees && filteredEmployees.length > 0 && !localSelectedEmployeeId) {
+      setLocalSelectedEmployeeId(filteredEmployees[0].id);
+    }
+  }, [isEmployee, filteredEmployees, localSelectedEmployeeId]);
+
   // Çalışan değişikliğini handle et
   const handleEmployeeChange = (employeeId: string | null) => {
     setLocalSelectedEmployeeId(employeeId);
@@ -306,12 +313,18 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
   return (
     <>
-    <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-4 shadow">
+    <div 
+      className="bg-white/60 backdrop-blur-md border-2 rounded-2xl p-4 shadow" 
+      style={{
+        borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+        border: '2px solid transparent',
+        background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+      }}
+    >
       {/* Başlık ve Özel Tarih Seçimi */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-bold text-gray-900">7 Günlük Slot Görünümü</div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-600">15dk aralıklarla</span>
           <button 
             onClick={() => setShowCustomDate(!showCustomDate)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -329,17 +342,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
       {!isEmployee && filteredEmployees && filteredEmployees.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-medium text-gray-700">Çalışan Filtresi:</span>
-            <button
-              onClick={() => handleEmployeeChange(null)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                !localSelectedEmployeeId
-                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
-                  : 'bg-white/80 text-gray-700 border border-white/50 hover:bg-white/90'
-              }`}
-            >
-              👥 Tümü
-            </button>
+            <span className="text-xs font-medium text-gray-700">Çalışan seçin:</span>
             {filteredEmployees.map((employee: any) => (
               <button
                 key={employee.id}
@@ -403,13 +406,22 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
           <button
             key={day.date}
             onClick={() => handleDayClick(day)}
-            className={`relative p-2 rounded-lg text-center transition-all ${
+            className={`relative p-2 rounded-lg text-center transition-all border-2 ${
               selectedDate === day.date
                 ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white shadow-lg'
                 : day.isToday
                 ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'
                 : 'bg-white/80 text-gray-900 hover:bg-white/90'
             }`}
+            style={{
+              borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+              border: '2px solid transparent',
+              background: selectedDate === day.date 
+                ? 'linear-gradient(135deg, #f43f5e, #d946ef)'
+                : day.isToday
+                ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                : 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+            }}
           >
             {/* Gün adı */}
             <div className={`text-[10px] font-bold mb-1 ${
@@ -528,11 +540,18 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                   <div 
                     key={apt.id} 
                     id={`appointment-${apt.id}`}
-                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-1500 ${
+                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-1500 border-2 ${
                       highlightedAppointmentId === apt.id 
                         ? 'ring-4 ring-yellow-400 ring-opacity-75 shadow-2xl scale-105 bg-gradient-to-r from-yellow-50 to-orange-50' 
                         : ''
                     }`}
+                    style={{
+                      borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                      border: '2px solid transparent',
+                      background: highlightedAppointmentId === apt.id 
+                        ? 'linear-gradient(135deg, #fef3c7, #fed7aa)'
+                        : 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                    }}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-gray-900">
@@ -651,11 +670,18 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                     key={apt.id} 
                     id={`appointment-${apt.id}`}
                     onClick={() => handleAppointmentClick(apt.id)}
-                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-1500 cursor-pointer hover:bg-white/80 hover:shadow-md ${
+                    className={`bg-white/60 rounded-lg p-2 text-xs transition-all duration-1500 cursor-pointer hover:bg-white/80 hover:shadow-md border-2 ${
                       highlightedAppointmentId === apt.id 
                         ? 'ring-4 ring-yellow-400 ring-opacity-75 shadow-2xl scale-105 bg-gradient-to-r from-yellow-50 to-orange-50' 
                         : ''
                     }`}
+                    style={{
+                      borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                      border: '2px solid transparent',
+                      background: highlightedAppointmentId === apt.id 
+                        ? 'linear-gradient(135deg, #fef3c7, #fed7aa)'
+                        : 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                    }}
                   >
                                           <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-gray-900">

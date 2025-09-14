@@ -178,10 +178,6 @@ export default function BusinessDashboard() {
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <NotificationsButton userType="business" />
-            <button onClick={() => router.push('/dashboard')} className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg bg-white/70 border border-white/50 text-gray-900 text-xs sm:text-sm shadow-sm hover:bg-white/80 active:bg-white/90 transition touch-manipulation min-h-[44px]">
-              <span>←</span>
-              <span className="hidden xs:inline">User</span>
-            </button>
           </div>
         </div>
       </div>
@@ -213,7 +209,15 @@ export default function BusinessDashboard() {
       )}
 
       {/* Business Mini Card - Mobile Optimized */}
-      <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-2xl p-3 sm:p-4 shadow mb-3 sm:mb-4">
+      <div 
+        className="bg-white/60 backdrop-blur-md border-2 rounded-2xl p-3 sm:p-4 shadow mb-3 sm:mb-4 cursor-pointer hover:bg-white/80 transition-all duration-200 active:scale-[0.98]" 
+        style={{
+          borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+          border: '2px solid transparent',
+          background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+        }}
+        onClick={() => router.push('/dashboard/business/edit')}
+      >
         <div className="flex items-center gap-2 sm:gap-3">
           {business.profile_image_url && business.profile_image_approved ? (
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -246,9 +250,24 @@ export default function BusinessDashboard() {
 
       {/* Quick Stats Row - Mobile Optimized */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <MiniStat label="Aktif" value={activeAppointments} color="from-rose-500 to-fuchsia-600" />
-        <MiniStat label="Hizmet" value={services?.length || 0} color="from-indigo-500 to-indigo-600" />
-        <MiniStat label="Çalışan" value={employees?.length || 0} color="from-emerald-500 to-emerald-600" />
+        <MiniStat 
+          label="Aktif" 
+          value={activeAppointments} 
+          color="from-rose-500 to-fuchsia-600" 
+          onClick={() => router.push('/dashboard/business/appointments')}
+        />
+        <MiniStat 
+          label="Hizmet" 
+          value={services?.length || 0} 
+          color="from-indigo-500 to-indigo-600" 
+          onClick={() => router.push('/dashboard/business/services')}
+        />
+        <MiniStat 
+          label="Çalışan" 
+          value={employees?.length || 0} 
+          color="from-emerald-500 to-emerald-600" 
+          onClick={() => router.push('/dashboard/business/employees')}
+        />
       </div>
 
       {/* Push CTA - Mobile Optimized */}
@@ -392,9 +411,17 @@ export default function BusinessDashboard() {
   );
 }
 
-function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
+function MiniStat({ label, value, color, onClick }: { label: string; value: number; color: string; onClick?: () => void }) {
   return (
-    <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-2 sm:p-3 text-center shadow">
+    <div 
+      className={`bg-white/60 backdrop-blur-md border-2 rounded-xl p-2 sm:p-3 text-center shadow ${onClick ? 'cursor-pointer hover:bg-white/80 transition-all duration-200 active:scale-[0.98]' : ''}`}
+      style={{
+        borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+        border: '2px solid transparent',
+        background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+      }}
+      onClick={onClick}
+    >
       <div className={`mx-auto mb-1 h-1 w-8 sm:w-10 rounded-full bg-gradient-to-r ${color}`}></div>
       <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-none">{value}</div>
       <div className="text-[10px] sm:text-[11px] text-gray-600">{label}</div>
