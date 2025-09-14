@@ -109,7 +109,11 @@ export default function BusinessServicesPage() {
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
             <button 
               onClick={() => { setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setEditing(false); setError(''); setSuccess(''); setFormOpen(true); }} 
-              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px]"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-white text-gray-900 text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px] border-2 border-transparent bg-gradient-to-r from-red-500 via-blue-500 to-white bg-clip-border"
+              style={{
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+                border: '2px solid transparent'
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               <span className="hidden xs:inline">Yeni Hizmet</span>
@@ -257,7 +261,11 @@ export default function BusinessServicesPage() {
       
       <div className="space-y-3">
         {services?.map((s: any) => (
-          <div key={s.id} className="bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm p-3 sm:p-4 hover:shadow-md active:shadow-lg transition-all">
+          <div key={s.id} className="bg-white/70 backdrop-blur-md rounded-2xl shadow-sm p-3 sm:p-4 hover:shadow-md active:shadow-lg transition-all border-2 border-transparent"
+               style={{
+                 background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+                 border: '2px solid transparent'
+               }}>
             {/* Header - Mobile Optimized */}
             <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -276,16 +284,7 @@ export default function BusinessServicesPage() {
             </div>
 
             {/* Detaylar - Mobile Optimized */}
-            <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-gray-600 mb-3 sm:mb-4">
-              <div className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                <span>Süre: {s.duration_minutes} dakika</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <span>Fiyat: ₺{s.price}</span>
-              </div>
-            </div>
+          
 
             {/* Aksiyon Butonları - Mobile Optimized */}
             <div className="flex gap-2">
