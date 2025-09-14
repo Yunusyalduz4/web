@@ -278,7 +278,7 @@ export default function BusinessAppointmentsPage() {
       // Employees by names
       if (employeeFilters.length > 0) {
         const names: string[] = Array.isArray(a.employee_names) ? a.employee_names : [];
-        if (!serviceFilters.some((e) => names.includes(e))) return false;
+        if (!employeeFilters.some((e) => names.includes(e))) return false;
       }
       // Date range
       if (dateFrom) {
@@ -322,7 +322,12 @@ export default function BusinessAppointmentsPage() {
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Canlı bağlantı"></div>
             <button 
               onClick={() => setShowHistory(true)} 
-              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px]"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-white text-gray-900 text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px] border-2"
+              style={{
+                borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                border: '2px solid transparent',
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               <span className="hidden xs:inline">Geçmiş</span>
@@ -330,16 +335,6 @@ export default function BusinessAppointmentsPage() {
           </div>
         </div>
         
-        {/* Debug Bilgisi */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-3 p-2 bg-gray-100 rounded text-xs">
-            <div>Loading: {isLoadingRequests ? 'Yes' : 'No'}</div>
-            <div>Error: {requestsError ? 'Yes' : 'No'}</div>
-            <div>Data: {pendingRescheduleRequests ? pendingRescheduleRequests.length : 'null'}</div>
-            <div>Business ID: {businessId}</div>
-            <div>User Role: {session?.user?.role}</div>
-          </div>
-        )}
 
         {/* Bekleyen Erteleme İstekleri - Mobile Optimized */}
         {isLoadingRequests && (
@@ -434,11 +429,16 @@ export default function BusinessAppointmentsPage() {
           </div>
         </div>
         
-        {/* Filtreleme Kartı - Mobile Optimized */}
-        <div className="mt-3 sm:mt-4 bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-3 sm:p-4 shadow-sm">
+        {/* Filtreleme Kartı - Modern Design */}
+        <div className="mt-3 sm:mt-4 bg-white/80 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-lg border-2"
+             style={{
+               borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+               border: '2px solid transparent',
+               background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+             }}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/></svg>
               </div>
               <h2 className="text-sm sm:text-lg font-bold text-gray-900">Filtreler</h2>
@@ -446,7 +446,12 @@ export default function BusinessAppointmentsPage() {
             <button 
               type="button"
               onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white active:bg-gray-50 transition-colors touch-manipulation min-h-[44px]"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white text-gray-700 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] border-2"
+              style={{
+                borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                border: '2px solid transparent',
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+              }}
             >
               {isFiltersOpen ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -458,7 +463,7 @@ export default function BusinessAppointmentsPage() {
           
           {isFiltersOpen && (
             <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-            {/* Hizmet Filtreleri - Mobile Optimized */}
+            {/* Hizmet Filtreleri - Modern Design */}
             <div>
               <div className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Hizmetler</div>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -471,11 +476,16 @@ export default function BusinessAppointmentsPage() {
                       );
                       setActiveCurrentPage(1);
                     }} 
-                    className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium border transition-all touch-manipulation min-h-[44px] ${
+                    className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] border-2 ${
                       activeServiceFilters.includes(s.name) 
                         ? 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent shadow-md' 
-                        : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-rose-200 active:bg-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                     }`}
+                    style={!activeServiceFilters.includes(s.name) ? {
+                      borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                      border: '2px solid transparent',
+                      background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                    } : {}}
                   >
                     {s.name}
                   </button>
@@ -483,7 +493,7 @@ export default function BusinessAppointmentsPage() {
               </div>
             </div>
             
-            {/* Çalışan Filtreleri - Mobile Optimized */}
+            {/* Çalışan Filtreleri - Modern Design */}
             <div>
               <div className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Çalışanlar</div>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -496,11 +506,16 @@ export default function BusinessAppointmentsPage() {
                       );
                       setActiveCurrentPage(1);
                     }} 
-                    className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium border transition-all touch-manipulation min-h-[44px] ${
+                    className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] border-2 ${
                       activeEmployeeFilters.includes(e.name) 
                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-md' 
-                        : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-indigo-200 active:bg-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                     }`}
+                    style={!activeEmployeeFilters.includes(e.name) ? {
+                      borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                      border: '2px solid transparent',
+                      background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                    } : {}}
                   >
                     {e.name}
                   </button>
@@ -561,8 +576,8 @@ export default function BusinessAppointmentsPage() {
               </div>
             </div>
             
-            {/* Sıfırla Butonu - Mobile Optimized */}
-            <div className="flex justify-center pt-2">
+            {/* Filtre Butonları - Modern Design */}
+            <div className="flex gap-2 pt-2">
               <button 
                 onClick={() => { 
                   setActiveServiceFilters([]); 
@@ -572,10 +587,29 @@ export default function BusinessAppointmentsPage() {
                   setActiveDateTo(''); 
                   setActiveCurrentPage(1);
                 }} 
-                className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-xs sm:text-sm font-medium text-gray-700 hover:bg-white/90 active:bg-white transition-colors touch-manipulation min-h-[44px]"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] border-2"
+                style={{
+                  borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                  border: '2px solid transparent',
+                  background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Filtreleri Sıfırla
+                Sıfırla
+              </button>
+              <button 
+                onClick={() => {
+                  setIsFiltersOpen(false);
+                }} 
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white hover:bg-green-600 active:bg-green-700 transition-all touch-manipulation min-h-[44px] shadow-md hover:shadow-lg border-2"
+                style={{
+                  borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                  border: '2px solid transparent',
+                  background: 'linear-gradient(green, green) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Uygula
               </button>
             </div>
             </div>
@@ -589,34 +623,42 @@ export default function BusinessAppointmentsPage() {
         </div>
       )}
       <div className="space-y-3">
-        {/* Sayfalanmış aktif randevuları göster - Mobile Optimized */}
+        {/* Sayfalanmış aktif randevuları göster - Modern Design */}
         {paginatedActiveAppointments?.map((a: any) => (
           <div
             key={a.id}
-            className="bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm p-3 sm:p-4 hover:shadow-md active:shadow-lg transition-all"
+            className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg p-3 sm:p-4 hover:shadow-xl active:shadow-2xl transition-all duration-300 border-2"
+            style={{
+              borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+              border: '2px solid transparent',
+              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+            }}
           >
-            {/* Header - Mobile Optimized */}
-            <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-xs sm:text-sm font-bold">
+            {/* Header - Compact Design */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
                   {a.user_name ? a.user_name.charAt(0).toUpperCase() : 'M'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs sm:text-sm font-bold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-600 flex items-center gap-1" suppressHydrationWarning>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}</span>
-                    <span className="mx-1 text-gray-400">•</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span>{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</span>
+                  <div className="text-sm font-bold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
+                  <div className="text-xs text-gray-600 flex items-center gap-3" suppressHydrationWarning>
+                    <div className="flex items-center gap-1">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className="font-medium">{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className="font-medium">{typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold border ${
-                a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
-                a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-200' :
-                a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-                'bg-blue-50 text-blue-800 border-blue-200'
+              <span className={`shrink-0 px-2 py-1 rounded-lg text-xs font-semibold border ${
+                a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-300' :
+                a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-300' :
+                a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-300' :
+                'bg-blue-50 text-blue-800 border-blue-300'
               }`}>
                 {a.status === 'pending' && 'Bekliyor'}
                 {a.status === 'confirmed' && 'Onaylandı'}
@@ -625,36 +667,46 @@ export default function BusinessAppointmentsPage() {
               </span>
             </div>
 
-            {/* Detaylar - Mobile Optimized */}
-            <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-              <div className="flex items-center gap-2 text-[10px] sm:text-sm text-gray-800">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <span className="font-medium">Hizmet:</span>
-                <span className="truncate">{a.service_names && a.service_names.length > 0 ? a.service_names.join(', ') : '—'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] sm:text-sm text-gray-800">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
-                <span className="font-medium">Çalışan:</span>
-                <span className="truncate">{a.employee_names && a.employee_names.length > 0 ? a.employee_names.join(', ') : '—'}</span>
+            {/* Detaylar - Compact Design */}
+            <div className="bg-gray-50/50 rounded-lg p-2 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-r from-rose-100 to-fuchsia-100 flex items-center justify-center">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-rose-600"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs text-gray-500 font-medium">Hizmet</div>
+                    <div className="text-xs font-semibold text-gray-900 truncate">{a.service_names && a.service_names.length > 0 ? a.service_names.join(', ') : '—'}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-indigo-600"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs text-gray-500 font-medium">Çalışan</div>
+                    <div className="text-xs font-semibold text-gray-900 truncate">{a.employee_names && a.employee_names.length > 0 ? a.employee_names.join(', ') : '—'}</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Aksiyon Butonları - Mobile Optimized */}
-            <div className="flex gap-1.5 sm:gap-2">
+            {/* Aksiyon Butonları - Compact Design */}
+            <div className="flex gap-1.5">
               {a.status === 'pending' && (
                 <>
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-md hover:shadow-lg active:shadow-xl'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+                        : 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-md hover:shadow-lg border-emerald-300'
                     }`} 
                     onClick={() => handleStatus(a.id, 'confirmed')}
                     disabled={updatingAppointmentId === a.id}
                   >
                     {updatingAppointmentId === a.id ? (
                       <>
-                        <span className="inline-block w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
                         <span>Güncelleniyor...</span>
                       </>
                     ) : (
@@ -665,17 +717,17 @@ export default function BusinessAppointmentsPage() {
                     )}
                   </button>
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg active:shadow-xl'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+                        : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg border-red-300'
                     }`} 
                     onClick={() => handleStatus(a.id, 'cancelled')}
                     disabled={updatingAppointmentId === a.id}
                   >
                     {updatingAppointmentId === a.id ? (
                       <>
-                        <span className="inline-block w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
                         <span>Güncelleniyor...</span>
                       </>
                     ) : (
@@ -688,47 +740,45 @@ export default function BusinessAppointmentsPage() {
                 </>
               )}
               {a.status === 'confirmed' && (
-                <div className="flex gap-1.5 sm:gap-2">
+                <div className="flex gap-1.5">
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-indigo-500 text-white hover:bg-indigo-600 active:bg-indigo-700 shadow-md hover:shadow-lg active:shadow-xl'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+                        : 'bg-indigo-500 text-white hover:bg-indigo-600 active:bg-indigo-700 shadow-md hover:shadow-lg border-indigo-300'
                     }`} 
                     onClick={() => handleStatus(a.id, 'completed')}
                     disabled={updatingAppointmentId === a.id}
                   >
                     {updatingAppointmentId === a.id ? (
                       <>
-                        <span className="inline-block w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
                         <span>Güncelleniyor...</span>
                       </>
                     ) : (
                       <>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        <span className="hidden xs:inline">Tamamlandı Olarak İşaretle</span>
-                        <span className="xs:hidden">Tamamla</span>
+                        <span>Tamamla</span>
                       </>
                     )}
                   </button>
                   <button 
-                    className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold transition-all touch-manipulation min-h-[44px] bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg active:shadow-xl"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg border border-blue-300"
                     onClick={() => handleRescheduleClick(a)}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span className="hidden xs:inline">Ertele</span>
-                    <span className="xs:hidden">📅</span>
+                    <span>Ertele</span>
                   </button>
                 </div>
               )}
               {a.status === 'completed' && (
-                <div className="w-full flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-green-100 text-green-800 text-[10px] sm:text-sm font-semibold">
+                <div className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-800 text-xs font-semibold border border-green-200">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>Tamamlandı</span>
                 </div>
               )}
               {a.status === 'cancelled' && (
-                <div className="w-full flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-red-100 text-red-800 text-[10px] sm:text-sm font-semibold">
+                <div className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-800 text-xs font-semibold border border-red-200">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>İptal Edildi</span>
                 </div>
@@ -806,26 +856,41 @@ export default function BusinessAppointmentsPage() {
               </button>
             </div>
 
-            {/* Filtreler - Mobile Optimized */}
-            <div className="bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-2 sm:p-3 mb-3 sm:mb-4">
+            {/* Filtreler - Modern Design */}
+            <div className="bg-white/80 backdrop-blur-md rounded-xl p-3 mb-4 shadow-lg border-2"
+                 style={{
+                   borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                   border: '2px solid transparent',
+                   background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                 }}>
               <div className="flex items-center justify-between">
-                <div className="text-xs sm:text-sm font-semibold text-gray-900">Filtreler</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/></svg>
+                  </div>
+                  <div className="text-sm font-bold text-gray-900">Filtreler</div>
+                </div>
                 <button 
                   type="button"
                   onClick={() => setIsHistoryFiltersOpen(!isHistoryFiltersOpen)}
-                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-white/80 border border-white/50 text-gray-700 flex items-center justify-center hover:bg-white active:bg-gray-50 transition-colors touch-manipulation min-h-[44px]"
+                  className="w-8 h-8 rounded-xl bg-white text-gray-700 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] border-2"
+                  style={{
+                    borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                    border: '2px solid transparent',
+                    background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                  }}
                 >
                   {isHistoryFiltersOpen ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   )}
                 </button>
               </div>
               
               {isHistoryFiltersOpen && (
                 <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
-              {/* Hizmet Filtreleri - Mobile Optimized */}
+              {/* Hizmet Filtreleri - Modern Design */}
               <div>
                 <div className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Hizmetler</div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -836,11 +901,16 @@ export default function BusinessAppointmentsPage() {
                         setServiceFilters(prev => prev.includes(s.name) ? prev.filter(n => n !== s.name) : [...prev, s.name]);
                         setHistoryCurrentPage(1);
                       }} 
-                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium border transition-all touch-manipulation min-h-[44px] ${
+                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] border-2 ${
                         serviceFilters.includes(s.name) 
                           ? 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent shadow-md' 
-                          : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-rose-200 active:bg-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                       }`}
+                      style={!serviceFilters.includes(s.name) ? {
+                        borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                        border: '2px solid transparent',
+                        background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                      } : {}}
                     >
                       {s.name}
                     </button>
@@ -848,7 +918,7 @@ export default function BusinessAppointmentsPage() {
                 </div>
               </div>
               
-              {/* Çalışan Filtreleri - Mobile Optimized */}
+              {/* Çalışan Filtreleri - Modern Design */}
               <div>
                 <div className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">Çalışanlar</div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -859,11 +929,16 @@ export default function BusinessAppointmentsPage() {
                         setEmployeeFilters(prev => prev.includes(e.name) ? prev.filter(n => n !== e.name) : [...prev, e.name]);
                         setHistoryCurrentPage(1);
                       }} 
-                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium border transition-all touch-manipulation min-h-[44px] ${
+                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-medium transition-all touch-manipulation min-h-[44px] border-2 ${
                         employeeFilters.includes(e.name) 
                           ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-md' 
-                          : 'bg-white/80 text-gray-700 border-white/50 hover:bg-white/90 hover:border-indigo-200 active:bg-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                       }`}
+                      style={!employeeFilters.includes(e.name) ? {
+                        borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                        border: '2px solid transparent',
+                        background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                      } : {}}
                     >
                       {e.name}
                     </button>
@@ -891,8 +966,8 @@ export default function BusinessAppointmentsPage() {
                 </select>
               </div>
               
-              {/* Sıfırla Butonu - Mobile Optimized */}
-              <div className="flex justify-center pt-2">
+              {/* Filtre Butonları - Modern Design */}
+              <div className="flex gap-2 pt-2">
                 <button 
                   onClick={() => { 
                     setServiceFilters([]); 
@@ -902,20 +977,44 @@ export default function BusinessAppointmentsPage() {
                     setDateTo(''); 
                     setHistoryCurrentPage(1);
                   }} 
-                  className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-xs sm:text-sm font-medium text-gray-700 hover:bg-white/90 active:bg-white transition-colors touch-manipulation min-h-[44px]"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] border-2"
+                  style={{
+                    borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                    border: '2px solid transparent',
+                    background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                  }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Filtreleri Sıfırla
+                  Sıfırla
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsHistoryFiltersOpen(false);
+                  }} 
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white hover:bg-green-600 active:bg-green-700 transition-all touch-manipulation min-h-[44px] shadow-md hover:shadow-lg border-2"
+                  style={{
+                    borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                    border: '2px solid transparent',
+                    background: 'linear-gradient(green, green) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Uygula
                 </button>
               </div>
                 </div>
               )}
             </div>
 
-            {/* Geçmiş Randevular Listesi - Mobile Optimized */}
+            {/* Geçmiş Randevular Listesi - Modern Design */}
             <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
               {paginatedHistory.map((a: any) => (
-                <div key={a.id} className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-2 sm:p-3 hover:shadow-md active:shadow-lg transition-all">
+                <div key={a.id} className="bg-white/90 backdrop-blur-md rounded-xl p-2 sm:p-3 hover:shadow-lg active:shadow-xl transition-all duration-300 border-2"
+                     style={{
+                       borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                       border: '2px solid transparent',
+                       background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                     }}>
                   <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2">
                     <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                       <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r from-gray-400 to-gray-500 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold">

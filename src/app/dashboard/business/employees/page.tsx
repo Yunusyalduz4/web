@@ -254,11 +254,16 @@ export default function BusinessEmployeesPage() {
     const endTime = a.end_time.includes(':') && a.end_time.split(':').length === 3 
       ? a.end_time.substring(0, 5)  // "22:00:00" -> "22:00"
       : a.end_time;
+    
+    // start_time'ı da kontrol et
+    const startTime = a.start_time.includes(':') && a.start_time.split(':').length === 3 
+      ? a.start_time.substring(0, 5)  // "09:00:00" -> "09:00"
+      : a.start_time;
       
     setAvailabilityForm({ 
       id: a.id,
       day_of_week: a.day_of_week,
-      start_time: a.start_time,
+      start_time: startTime,
       end_time: endTime
     });
     setEditingAvailability(true);
@@ -271,12 +276,12 @@ export default function BusinessEmployeesPage() {
   };
 
   const confirmDeleteAvailability = async () => {
-    if (!deleteAvailabilityId || !selectedEmployee) return;
+    if (!deleteAvailabilityId) return;
     try {
-      await deleteAvailability.mutateAsync({ id: deleteAvailabilityId, employeeId: selectedEmployee.id });
+      await deleteAvailability.mutateAsync({ id: deleteAvailabilityId, employeeId: employee.id });
       setDeleteAvailabilityId(null);
       setSuccess('Uygunluk silindi!');
-      getAvailability({ employeeId: selectedEmployee.id }).refetch();
+      refetch();
       setTimeout(() => setSuccess(''), 1200);
     } catch (err: any) {
       setError(err.message || 'Silme işlemi başarısız');
@@ -359,7 +364,11 @@ export default function BusinessEmployeesPage() {
                 setShowServiceModal(false); 
                 setAddOpen(true); 
               }} 
-              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px]"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-white text-gray-900 text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px] border-2 border-transparent"
+              style={{
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+                border: '2px solid transparent'
+              }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               <span className="hidden xs:inline">Yeni Çalışan</span>
@@ -553,63 +562,6 @@ export default function BusinessEmployeesPage() {
                   </>
                 )}
 
-                {/* Düzenleme Modunda Yetki Yönetimi - Mobile Optimized */}
-                {editing && (
-                  <div className="border-t border-gray-200 pt-3 sm:pt-4">
-                    <div className="space-y-3 sm:space-y-4 bg-purple-50 rounded-xl p-3 sm:p-4">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-blue-600">🔐</span>
-                          <span className="text-xs sm:text-sm font-medium text-blue-800">Yetki Yönetimi</span>
-                        </div>
-                        <p className="text-[10px] sm:text-xs text-blue-700">
-                          Çalışanın hangi sayfaları görebileceğini ve hangi işlemleri yapabileceğini belirleyin.
-                        </p>
-                      </div>
-
-                      {/* İzinler - Mobile Optimized */}
-                      <div>
-                        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">
-                          Yetkiler
-                        </label>
-                        <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                          {[
-                            { key: 'can_manage_appointments', label: 'Randevu Yönetimi', icon: '📅', description: 'Randevuları görüntüleme ve yönetme' },
-                            { key: 'can_view_analytics', label: 'İstatistik Görüntüleme', icon: '📊', description: 'Analitik ve raporları görüntüleme' },
-                            { key: 'can_manage_services', label: 'Hizmet Yönetimi', icon: '🔧', description: 'Hizmetleri ekleme, düzenleme ve silme' },
-                            { key: 'can_manage_employees', label: 'Çalışan Yönetimi', icon: '👥', description: 'Diğer çalışanları yönetme' },
-                            { key: 'can_manage_business_settings', label: 'İşletme Ayarları', icon: '⚙️', description: 'İşletme bilgilerini düzenleme' }
-                          ].map((permission) => (
-                            <div key={permission.key} className="flex items-start gap-3 p-2 sm:p-3 bg-white rounded-lg border border-purple-200">
-                              <input
-                                type="checkbox"
-                                id={`edit-${permission.key}`}
-                                checked={form.permissions?.[permission.key as keyof typeof form.permissions] || false}
-                                onChange={e => setForm(f => ({
-                                  ...f,
-                                  permissions: {
-                                    ...(f.permissions || {}),
-                                    [permission.key]: e.target.checked
-                                  }
-                                }))}
-                                className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 touch-manipulation mt-0.5"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <label htmlFor={`edit-${permission.key}`} className="text-xs sm:text-sm font-medium text-gray-900 flex items-center gap-2 cursor-pointer">
-                                  <span className="text-base">{permission.icon}</span>
-                                  {permission.label}
-                                </label>
-                                <p className="text-[10px] sm:text-xs text-gray-600 mt-1">
-                                  {permission.description}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
               
               {error && (
@@ -679,7 +631,11 @@ export default function BusinessEmployeesPage() {
       
       <div className="space-y-3">
         {employees?.map((e: any) => (
-          <div key={e.id} className="bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm p-3 sm:p-4 hover:shadow-md active:shadow-lg transition-all">
+          <div key={e.id} className="bg-white/70 backdrop-blur-md rounded-2xl shadow-sm p-3 sm:p-4 hover:shadow-md active:shadow-lg transition-all border-2 border-transparent"
+               style={{
+                 background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+                 border: '2px solid transparent'
+               }}>
             {/* Header - Mobile Optimized */}
             <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -1087,6 +1043,11 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Mutation'ları modal içinde tanımla
+  const createAvailability = trpc.business.createEmployeeAvailability.useMutation();
+  const updateAvailability = trpc.business.updateEmployeeAvailability.useMutation();
+  const deleteAvailability = trpc.business.deleteEmployeeAvailability.useMutation();
+
   // WebSocket entegrasyonu
   const { isConnected, emit } = useWebSocket();
 
@@ -1124,7 +1085,24 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
         return;
       }
 
-      await handleAvailabilitySubmit(e);
+      if (editingAvailability) {
+        await updateAvailability.mutateAsync({ 
+          id: availabilityForm.id,
+          employeeId: employee.id,
+          day_of_week: availabilityForm.day_of_week,
+          start_time: availabilityForm.start_time,
+          end_time: availabilityForm.end_time
+        });
+        setSuccess('Uygunluk güncellendi!');
+      } else {
+        await createAvailability.mutateAsync({ 
+          employeeId: employee.id,
+          day_of_week: availabilityForm.day_of_week,
+          start_time: availabilityForm.start_time,
+          end_time: availabilityForm.end_time
+        });
+        setSuccess('Uygunluk eklendi!');
+      }
       
       // WebSocket ile güncelleme bildir
       if (isConnected) {
@@ -1339,7 +1317,9 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
             </div>
           ) : availability && availability.length > 0 ? (
             <div className="space-y-2">
-              {availability.map((a: any) => (
+              {availability
+                .sort((a: any, b: any) => a.day_of_week - b.day_of_week)
+                .map((a: any) => (
                 <div key={a.id} className="flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl shadow-sm hover:shadow-md transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">
@@ -1411,7 +1391,18 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
               
               <div className="flex gap-2 pt-2">
                 <button 
-                  onClick={confirmDeleteAvailability}
+                  onClick={async () => {
+                    if (!deleteAvailabilityId) return;
+                    try {
+                      await deleteAvailability.mutateAsync({ id: deleteAvailabilityId, employeeId: employee.id });
+                      setDeleteAvailabilityId(null);
+                      setSuccess('Uygunluk silindi!');
+                      refetch();
+                      setTimeout(() => setSuccess(''), 1200);
+                    } catch (err: any) {
+                      setError(err.message || 'Silme işlemi başarısız');
+                    }
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
