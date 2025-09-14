@@ -235,61 +235,30 @@ export const reviewRouter = t.router({
 
   // Get reviews by business with pagination
   getByBusiness: t.procedure
-    .use(isEmployeeOrBusiness)
     .input(z.object({
       businessId: z.string().uuid(),
       page: z.number().min(1).default(1),
       limit: z.number().min(1).max(50).default(10),
     }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       const { businessId, page, limit } = input;
       const offset = (page - 1) * limit;
 
-      let reviewsQuery;
-      let reviewsParams;
-      let totalQuery;
-      let totalParams;
+      // Herkes işletme yorumlarını görebilir
+      const reviewsQuery = `SELECT r.*, u.name as user_name, a.appointment_datetime,
+              b.name as business_name, r.business_reply, r.business_reply_at, r.photos
+       FROM reviews r
+       JOIN users u ON r.user_id = u.id
+       JOIN appointments a ON r.appointment_id = a.id
+       JOIN businesses b ON r.business_id = b.id
+       WHERE r.business_id = $1 AND b.is_approved = true AND r.is_approved = true
+       ORDER BY r.created_at DESC
+       LIMIT $2 OFFSET $3`;
 
-      if (ctx.user.role === 'employee') {
-        // Employee sadece kendi yorumlarını görür
-        reviewsQuery = `SELECT r.*, u.name as user_name, a.appointment_datetime,
-                b.name as business_name, r.business_reply, r.business_reply_at, r.photos,
-                aps.employee_id
-         FROM reviews r
-         JOIN users u ON r.user_id = u.id
-         JOIN appointments a ON r.appointment_id = a.id
-         JOIN businesses b ON r.business_id = b.id
-         JOIN appointment_services aps ON a.id = aps.appointment_id
-         WHERE r.business_id = $1 AND aps.employee_id = $2 AND b.is_approved = true AND r.is_approved = true
-         ORDER BY r.created_at DESC
-         LIMIT $3 OFFSET $4`;
-        reviewsParams = [businessId, ctx.user.employeeId, limit, offset];
+      const totalQuery = 'SELECT COUNT(*) as total FROM reviews WHERE business_id = $1';
 
-        totalQuery = `SELECT COUNT(*) as total 
-         FROM reviews r
-         JOIN appointments a ON r.appointment_id = a.id
-         JOIN appointment_services aps ON a.id = aps.appointment_id
-         WHERE r.business_id = $1 AND aps.employee_id = $2`;
-        totalParams = [businessId, ctx.user.employeeId];
-      } else {
-        // Business tüm yorumları görür
-        reviewsQuery = `SELECT r.*, u.name as user_name, a.appointment_datetime,
-                b.name as business_name, r.business_reply, r.business_reply_at, r.photos
-         FROM reviews r
-         JOIN users u ON r.user_id = u.id
-         JOIN appointments a ON r.appointment_id = a.id
-         JOIN businesses b ON r.business_id = b.id
-         WHERE r.business_id = $1 AND b.is_approved = true AND r.is_approved = true
-         ORDER BY r.created_at DESC
-         LIMIT $2 OFFSET $3`;
-        reviewsParams = [businessId, limit, offset];
-
-        totalQuery = 'SELECT COUNT(*) as total FROM reviews WHERE business_id = $1';
-        totalParams = [businessId];
-      }
-
-      const result = await pool.query(reviewsQuery, reviewsParams);
-      const totalResult = await pool.query(totalQuery, totalParams);
+      const result = await pool.query(reviewsQuery, [businessId, limit, offset]);
+      const totalResult = await pool.query(totalQuery, [businessId]);
 
       return {
         reviews: result.rows.map(row => ({
@@ -368,7 +337,6 @@ export const reviewRouter = t.router({
 
   // Get business rating summary
   getBusinessRating: t.procedure
-    .use(isEmployeeOrBusiness)
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {
       const { businessId } = input;

@@ -9,9 +9,10 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
-import StoryViewer from '@/components/story/StoryViewer';
-import { Story } from '@/types/story';
+// Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
+// import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
+// import StoryViewer from '@/components/story/StoryViewer';
+// import { Story } from '@/types/story';
 
 // Inline StarRating Component
 interface StarRatingProps {
@@ -100,7 +101,8 @@ export default function BusinessDetailPage() {
   const { data: businessImages } = trpc.business.getBusinessImages.useQuery({ businessId }, { enabled: !!businessId });
   const { data: businessRating } = trpc.review.getBusinessRating.useQuery({ businessId }, { enabled: !!businessId });
   const { data: reviewsData } = trpc.review.getByBusiness.useQuery({ businessId, page: 1, limit: 5 }, { enabled: !!businessId });
-  const { data: businessStories, refetch: refetchStories } = trpc.story.getByBusiness.useQuery({ businessId }, { enabled: !!businessId });
+  // Hikaye API'si - GEÇİCİ OLARAK KAPALI
+  // const { data: businessStories, refetch: refetchStories } = trpc.story.getByBusiness.useQuery({ businessId }, { enabled: !!businessId });
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [minRating, setMinRating] = useState(0);
@@ -120,9 +122,10 @@ export default function BusinessDetailPage() {
   const [photoSwiper, setPhotoSwiper] = useState<any>(null);
   
   // Hikaye state'leri
-  const [storiesOpen, setStoriesOpen] = useState(false);
-  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
-  const [viewingStories, setViewingStories] = useState<any[]>([]);
+  // Hikaye state'leri - GEÇİCİ OLARAK KAPALI
+  // const [storiesOpen, setStoriesOpen] = useState(false);
+  // const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+  // const [viewingStories, setViewingStories] = useState<any[]>([]);
 
   const minServicePrice = useMemo(() => {
     if (!services || services.length === 0) return null as number | null;
@@ -131,16 +134,16 @@ export default function BusinessDetailPage() {
     return Math.min(...nums);
   }, [services]);
 
-  // tRPC mutations
-  const likeStoryMutation = trpc.story.toggleLike.useMutation();
-  const viewStoryMutation = trpc.story.view.useMutation();
+  // tRPC mutations - GEÇİCİ OLARAK KAPALI
+  // const likeStoryMutation = trpc.story.toggleLike.useMutation();
+  // const viewStoryMutation = trpc.story.view.useMutation();
 
-  // Hikaye etkileşim fonksiyonları
+  // Hikaye etkileşim fonksiyonları - GEÇİCİ OLARAK KAPALI
+  /*
   const handleStoryClick = (story: any, index: number) => {
     setViewingStories(businessStories || []);
     setCurrentStoryIndex(index);
     setStoriesOpen(true);
-    // Hikaye görüntüleme kaydı
     handleStoryView(story.id);
   };
 
@@ -163,24 +166,23 @@ export default function BusinessDetailPage() {
   };
 
   const handleStoryLike = async (storyId: string) => {
-    // Hikaye beğeni işlemi
     try {
       await likeStoryMutation.mutateAsync({ storyId });
-      refetchStories(); // Hikayeleri yenile
+      refetchStories();
     } catch (error) {
     }
   };
 
   const handleStoryView = async (storyId: string) => {
-    // Hikaye görüntüleme kaydı
     try {
       await viewStoryMutation.mutateAsync({ 
         storyId,
-        deviceType: 'mobile' // veya cihaz tespiti yapılabilir
+        deviceType: 'mobile'
       });
     } catch (error) {
     }
   };
+  */
 
 
   // Filtrelenmiş ve sıralanmış yorumlar
@@ -352,7 +354,8 @@ export default function BusinessDetailPage() {
             </p>
           )}
 
-          {/* Hikayeler Bölümü - Mobile Optimized */}
+          {/* Hikayeler Bölümü - Mobile Optimized - GEÇİCİ OLARAK KAPALI */}
+          {/*
           {businessStories && businessStories.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-center mb-3">
@@ -368,6 +371,7 @@ export default function BusinessDetailPage() {
               />
             </div>
           )}
+          */}
           
           {/* Business Rating - Mobile Optimized */}
           {businessRating && businessRating.total_reviews > 0 && (
@@ -1098,7 +1102,8 @@ export default function BusinessDetailPage() {
       </div>
     )}
 
-    {/* Hikaye Viewer */}
+    {/* Hikaye Viewer - GEÇİCİ OLARAK KAPALI */}
+    {/*
     {storiesOpen && (
       <StoryViewer
         stories={viewingStories}
@@ -1109,6 +1114,7 @@ export default function BusinessDetailPage() {
         onLike={handleStoryLike}
       />
     )}
+    */}
     </>
   );
 } 
