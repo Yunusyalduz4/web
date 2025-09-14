@@ -278,10 +278,10 @@ export default function BusinessEmployeesPage() {
   const confirmDeleteAvailability = async () => {
     if (!deleteAvailabilityId) return;
     try {
-      await deleteAvailability.mutateAsync({ id: deleteAvailabilityId, employeeId: employee.id });
+      await deleteAvailability.mutateAsync({ id: deleteAvailabilityId, employeeId: selectedEmployee?.id || '' });
       setDeleteAvailabilityId(null);
       setSuccess('Uygunluk silindi!');
-      refetch();
+      employeesQuery.refetch();
       setTimeout(() => setSuccess(''), 1200);
     } catch (err: any) {
       setError(err.message || 'Silme işlemi başarısız');
@@ -1391,18 +1391,7 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
               
               <div className="flex gap-2 pt-2">
                 <button 
-                  onClick={async () => {
-                    if (!deleteAvailabilityId) return;
-                    try {
-                      await deleteAvailability.mutateAsync({ id: deleteAvailabilityId, employeeId: employee.id });
-                      setDeleteAvailabilityId(null);
-                      setSuccess('Uygunluk silindi!');
-                      refetch();
-                      setTimeout(() => setSuccess(''), 1200);
-                    } catch (err: any) {
-                      setError(err.message || 'Silme işlemi başarısız');
-                    }
-                  }}
+                  onClick={confirmDeleteAvailability}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CreateStoryForm } from '../../types/story';
 import { validateFileSize, validateFileType, compressMedia, extractHashtags, extractMentions } from '../../utils/storyUtils';
 import { X, Upload, Camera, Video } from 'lucide-react';
@@ -157,6 +157,22 @@ export default function StoryCreator({
     }
   };
 
+
+  // Component mount olduğunda direkt dosya seçiciyi aç
+  useEffect(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+    
+    // Eğer 5 saniye içinde dosya seçilmezse modal'ı kapat
+    const timeout = setTimeout(() => {
+      if (!previewUrl) {
+        onCancel();
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
+  }, [previewUrl, onCancel]);
 
   return (
     <div className={`fixed inset-0 z-50 bg-black ${className}`}>
