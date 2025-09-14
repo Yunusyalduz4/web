@@ -48,7 +48,7 @@ const businessUpdateSchema = z.object({
 const businessProfileUpdateSchema = z.object({
   businessId: z.string().uuid(),
   name: z.string().min(2),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   phone: z.string().optional(),
   password: z.string().min(6).optional(),
 });
@@ -104,7 +104,7 @@ export const businessRouter = t.router({
     }),
   updateBusinessProfile: t.procedure.use(isBusiness)
     .input(businessProfileUpdateSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // Önce business'i bul
       const businessResult = await pool.query(
         `SELECT * FROM businesses WHERE id = $1`,
@@ -117,21 +117,62 @@ export const businessRouter = t.router({
 
       const business = businessResult.rows[0];
 
-      // Şifre güncellenecekse hash'le
-      let passwordHash = business.password;
+      // Business'i güncelle (şifre olmadan)
+      const result = await pool.query(
+        `UPDATE businesses SET name = $1, email = $2, phone = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
+        [input.name, input.email || business.email, input.phone || business.phone, input.businessId]
+      );
+
+      // Şifre güncellenecekse users tablosunda güncelle
       if (input.password) {
         const bcrypt = require('bcrypt');
-        passwordHash = await bcrypt.hash(input.password, 10);
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        
+        await pool.query(
+          `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+          [passwordHash, ctx.user.id]
+        );
       }
-
-      // Business'i güncelle
-      const result = await pool.query(
-        `UPDATE businesses SET name = $1, email = $2, phone = $3, password = $4, updated_at = NOW() WHERE id = $5 RETURNING *`,
-        [input.name, input.email, input.phone || '', passwordHash, input.businessId]
-      );
       
       return result.rows[0];
     }),
+
+  changePassword: t.procedure.use(isBusiness)
+    .input(z.object({
+      currentPassword: z.string().min(1),
+      newPassword: z.string().min(6)
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Mevcut şifreyi kontrol et
+      const userResult = await pool.query(
+        `SELECT password_hash FROM users WHERE id = $1`,
+        [ctx.user.id]
+      );
+      
+      if (userResult.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Kullanıcı bulunamadı' });
+      }
+
+      const user = userResult.rows[0];
+      const bcrypt = require('bcrypt');
+      
+      // Mevcut şifreyi doğrula
+      const isValidPassword = await bcrypt.compare(input.currentPassword, user.password_hash);
+      if (!isValidPassword) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Mevcut şifre yanlış' });
+      }
+
+      // Yeni şifreyi hash'le ve güncelle
+      const newPasswordHash = await bcrypt.hash(input.newPassword, 10);
+      
+      await pool.query(
+        `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+        [newPasswordHash, ctx.user.id]
+      );
+
+      return { success: true };
+    }),
+
   getBusinessImages: t.procedure
     .input(z.object({ businessId: z.string().uuid() }))
     .query(async ({ input }) => {

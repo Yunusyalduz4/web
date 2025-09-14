@@ -13,7 +13,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
-// Yanıt verme modal component'i
+// Yanıt verme modal component'i - Modern Kompakt
 function ReplyModal({ review, isOpen, onClose, onSubmit }: any) {
   const [reply, setReply] = useState(review?.business_reply || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,62 +32,65 @@ function ReplyModal({ review, isOpen, onClose, onSubmit }: any) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-3 sm:p-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
             <div>
-              <div className="text-sm sm:text-lg font-bold text-gray-900">{review?.business_reply ? 'Yanıtı Düzenle' : 'Yanıt Ver'}</div>
-              <div className="text-[10px] sm:text-xs text-gray-600">Müşteri yorumuna yanıt verin</div>
+              <h3 className="text-lg font-bold text-gray-900">{review?.business_reply ? 'Yanıtı Düzenle' : 'Yanıt Ver'}</h3>
+              <p className="text-sm text-gray-600">Müşteri yorumuna yanıt verin</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors min-h-[44px]"
+            className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
 
-        <div className="space-y-3 sm:space-y-4">
+        {/* Content */}
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Yanıtınız</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Yanıtınız</label>
             <textarea
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               placeholder="Müşteri yorumuna yanıt verin..."
-              className="w-full h-24 sm:h-32 px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none touch-manipulation"
+              className="w-full h-32 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               style={{ fontSize: '16px' }}
             />
           </div>
           
-          <div className="flex gap-1.5 sm:gap-2 pt-2">
+          {/* Buttons */}
+          <div className="flex gap-3 pt-2">
             <button
               onClick={handleSubmit}
               disabled={!reply.trim() || isSubmitting}
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/></svg>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/></svg>
                   <span>Gönderiliyor...</span>
                 </>
               ) : (
                 <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>Gönder</span>
                 </>
               )}
             </button>
             <button
               onClick={onClose}
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-xs sm:text-sm font-semibold hover:bg-white/90 transition-colors min-h-[44px]"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               <span>İptal</span>
             </button>
           </div>
@@ -220,7 +223,7 @@ export default function BusinessReviewsPage() {
   };
 
   return (
-    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-4 pb-20 min-h-screen bg-gray-50">
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/80 backdrop-blur-md border-b border-white/60 mb-3 sm:mb-4">
         <div className="flex items-center justify-between">
@@ -253,294 +256,275 @@ export default function BusinessReviewsPage() {
       </div>
       {/* Loading State */}
       {(reviewsLoading || ratingLoading) && (
-        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-6 sm:p-8 text-center">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <svg className="animate-spin w-4 h-4 sm:w-6 sm:h-6 text-gray-400" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
-              <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
-            </svg>
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
+                <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
+              </svg>
+            </div>
+            <span className="text-sm text-gray-600 font-medium">Yorumlar yükleniyor...</span>
           </div>
-          <div className="text-xs sm:text-sm font-medium text-gray-500">Yorumlar yükleniyor...</div>
         </div>
       )}
 
-      {/* Puan Özeti */}
+      {/* Puan Özeti - Kompakt Tasarım */}
       {ratingSummary && !ratingLoading && (
-        <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-gradient-to-r from-yellow-500 to-yellow-600 text-white flex items-center justify-center">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <div className="mb-4">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900">Genel Puan</h3>
+              <div className="flex items-center gap-1">
+                <span className="text-2xl font-bold text-gray-900">
+                  {Number(ratingSummary.overall_rating || 0).toFixed(1)}
+                </span>
+                <span className="text-sm text-gray-500">/5</span>
+              </div>
             </div>
-            <h2 className="text-xs sm:text-sm font-semibold text-gray-900">Genel Puan Özeti</h2>
-          </div>
-          
-          <div className="space-y-2 sm:space-y-3">
-            {/* Hizmet Puanı */}
-            <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-blue-50 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-4 h-4 rounded bg-blue-500 flex items-center justify-center">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                      <path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/>
+                    </svg>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">Hizmet</span>
                 </div>
-                <div>
-                  <div className="text-[10px] sm:text-xs font-semibold text-gray-900">Hizmet Kalitesi</div>
+                <div className="flex items-center gap-1">
                   <StarRating rating={Number(ratingSummary.average_service_rating)} />
+                  <span className="text-xs font-bold text-blue-600 ml-1">
+                    {Number(ratingSummary.average_service_rating || 0).toFixed(1)}
+                  </span>
                 </div>
               </div>
-              <div className="text-sm sm:text-lg font-bold text-blue-800">
-                {Number(ratingSummary.average_service_rating || 0).toFixed(1)}
-              </div>
-            </div>
-
-            {/* Çalışan Puanı */}
-            <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-white flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
+              
+              <div className="bg-green-50 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-4 h-4 rounded bg-green-500 flex items-center justify-center">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                      <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/>
+                    </svg>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">Çalışan</span>
                 </div>
-                <div>
-                  <div className="text-[10px] sm:text-xs font-semibold text-gray-900">Çalışan Performansı</div>
+                <div className="flex items-center gap-1">
                   <StarRating rating={Number(ratingSummary.average_employee_rating)} />
+                  <span className="text-xs font-bold text-green-600 ml-1">
+                    {Number(ratingSummary.average_employee_rating || 0).toFixed(1)}
+                  </span>
                 </div>
-              </div>
-              <div className="text-sm sm:text-lg font-bold text-emerald-800">
-                {Number(ratingSummary.average_employee_rating || 0).toFixed(1)}
-              </div>
-            </div>
-
-            {/* Genel Puan */}
-            <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-rose-50 to-fuchsia-50 rounded-lg border border-rose-200">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                </div>
-                <div>
-                  <div className="text-[10px] sm:text-xs font-semibold text-gray-900">Genel Puan</div>
-                  <StarRating rating={Number(ratingSummary.overall_rating)} />
-                </div>
-              </div>
-              <div className="text-sm sm:text-lg font-bold text-rose-800">
-                {Number(ratingSummary.overall_rating || 0).toFixed(1)}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Yorum Listesi */}
+      {/* Yorum Listesi - Modern Kompakt Tasarım */}
       {!reviewsLoading && (
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3">
           {reviews.length === 0 ? (
-          <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-2xl p-6 sm:p-8 text-center">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Henüz yorum yok</h3>
+              <p className="text-sm text-gray-500">Müşterileriniz randevularını tamamladıktan sonra yorum yapabilir</p>
             </div>
-            <div className="text-sm sm:text-lg font-medium text-gray-500 mb-2">Henüz yorum bulunmuyor</div>
-            <div className="text-xs sm:text-sm text-gray-400">Müşterileriniz randevularını tamamladıktan sonra yorum yapabilir</div>
-          </div>
-        ) : (
-          reviews.map((review: any) => (
-            <div key={review.id} className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md transition-all">
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
-                    {review.user_name ? review.user_name.charAt(0).toUpperCase() : 'M'}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-sm font-bold text-gray-900 truncate">{review.user_name}</div>
-                    <div className="text-[10px] sm:text-xs text-gray-600">
-                      {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
+          ) : (
+            reviews.map((review: any) => (
+              <div key={review.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200" style={{
+                border: '2px solid',
+                borderImage: 'linear-gradient(45deg, #dc2626, #2563eb, #f8fafc) 1',
+                borderRadius: '16px'
+              }}>
+                {/* Header - Ultra Kompakt */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold">
+                      {review.user_name ? review.user_name.charAt(0).toUpperCase() : 'M'}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">{review.user_name}</div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {review.is_approved ? (
-                    <span className="px-1.5 sm:px-2 py-1 rounded-lg bg-green-100 text-green-800 text-[10px] sm:text-xs font-semibold shadow-sm">
-                      ✅ Onaylı
-                    </span>
-                  ) : (
-                    <span className="px-1.5 sm:px-2 py-1 rounded-lg bg-yellow-100 text-yellow-800 text-[10px] sm:text-xs font-semibold shadow-sm">
-                      ⏳ Bekliyor
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Rating'ler */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-2 sm:p-3 border border-blue-200">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-blue-500 text-white flex items-center justify-center">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
-                  </div>
-                  <div>
-                    <div className="text-[10px] sm:text-xs text-blue-600 font-semibold">Hizmet</div>
-                    <StarRating rating={review.service_rating || 0} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-2 sm:p-3 border border-green-200">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-green-500 text-white flex items-center justify-center">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z"/></svg>
-                  </div>
-                  <div>
-                    <div className="text-[10px] sm:text-xs text-green-600 font-semibold">Çalışan</div>
-                    <StarRating rating={review.employee_rating || 0} />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Yorum */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 border-l-4 border-gray-400">
-                <div className="flex items-start gap-2 mb-2 sm:mb-3">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-gray-500 text-white flex items-center justify-center">
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-700">Yorum</span>
-                </div>
-                <p className="text-[10px] sm:text-xs text-gray-800 leading-relaxed pl-5 sm:pl-6">{review.comment}</p>
-              </div>
-
-              {/* Yorum Görselleri */}
-              {review.photos && review.photos.length > 0 && (
-                <div className="mb-3 sm:mb-4">
-                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-purple-500 text-white flex items-center justify-center">
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    </div>
-                    <span className="text-[10px] sm:text-xs font-semibold text-gray-700">Müşteri Görselleri</span>
-                    <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-1 rounded-full">{review.photos.length}</span>
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto">
-                    {review.photos.slice(0, 4).map((photo: string, photoIndex: number) => (
-                      <div
-                        key={photoIndex}
-                        className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer group"
-                        onClick={() => {
-                          setCurrentPhotos(review.photos);
-                          setCurrentPhotoIndex(photoIndex);
-                          setPhotoModalOpen(true);
-                        }}
-                      >
-                        <img
-                          src={photo}
-                          alt={`Review photo ${photoIndex + 1}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        {/* Fallback for failed images */}
-                        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center hidden">
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" className="text-gray-400">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          </svg>
-                        </div>
-                      </div>
-                    ))}
-                    {review.photos.length > 4 && (
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] sm:text-xs text-gray-500 font-medium">
-                        +{review.photos.length - 4}
-                      </div>
+                  <div className="flex items-center gap-2">
+                    {review.is_approved ? (
+                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                        ✓
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                        ⏳
+                      </span>
                     )}
                   </div>
                 </div>
-              )}
-
-              {/* İşletme Yanıtı */}
-              {review.business_reply && (
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 border-l-4 border-blue-500">
-                  <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-blue-500 text-white flex items-center justify-center">
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-semibold text-blue-800">İşletme Yanıtı</span>
-                      {review.business_reply_approved ? (
-                        <span className="px-1.5 sm:px-2 py-1 rounded-md bg-green-100 text-green-800 text-[10px] sm:text-xs font-semibold">
-                          ✅ Onaylı
-                        </span>
-                      ) : (
-                        <span className="px-1.5 sm:px-2 py-1 rounded-md bg-yellow-100 text-yellow-800 text-[10px] sm:text-xs font-semibold">
-                          ⏳ Bekliyor
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] sm:text-xs text-blue-600 bg-blue-200 px-1.5 sm:px-2 py-1 rounded-md font-medium">
-                      {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
+                
+                {/* Rating'ler - Sadece Sayı */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
+                    <span className="text-xs text-gray-600">Hizmet</span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {review.service_rating || 0}/5
                     </span>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-blue-800 leading-relaxed mb-2 sm:mb-3 pl-5 sm:pl-6">{review.business_reply}</div>
-                  {!isEmployee && (
-                    <div className="flex gap-1.5 sm:gap-2 pl-5 sm:pl-6">
+                  <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
+                    <span className="text-xs text-gray-600">Çalışan</span>
+                    <span className="text-sm font-bold text-green-600">
+                      {review.employee_rating || 0}/5
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Yorum - Ultra Kompakt */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                  <p className="text-sm text-gray-800 leading-relaxed line-clamp-3">{review.comment}</p>
+                </div>
+
+                {/* Yorum Görselleri - Ultra Kompakt */}
+                {review.photos && review.photos.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-gray-700">📷</span>
+                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+                        {review.photos.length}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {review.photos.slice(0, 3).map((photo: string, photoIndex: number) => (
+                        <div
+                          key={photoIndex}
+                          className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer group"
+                          onClick={() => {
+                            setCurrentPhotos(review.photos);
+                            setCurrentPhotoIndex(photoIndex);
+                            setPhotoModalOpen(true);
+                          }}
+                        >
+                          <img
+                            src={photo}
+                            alt={`Review photo ${photoIndex + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <div className="absolute inset-0 bg-gray-200 flex items-center justify-center hidden">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2"/>
+                              <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                          </div>
+                        </div>
+                      ))}
+                      {review.photos.length > 3 && (
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium">
+                          +{review.photos.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* İşletme Yanıtı - Ultra Kompakt */}
+                {review.business_reply && (
+                  <div className="bg-blue-50 rounded-lg p-3 mb-3 border-l-4 border-blue-500">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-blue-800">💬 Yanıt</span>
+                        {review.business_reply_approved ? (
+                          <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                            ⏳
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-blue-600 bg-blue-200 px-2 py-1 rounded-full font-medium">
+                        {new Date(review.business_reply_at).toLocaleDateString('tr-TR')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-800 leading-relaxed mb-2 line-clamp-2">{review.business_reply}</p>
+                    {!isEmployee && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setReplyModal({ isOpen: true, review })}
+                          className="flex items-center gap-1 px-2 py-1 bg-blue-200 text-blue-800 rounded-md hover:bg-blue-300 text-xs font-medium transition-colors"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Düzenle
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReply(review.id)}
+                          className="flex items-center gap-1 px-2 py-1 bg-red-200 text-red-800 rounded-md hover:bg-red-300 text-xs font-medium transition-colors"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Sil
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Yanıt Verme Butonu - Ultra Kompakt */}
+                {!isEmployee && (
+                  <div className="flex justify-end">
+                    {!review.business_reply ? (
                       <button
                         onClick={() => setReplyModal({ isOpen: true, review })}
-                        className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-200 text-blue-800 rounded-md hover:bg-blue-300 text-[10px] sm:text-xs font-medium transition-colors min-h-[44px]"
+                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-105"
                       >
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Yanıt Ver
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setReplyModal({ isOpen: true, review })}
+                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-105"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         Düzenle
                       </button>
-                      <button
-                        onClick={() => handleDeleteReply(review.id)}
-                        className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-200 text-red-800 rounded-md hover:bg-red-300 text-[10px] sm:text-xs font-medium transition-colors min-h-[44px]"
-                      >
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        Sil
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Yanıt Verme Butonu - Sadece Business için */}
-              {!isEmployee && (
-                <div className="flex justify-end">
-                  {!review.business_reply ? (
-                    <button
-                      onClick={() => setReplyModal({ isOpen: true, review })}
-                      className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 min-h-[44px]"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Yanıt Ver
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setReplyModal({ isOpen: true, review })}
-                      className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 min-h-[44px]"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Yanıtı Düzenle
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
           )}
         </div>
       )}
 
-      {/* Sayfalama */}
+      {/* Sayfalama - Modern Kompakt */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-3 sm:mt-4 flex justify-center">
-          <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-lg p-2 sm:p-3 shadow-sm">
-            <div className="flex gap-1 sm:gap-2">
+        <div className="mt-6 flex justify-center">
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-md text-[10px] sm:text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/80 disabled:cursor-not-allowed flex items-center justify-center min-h-[44px]"
+                className="w-8 h-8 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
@@ -559,10 +543,10 @@ export default function BusinessReviewsPage() {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-md text-[10px] sm:text-xs font-medium transition flex items-center justify-center min-h-[44px] ${
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition flex items-center justify-center ${
                       currentPage === pageNum
-                        ? 'bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white shadow-md'
-                        : 'hover:bg-white/80 text-gray-700'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm'
+                        : 'hover:bg-gray-100 text-gray-700'
                     }`}
                   >
                     {pageNum}
@@ -573,23 +557,23 @@ export default function BusinessReviewsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
                 disabled={currentPage === pagination.totalPages}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-md text-[10px] sm:text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/80 disabled:cursor-not-allowed flex items-center justify-center min-h-[44px]"
+                className="w-8 h-8 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toplam Yorum Sayısı */}
+      {/* Toplam Yorum Sayısı - Kompakt */}
       {pagination && (
-        <div className="mt-3 sm:mt-4 text-center">
-          <div className="inline-flex items-center gap-1 sm:gap-2 bg-white/70 backdrop-blur-md border border-white/50 rounded-full px-2 sm:px-3 py-2 text-[10px] sm:text-xs text-gray-600">
-            <span className="font-medium">📊</span>
-            <span>Toplam <strong className="text-gray-800">{pagination.total}</strong> yorum</span>
-            <span className="text-gray-400">•</span>
-            <span>Sayfa <strong className="text-gray-800">{currentPage}</strong> / <strong className="text-gray-800">{pagination.totalPages}</strong></span>
+        <div className="mt-4 text-center">
+          <div className="inline-flex items-center gap-2 bg-white rounded-full px-4 py-2 text-sm text-gray-600 shadow-sm border border-gray-100">
+            <span className="text-blue-500">📊</span>
+            <span>Toplam <strong className="text-gray-900">{pagination.total}</strong> yorum</span>
+            <span className="text-gray-300">•</span>
+            <span>Sayfa <strong className="text-gray-900">{currentPage}</strong> / <strong className="text-gray-900">{pagination.totalPages}</strong></span>
           </div>
         </div>
       )}
