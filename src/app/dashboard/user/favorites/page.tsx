@@ -5,74 +5,19 @@ import { useRouter } from 'next/navigation';
 // Iconlar: Fluent tarzında inline SVG kullanımı (paket bağımlılığı olmadan)
 import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
-import StoryCard, { StoryGrid } from '../../../../components/story/StoryCard';
-import StoryViewer from '../../../../components/story/StoryViewer';
-import { Story } from '../../../../types/story';
 
 export default function FavoritesPage() {
   const router = useRouter();
   const { data: favorites, isLoading } = trpc.favorites.list.useQuery();
-  const { data: favoritesStories, refetch: refetchStories } = trpc.story.getFavoritesStories.useQuery();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'favorites'>('recent');
   
-  // Hikaye state'leri
-  const [storiesOpen, setStoriesOpen] = useState(false);
-  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
-  const [viewingStories, setViewingStories] = useState<Story[]>([]);
 
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
   const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness();
 
-  // tRPC mutations
-  const likeStoryMutation = trpc.story.toggleLike.useMutation();
-  const viewStoryMutation = trpc.story.view.useMutation();
 
-  // Hikaye etkileşim fonksiyonları
-  const handleStoryClick = (story: Story, index: number) => {
-    setViewingStories(favoritesStories || []);
-    setCurrentStoryIndex(index);
-    setStoriesOpen(true);
-    // Hikaye görüntüleme kaydı
-    handleStoryView(story.id);
-  };
-
-  const handleStoryClose = () => {
-    setStoriesOpen(false);
-    setViewingStories([]);
-    setCurrentStoryIndex(0);
-  };
-
-  const handleStoryNext = () => {
-    if (currentStoryIndex < viewingStories.length - 1) {
-      setCurrentStoryIndex(prev => prev + 1);
-    }
-  };
-
-  const handleStoryPrevious = () => {
-    if (currentStoryIndex > 0) {
-      setCurrentStoryIndex(prev => prev - 1);
-    }
-  };
-
-  const handleStoryLike = async (storyId: string) => {
-    try {
-      const result = await likeStoryMutation.mutateAsync({ storyId });
-      await refetchStories();
-    } catch (error) {
-    }
-  };
-
-  const handleStoryView = async (storyId: string) => {
-    try {
-      await viewStoryMutation.mutateAsync({ 
-        storyId,
-        deviceType: 'mobile'
-      });
-    } catch (error) {
-    }
-  };
 
 
   const list = useMemo(() => {
@@ -119,22 +64,6 @@ export default function FavoritesPage() {
       <div className="mt-2">
         <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">Favoriler</h1>
         
-        {/* Hikayeler Bölümü - Mobile Optimized */}
-        {favoritesStories && favoritesStories.length > 0 && (
-          <div className="mt-4 sm:mt-6 mb-4">
-            <div className="flex items-center justify-center mb-3 sm:mb-4">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-700 mr-2 sm:mr-3">Favori İşletmelerin Hikayeleri</h3>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs sm:text-sm">📱</span>
-              </div>
-            </div>
-            <StoryGrid 
-              stories={favoritesStories} 
-              onStoryClick={handleStoryClick}
-              className="justify-center"
-            />
-          </div>
-        )}
         
         {/* Search and Sort - Mobile Optimized */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-4">
@@ -296,17 +225,6 @@ export default function FavoritesPage() {
         }
       `}</style>
 
-      {/* Hikaye Viewer */}
-      {storiesOpen && (
-        <StoryViewer
-          stories={viewingStories}
-          currentIndex={currentStoryIndex}
-          onClose={handleStoryClose}
-          onNext={handleStoryNext}
-          onPrevious={handleStoryPrevious}
-          onLike={handleStoryLike}
-        />
-      )}
     </main>
   );
 }

@@ -9,8 +9,9 @@ import WeeklySlotView from '../../../components/WeeklySlotView';
 import NotificationsButton from '../../../components/NotificationsButton';
 import { useRealTimeAppointments, useRealTimeBusiness } from '../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
-import { StoryCard, StoryGrid } from '../../../components/story/StoryCard';
-import StoryViewer from '../../../components/story/StoryViewer';
+// Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
+// import { StoryCard, StoryGrid } from '../../../components/story/StoryCard';
+// import StoryViewer from '../../../components/story/StoryViewer';
 
 export default function BusinessDashboard() {
   const { data: session } = useSession();
@@ -18,8 +19,9 @@ export default function BusinessDashboard() {
   const userId = session?.user.id;
   const businessId = session?.user?.businessId;
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [showStoryViewer, setShowStoryViewer] = useState(false);
-  const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
+  // Hikaye state'leri - GEÇİCİ OLARAK KAPALI
+  // const [showStoryViewer, setShowStoryViewer] = useState(false);
+  // const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // WebSocket entegrasyonu
@@ -55,30 +57,27 @@ export default function BusinessDashboard() {
     businessId ? { businessId } : skipToken
   );
 
-  // Hikayeleri getir
+  // Hikaye API'leri ve fonksiyonları - GEÇİCİ OLARAK KAPALI
+  /*
   const { data: stories, refetch: refetchStories } = trpc.story.getByBusiness.useQuery(
     businessId ? { businessId } : skipToken
   );
 
-  // Hikaye ekleme fonksiyonu
   const handleAddStory = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  // Dosya seçildiğinde hikaye oluştur
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !businessId) return;
 
     try {
-      // Dosyayı base64'e çevir
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64Data = e.target?.result as string;
         
-        // Önce medyayı yükle
         const uploadResponse = await fetch('/api/upload_base64', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -94,7 +93,6 @@ export default function BusinessDashboard() {
 
         const uploadData = await uploadResponse.json();
 
-        // Hikaye oluştur
         const createResponse = await fetch('/api/story/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -127,6 +125,7 @@ export default function BusinessDashboard() {
       console.error('Hikaye ekleme hatası:', error);
     }
   };
+  */
 
   // Push notification hook'u
   const {
@@ -348,7 +347,8 @@ export default function BusinessDashboard() {
         />
       </div>
 
-      {/* Hikayeler Bölümü - Mobile Optimized */}
+      {/* Hikayeler Bölümü - Mobile Optimized - GEÇİCİ OLARAK KAPALI */}
+      {/* 
       <div className="bg-white/60 backdrop-blur-md border-2 rounded-2xl p-3 sm:p-4 shadow mb-3 sm:mb-4" 
            style={{
              borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
@@ -356,7 +356,6 @@ export default function BusinessDashboard() {
              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
            }}>
         
-        {/* Hikaye Başlık */}
         <div className="flex items-center gap-2 mb-3">
           <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white flex items-center justify-center text-xs sm:text-sm">
             📱
@@ -364,7 +363,6 @@ export default function BusinessDashboard() {
           <h3 className="text-sm sm:text-base font-bold text-gray-900">Hikayeler</h3>
         </div>
 
-        {/* Hikaye Listesi */}
         <StoryGrid
           stories={stories || []}
           onStoryClick={(story, index) => {
@@ -376,6 +374,7 @@ export default function BusinessDashboard() {
           className="mb-2"
         />
       </div>
+      */}
 
       {/* Push CTA - Mobile Optimized */}
       {isSupported && !isSubscribed && (
@@ -453,7 +452,8 @@ export default function BusinessDashboard() {
         onEmployeeChange={session?.user?.role === 'employee' ? undefined : setSelectedEmployeeId}
       />
 
-      {/* Gizli Dosya Input */}
+      {/* Hikaye Modal'ları - GEÇİCİ OLARAK KAPALI */}
+      {/*
       <input
         ref={fileInputRef}
         type="file"
@@ -462,7 +462,6 @@ export default function BusinessDashboard() {
         className="hidden"
       />
 
-      {/* Hikaye Modal'ları */}
       {showStoryViewer && stories && stories.length > 0 && (
         <StoryViewer
           stories={stories}
@@ -481,7 +480,6 @@ export default function BusinessDashboard() {
             }
           }}
           onLike={async (storyId) => {
-            // Hikaye beğenme işlemi
             try {
               await fetch('/api/trpc/story.like', {
                 method: 'POST',
@@ -494,6 +492,7 @@ export default function BusinessDashboard() {
           }}
         />
       )}
+      */}
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
