@@ -406,6 +406,7 @@ users	longitude	double precision	YES
 users	business_id	uuid	YES	
 users	employee_id	uuid	YES	
 users	is_employee_active	boolean	YES	true
+users	profile_image_url	text	YES	
 
 -- Constraints
 appointment_notes	appointment_notes_appointment_id_fkey	FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE

@@ -8,7 +8,7 @@ export const userRouter = t.router({
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
-        `SELECT id, name, email, role, phone, address, created_at FROM users WHERE id = $1`,
+        `SELECT id, name, email, role, phone, address, profile_image_url, created_at FROM users WHERE id = $1`,
         [input.userId]
       );
       return result.rows[0];
@@ -138,6 +138,20 @@ export const userRouter = t.router({
       const result = await pool.query(
         `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${param} RETURNING id, name, email, role, phone, address, created_at`,
         [...values, input.userId]
+      );
+      return result.rows[0];
+    }),
+
+  // Profil fotoğrafı güncelleme
+  updateProfileImage: t.procedure.use(isUser)
+    .input(z.object({
+      userId: z.string().uuid(),
+      profileImageUrl: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await pool.query(
+        `UPDATE users SET profile_image_url = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, email, role, phone, address, profile_image_url, created_at`,
+        [input.profileImageUrl, input.userId]
       );
       return result.rows[0];
     }),

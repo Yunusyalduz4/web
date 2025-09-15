@@ -29,6 +29,7 @@ export default function UserProfilePage() {
     userId ? { userId, page: 1, limit: 50 } : skipToken
   );
   const updateMutation = trpc.user.updateProfile.useMutation();
+  const updateProfileImageMutation = trpc.user.updateProfileImage.useMutation();
   const deleteReviewMutation = trpc.review.deleteUserReview.useMutation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,6 +51,9 @@ export default function UserProfilePage() {
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [photoSwiper, setPhotoSwiper] = useState<any>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -65,6 +69,7 @@ export default function UserProfilePage() {
       setEmail(profile.email || '');
       setPhone(profile.phone || '');
       setAddress(profile.address || '');
+      setProfileImageUrl(profile.profile_image_url || null);
     }
   }, [profile]);
 
@@ -100,6 +105,147 @@ export default function UserProfilePage() {
     }
   };
 
+  // Image resize helper to keep payloads small - mobil uyumlu
+  const resizeImageToDataUrl = async (file: File, maxSize = 1600, quality = 0.8): Promise<string> => {
+    // Mobil cihaz kontrolü
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // FileReader API kontrolü
+    if (typeof FileReader === 'undefined') {
+      throw new Error('Bu cihazda dosya okuma desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
+    }
+
+    // Dosya boyutu kontrolü - çok büyük dosyaları reddet
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      throw new Error('Dosya çok büyük. Lütfen 10MB\'dan küçük bir dosya seçin.');
+    }
+
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error('Dosya okunamadı'));
+      }
+    });
+
+    // Mobil cihazlarda resize yapmaya çalış, başarısız olursa basit yükleme yap
+    if (isMobile) {
+      return dataUrl;
+    }
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          
+          if (width > height && width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context alınamadı'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        } catch (error) {
+          reject(new Error('Görsel işlenemedi'));
+        }
+      };
+      img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+      img.src = dataUrl;
+    });
+  };
+
+  // Basit dosya yükleme (mobil fallback)
+  const uploadFileSimple = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Dosya okunamadı'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Profile image upload via file picker
+  const handleProfileFileSelect = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      let dataUrl: string;
+      
+      // Mobil cihazlarda resize yapmaya çalış, başarısız olursa basit yükleme yap
+      try {
+        dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
+      } catch (resizeError) {
+        dataUrl = await uploadFileSimple(file);
+      }
+
+      const resp = await fetch('/api/upload_base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename: file.name }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Upload failed');
+      
+      // If API returned data URL fallback, try stronger compression and retry once
+      if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
+        try {
+          dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        } catch (resizeError) {
+          dataUrl = await uploadFileSimple(file);
+        }
+        
+        const resp2 = await fetch('/api/upload_base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, filename: file.name })
+        });
+        const json2 = await resp2.json();
+        if (resp2.ok && json2.url && typeof json2.url === 'string' && json2.url.startsWith('http')) {
+          json.url = json2.url;
+        } else {
+          throw new Error('Görsel çok büyük. Lütfen daha küçük bir görsel yükleyin.');
+        }
+      }
+      
+      const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
+      
+      // Update profile image
+      if (userId) {
+        await updateProfileImageMutation.mutateAsync({ 
+          userId, 
+          profileImageUrl: absoluteUrl 
+        });
+        setProfileImageUrl(absoluteUrl);
+        setSuccess('Profil fotoğrafı başarıyla güncellendi!');
+        setTimeout(() => router.refresh(), 1200);
+      }
+    } catch (e: any) {
+      const errorMessage = e.message || 'Profil fotoğrafı yüklenemedi';
+      setUploadError(errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -120,8 +266,27 @@ export default function UserProfilePage() {
       {/* Header Mini - Mobile Optimized */}
       <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs sm:text-sm font-bold grid place-items-center">
-            {(profile?.name?.[0] || 'U').toUpperCase()}
+          <div className="relative">
+            {profileImageUrl ? (
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-white shadow-md">
+                <img
+                  src={profileImageUrl}
+                  alt="Profil fotoğrafı"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="w-full h-full bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs sm:text-sm font-bold grid place-items-center hidden">
+                  {(profile?.name?.[0] || 'U').toUpperCase()}
+                </div>
+              </div>
+            ) : (
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-xs sm:text-sm font-bold grid place-items-center">
+                {(profile?.name?.[0] || 'U').toUpperCase()}
+              </div>
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm sm:text-base font-semibold text-gray-900 truncate">{profile?.name || 'Kullanıcı'}</div>
@@ -167,6 +332,71 @@ export default function UserProfilePage() {
       {profileOpen && (
         <section className="mt-3 sm:mt-4 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-3 sm:p-4 animate-fade-in">
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            {/* Profil Fotoğrafı */}
+            <div>
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Profil Fotoğrafı</label>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm">
+                  {profileImageUrl ? (
+                    <img
+                      src={profileImageUrl}
+                      alt="Profil fotoğrafı"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full bg-gradient-to-br from-rose-600 via-fuchsia-600 to-indigo-600 text-white text-lg font-bold grid place-items-center ${profileImageUrl ? 'hidden' : ''}`}>
+                    {(profile?.name?.[0] || 'U').toUpperCase()}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-all cursor-pointer">
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
+                      {uploading ? (
+                        <>
+                          <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                          <span>Yükleniyor</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                          <span>Yükle</span>
+                        </>
+                      )}
+                    </label>
+                    {profileImageUrl && (
+                      <button 
+                        type="button" 
+                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200 transition-colors" 
+                        onClick={() => {
+                          setProfileImageUrl(null);
+                          if (userId) {
+                            updateProfileImageMutation.mutateAsync({ 
+                              userId, 
+                              profileImageUrl: '' 
+                            });
+                          }
+                        }}
+                      >
+                        Kaldır
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Hata mesajı */}
+              {uploadError && (
+                <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-xs text-red-700 text-center mt-2">
+                  ⚠️ {uploadError}
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Ad Soyad</label>
               <input
