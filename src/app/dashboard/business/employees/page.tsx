@@ -49,6 +49,7 @@ export default function BusinessEmployeesPage() {
     name: '', 
     email: '', 
     phone: '',
+    profileImageUrl: null as string | null,
     // Hesap oluşturma için yeni alanlar
     createAccount: false,
     password: '',
@@ -76,6 +77,151 @@ export default function BusinessEmployeesPage() {
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Fotoğraf yükleme için state'ler
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Image resize helper to keep payloads small - mobil uyumlu
+  const resizeImageToDataUrl = async (file: File, maxSize = 1600, quality = 0.8): Promise<string> => {
+    // Mobil cihaz kontrolü
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // FileReader API kontrolü
+    if (typeof FileReader === 'undefined') {
+      throw new Error('Bu cihazda dosya okuma desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
+    }
+
+    // Dosya boyutu kontrolü - çok büyük dosyaları reddet
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      throw new Error('Dosya çok büyük. Lütfen 10MB\'dan küçük bir dosya seçin.');
+    }
+
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error('Dosya okuma hatası: ' + (error as Error).message));
+      }
+    });
+
+    // Canvas API kontrolü
+    if (typeof document.createElement('canvas').getContext === 'undefined') {
+      throw new Error('Bu cihazda görsel işleme desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // CORS sorunlarını önle
+    
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
+      img.src = dataUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    let { width, height } = img;
+    
+    // Mobil cihazlarda daha agresif resize
+    const mobileMaxSize = isMobile ? 1200 : maxSize;
+    const scale = Math.min(1, mobileMaxSize / Math.max(width, height));
+    
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+    
+    // Minimum boyut kontrolü
+    if (width < 100 || height < 100) {
+      throw new Error('Görsel çok küçük. Lütfen daha büyük bir görsel seçin.');
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas desteklenmiyor');
+    
+    // Mobil cihazlarda daha düşük kalite
+    const mobileQuality = isMobile ? Math.min(quality, 0.7) : quality;
+    
+    ctx.drawImage(img, 0, 0, width, height);
+    const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
+    const out = canvas.toDataURL(mime, mobileQuality);
+    
+    // Memory temizliği
+    img.src = '';
+    
+    return out;
+  };
+
+  // Mobil cihazlar için basit dosya yükleme (resize olmadan)
+  const uploadFileSimple = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error('Dosya okunamadı'));
+      }
+    });
+  };
+
+  // Profile image upload via file picker
+  const handleProfileFileSelect = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null); // Hata mesajını temizle
+    try {
+      let dataUrl: string;
+      
+      // Mobil cihazlarda resize yapmaya çalış, başarısız olursa basit yükleme yap
+      try {
+        dataUrl = await resizeImageToDataUrl(file, 1600, 0.8);
+      } catch (resizeError) {
+        dataUrl = await uploadFileSimple(file);
+      }
+
+      const resp = await fetch('/api/upload_base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename: file.name }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Upload failed');
+      // If API returned data URL fallback, try stronger compression and retry once
+      if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
+        try {
+          dataUrl = await resizeImageToDataUrl(file, 1200, 0.7);
+        } catch (resizeError) {
+          dataUrl = await uploadFileSimple(file);
+        }
+        
+        const resp2 = await fetch('/api/upload_base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, filename: file.name })
+        });
+        const json2 = await resp2.json();
+        if (resp2.ok && json2.url && typeof json2.url === 'string' && json2.url.startsWith('http')) {
+          json.url = json2.url;
+        } else {
+          throw new Error('Görsel çok büyük. Lütfen daha küçük bir görsel yükleyin.');
+        }
+      }
+      const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
+      setForm(prev => ({ ...prev, profileImageUrl: absoluteUrl }));
+    } catch (e: any) {
+      const errorMessage = e.message || 'Profil fotoğrafı yüklenemedi';
+      setUploadError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -152,6 +298,7 @@ export default function BusinessEmployeesPage() {
         name: '', 
         email: '', 
         phone: '',
+        profileImageUrl: null,
         createAccount: false,
         password: '',
         confirmPassword: '',
@@ -191,6 +338,7 @@ export default function BusinessEmployeesPage() {
       name: e.name || '',
       email: e.email || '',
       phone: e.phone || '',
+      profileImageUrl: e.profile_image_url || null,
       createAccount: false, // Edit modunda hesap oluşturma kapalı
       password: '',
       confirmPassword: '',
@@ -414,6 +562,51 @@ export default function BusinessEmployeesPage() {
             
             <form onSubmit={(e)=>{handleSubmit(e); if (!error) setAddOpen(false);}} className="space-y-3 sm:space-y-4">
               <div className="space-y-3 sm:space-y-4">
+                {/* Profile Image Section */}
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div 
+                    className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => form.profileImageUrl && window.open(form.profileImageUrl, '_blank')}
+                  >
+                    {form.profileImageUrl ? (
+                      <img src={form.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-lg">👤</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-gray-900 mb-1">Profil Fotoğrafı</div>
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-all cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
+                        {uploading ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                            <span>Yükleniyor</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                            <span>Yükle</span>
+                          </>
+                        )}
+                      </label>
+                      {form.profileImageUrl && (
+                        <button type="button" className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200 transition-colors" onClick={() => setForm(prev => ({ ...prev, profileImageUrl: null }))}>
+                          Kaldır
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Hata mesajı */}
+                {uploadError && (
+                  <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-xs text-red-700 text-center">
+                    ⚠️ {uploadError}
+                  </div>
+                )}
+                
                 <div>
                   <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Çalışan Adı</label>
                   <input 
@@ -639,8 +832,14 @@ export default function BusinessEmployeesPage() {
             {/* Header - Mobile Optimized */}
             <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs sm:text-sm font-bold">
-                  {e.name.charAt(0).toUpperCase()}
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
+                  {e.profile_image_url ? (
+                    <img src={e.profile_image_url} alt={e.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs sm:text-sm font-bold">
+                      {e.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs sm:text-sm font-bold text-gray-900 truncate">{e.name}</div>
