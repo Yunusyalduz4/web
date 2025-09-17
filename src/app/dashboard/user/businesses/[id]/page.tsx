@@ -359,6 +359,67 @@ export default function BusinessDetailPage() {
             </p>
           )}
 
+          {/* Sosyal Medya Iconları - İşletme Adının Altında */}
+          {(business?.instagram_url || business?.facebook_url || business?.tiktok_url || business?.x_url) && (
+            <div className="flex items-center justify-center gap-3 mb-4">
+              {business.instagram_url && (
+                <button 
+                  onClick={() => window.open(business.instagram_url, '_blank')}
+                  className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all duration-200 touch-manipulation hover:shadow-xl border border-gray-200"
+                  title="Instagram"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                      <linearGradient id="instagram-gradient-real" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f09433"/>
+                        <stop offset="25%" stopColor="#e6683c"/>
+                        <stop offset="50%" stopColor="#dc2743"/>
+                        <stop offset="75%" stopColor="#cc2366"/>
+                        <stop offset="100%" stopColor="#bc1888"/>
+                      </linearGradient>
+                    </defs>
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="url(#instagram-gradient-real)"/>
+                    <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" fill="white"/>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="white" strokeWidth="2"/>
+                  </svg>
+                </button>
+              )}
+              {business.facebook_url && (
+                <button 
+                  onClick={() => window.open(business.facebook_url, '_blank')}
+                  className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all duration-200 touch-manipulation hover:shadow-xl border border-gray-200"
+                  title="Facebook"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </button>
+              )}
+              {business.tiktok_url && (
+                <button 
+                  onClick={() => window.open(business.tiktok_url, '_blank')}
+                  className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all duration-200 touch-manipulation hover:shadow-xl border border-gray-200"
+                  title="TikTok"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#000000">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                  </svg>
+                </button>
+              )}
+              {business.x_url && (
+                <button 
+                  onClick={() => window.open(business.x_url, '_blank')}
+                  className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all duration-200 touch-manipulation hover:shadow-xl border border-gray-200"
+                  title="X (Twitter)"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#000000">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Hikayeler Bölümü - Mobile Optimized - GEÇİCİ OLARAK KAPALI */}
           {/*
           {businessStories && businessStories.length > 0 && (
@@ -487,69 +548,6 @@ export default function BusinessDetailPage() {
             </button>
           )}
 
-          {/* Sosyal Medya - Mobile Optimized */}
-          {(business.instagram_url || business.facebook_url || business.tiktok_url || business.x_url) && (
-            <div className="p-3 bg-gradient-to-r from-pink-50/50 to-purple-100/30 rounded-xl border border-pink-100/30">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
-                  </svg>
-                </div>
-                <p className="text-xs text-pink-600 font-medium">Sosyal Medya</p>
-              </div>
-              <div className="flex items-center justify-center gap-3">
-                {business.instagram_url && (
-                  <button 
-                    onClick={() => window.open(business.instagram_url, '_blank')}
-                    className="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
-                    title="Instagram"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
-                      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                  </button>
-                )}
-                {business.facebook_url && (
-                  <button 
-                    onClick={() => window.open(business.facebook_url, '_blank')}
-                    className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
-                    title="Facebook"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
-                    </svg>
-                  </button>
-                )}
-                {business.tiktok_url && (
-                  <button 
-                    onClick={() => window.open(business.tiktok_url, '_blank')}
-                    className="w-10 h-10 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
-                    title="TikTok"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="currentColor" strokeWidth="2" fill="none"/>
-                    </svg>
-                  </button>
-                )}
-                {business.x_url && (
-                  <button 
-                    onClick={() => window.open(business.x_url, '_blank')}
-                    className="w-10 h-10 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
-                    title="X (Twitter)"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M4 4l11.733 16h4.267l-11.733-16z"/>
-                      <path d="M6.8 15.6l-2.8 4.4"/>
-                      <path d="M20 4l-6.8 9.6"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
       {/* Segmented Tabs - Mobile Optimized */}

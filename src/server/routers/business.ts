@@ -91,7 +91,8 @@ export const businessRouter = t.router({
           id, name, description, address, latitude, longitude, phone, email, 
           created_at, updated_at, profile_image_url, gender_preference, 
           working_hours_enabled, is_verified, average_rating, total_reviews, 
-          gender_service, is_approved, profile_image_approved
+          gender_service, is_approved, profile_image_approved,
+          instagram_url, facebook_url, tiktok_url, x_url
         FROM businesses 
         WHERE id = $1 AND is_approved = true`, 
         [input.businessId]
