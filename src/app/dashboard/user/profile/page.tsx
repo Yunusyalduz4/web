@@ -226,7 +226,26 @@ export default function UserProfilePage() {
         }
       }
       
-      const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
+      // URL'i düzgün formatla
+      let absoluteUrl: string;
+      if (json.url.startsWith('http')) {
+        absoluteUrl = json.url;
+      } else if (typeof window !== 'undefined') {
+        // Relative URL'i absolute URL'e çevir
+        const baseUrl = window.location.origin;
+        const cleanUrl = json.url.startsWith('/') ? json.url : `/${json.url}`;
+        absoluteUrl = `${baseUrl}${cleanUrl}`;
+      } else {
+        // Server-side için fallback
+        absoluteUrl = json.url;
+      }
+      
+      // URL validation - geçerli URL formatını kontrol et
+      try {
+        new URL(absoluteUrl);
+      } catch (urlError) {
+        throw new Error('Geçersiz URL formatı oluştu. Lütfen tekrar deneyin.');
+      }
       
       // Update profile image
       if (userId) {
