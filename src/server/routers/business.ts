@@ -16,6 +16,7 @@ const employeeSchema = z.object({
   name: z.string().min(2),
   email: z.string().email().optional(),
   phone: z.string().optional(),
+  profileImageUrl: z.string().url().optional(),
   permissions: z.object({
     can_manage_appointments: z.boolean(),
     can_view_analytics: z.boolean(),
@@ -328,8 +329,8 @@ export const businessRouter = t.router({
       const permissions = input.permissions || defaultPermissions;
       
       const result = await pool.query(
-        `INSERT INTO employees (business_id, name, email, phone, permissions) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [input.businessId, input.name, input.email || '', input.phone || '', JSON.stringify(permissions)]
+        `INSERT INTO employees (business_id, name, email, phone, profile_image_url, permissions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [input.businessId, input.name, input.email || '', input.phone || '', input.profileImageUrl || null, JSON.stringify(permissions)]
       );
       return result.rows[0];
     }),
@@ -338,20 +339,49 @@ export const businessRouter = t.router({
     .mutation(async ({ input }) => {
       const permissions = input.permissions ? JSON.stringify(input.permissions) : null;
       
-      let query = `UPDATE employees SET name = $1, email = $2, phone = $3`;
-      let params = [input.name, input.email || '', input.phone || ''];
+      let query = `UPDATE employees SET name = $1, email = $2, phone = $3, profile_image_url = $4`;
+      let params = [input.name, input.email || '', input.phone || '', input.profileImageUrl || null];
       
       if (permissions) {
-        query += `, permissions = $4 WHERE id = $5 AND business_id = $6 RETURNING *`;
+        query += `, permissions = $5 WHERE id = $6 AND business_id = $7 RETURNING *`;
         params.push(permissions, input.id, input.businessId);
       } else {
-        query += ` WHERE id = $4 AND business_id = $5 RETURNING *`;
+        query += ` WHERE id = $5 AND business_id = $6 RETURNING *`;
         params.push(input.id, input.businessId);
       }
       
       const result = await pool.query(query, params);
       return result.rows[0];
     }),
+
+  // Employee profil fotoğrafı güncelleme
+  updateEmployeeProfileImage: t.procedure.use(isBusiness)
+    .input(z.object({
+      employeeId: z.string().uuid(),
+      businessId: z.string().uuid(),
+      profileImageUrl: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      // İşletmenin bu kullanıcıya ait olduğunu kontrol et
+      if (input.businessId !== ctx.user.businessId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu işletmeye erişim yetkiniz yok' });
+      }
+
+      const result = await pool.query(
+        `UPDATE employees SET profile_image_url = $1, updated_at = NOW() WHERE id = $2 AND business_id = $3 RETURNING id, name, email, phone, profile_image_url, created_at`,
+        [input.profileImageUrl, input.employeeId, input.businessId]
+      );
+      
+      if (result.rows.length === 0) {
+        throw new TRPCError({ 
+          code: 'NOT_FOUND', 
+          message: 'Çalışan bulunamadı' 
+        });
+      }
+      
+      return result.rows[0];
+    }),
+
   deleteEmployee: t.procedure.use(isBusiness)
     .input(z.object({ id: z.string().uuid(), businessId: z.string().uuid() }))
     .mutation(async ({ input }) => {
