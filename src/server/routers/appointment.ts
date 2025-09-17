@@ -261,7 +261,7 @@ export const appointmentRouter = t.router({
         params.push(ctx.user.employeeId!);
       }
       
-      query += ` GROUP BY a.id, u.name
+      query += ` GROUP BY a.id, u.name, u.profile_image_url
         ORDER BY a.appointment_datetime DESC`;
       
       const result = await pool.query(query, params);
