@@ -1032,23 +1032,26 @@ export default function BusinessDetailPage() {
 
     {/* Photo Slider Modal - Mobile Optimized */}
     {photoSliderOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-2 sm:p-4">
-        <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
-          {/* Close Button - Mobile Optimized */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+          {/* Close Button */}
           <button
             onClick={() => setPhotoSliderOpen(false)}
-            className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors touch-manipulation min-h-[44px]"
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
           >
-            <span className="text-xl">×</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
 
-          {/* Photo Counter - Mobile Optimized */}
-          <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-10 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-xs sm:text-sm">
-            {currentPhotoIndex + 1} / {currentPhotos.length}
+          {/* Photo Counter */}
+          <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-2 rounded-lg">
+            <div className="text-sm font-medium">{currentPhotoIndex + 1} / {currentPhotos.length}</div>
+            <div className="text-xs opacity-80">Yorum Fotoğrafı</div>
           </div>
 
-          {/* Swiper Container */}
-          <div className="flex-1 w-full">
+          {/* Photo Container */}
+          <div className="bg-white rounded-xl overflow-hidden shadow-2xl">
             <Swiper
               modules={[Navigation, Pagination, EffectFade]}
               spaceBetween={0}
@@ -1075,7 +1078,7 @@ export default function BusinessDetailPage() {
                     <img
                       src={photo}
                       alt={`Photo ${index + 1}`}
-                      className="max-w-full max-h-full object-contain rounded-lg"
+                      className="w-full h-auto max-h-[80vh] object-contain"
                     />
                   </div>
                 </SwiperSlide>
@@ -1083,21 +1086,25 @@ export default function BusinessDetailPage() {
             </Swiper>
           </div>
 
-          {/* Custom Navigation Buttons - Mobile Optimized */}
+          {/* Custom Navigation Buttons */}
           {currentPhotos.length > 1 && (
             <>
-              <button className="swiper-button-prev-custom absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors z-10 touch-manipulation min-h-[44px]">
-                <span className="text-xl sm:text-2xl">‹</span>
+              <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
-              <button className="swiper-button-next-custom absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 active:bg-white/40 transition-colors z-10 touch-manipulation min-h-[44px]">
-                <span className="text-xl sm:text-2xl">›</span>
+              <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
             </>
           )}
 
-          {/* Thumbnail Strip - Mobile Optimized */}
+          {/* Thumbnail Strip */}
           {currentPhotos.length > 1 && (
-            <div className="flex justify-center gap-2 p-2 sm:p-4 overflow-x-auto no-scrollbar">
+            <div className="flex justify-center gap-2 p-4 overflow-x-auto no-scrollbar">
               {currentPhotos.map((photo, index) => (
                 <button
                   key={index}
@@ -1105,10 +1112,10 @@ export default function BusinessDetailPage() {
                     setCurrentPhotoIndex(index);
                     photoSwiper?.slideTo(index);
                   }}
-                  className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                     index === currentPhotoIndex
                       ? 'border-white'
-                      : 'border-white/30 hover:border-white/60 active:border-white/80'
+                      : 'border-white/30 hover:border-white/60'
                   }`}
                 >
                   <img
