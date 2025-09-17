@@ -26,6 +26,10 @@ export default function BusinessEditPage() {
     longitude: 0,
     profileImageUrl: null as string | null,
     genderService: 'unisex' as 'male' | 'female' | 'unisex',
+    instagramUrl: '',
+    facebookUrl: '',
+    tiktokUrl: '',
+    xUrl: '',
   });
 
   const [images, setImages] = useState<Array<{ id: string; image_url: string; image_order: number; is_approved: boolean }>>([]);
@@ -42,6 +46,7 @@ export default function BusinessEditPage() {
     gender: false,
     location: false,
     images: false,
+    socialMedia: false,
   });
 
   const updateBusinessMutation = trpc.business.updateBusiness.useMutation();
@@ -65,6 +70,10 @@ export default function BusinessEditPage() {
         longitude: business.longitude || 0,
         profileImageUrl: business.profile_image_url || null,
         genderService: business.gender_service || 'unisex',
+        instagramUrl: business.instagram_url || '',
+        facebookUrl: business.facebook_url || '',
+        tiktokUrl: business.tiktok_url || '',
+        xUrl: business.x_url || '',
       });
     }
   }, [business]);
@@ -873,6 +882,126 @@ export default function BusinessEditPage() {
           </div>
         )}
       </div>
+
+        {/* Sosyal Medya Card */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+          <button 
+            type="button"
+            onClick={() => toggleCard('socialMedia')}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-base font-medium text-gray-900 group-hover:text-purple-600 transition-colors">Sosyal Medya</h2>
+                <p className="text-xs text-gray-500">İşletmenizin sosyal medya hesapları</p>
+              </div>
+            </div>
+            <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-purple-50 transition-colors">
+              {cardStates.socialMedia ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-600 group-hover:text-purple-600 transition-colors">
+                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-600 group-hover:text-purple-600 transition-colors">
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+          </button>
+          
+          {cardStates.socialMedia && (
+            <div className="px-4 pb-4 space-y-4">
+              {/* Instagram */}
+              <div>
+                <label className="block text-xs font-medium text-gray-900 mb-1">
+                  <span className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-pink-500">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" stroke="currentColor" strokeWidth="2"/>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    Instagram
+                  </span>
+                </label>
+                <input 
+                  name="instagramUrl" 
+                  value={formData.instagramUrl} 
+                  onChange={handleInputChange} 
+                  type="url"
+                  placeholder="https://instagram.com/isletmeniz" 
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all" 
+                />
+              </div>
+
+              {/* Facebook */}
+              <div>
+                <label className="block text-xs font-medium text-gray-900 mb-1">
+                  <span className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-600">
+                      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Facebook
+                  </span>
+                </label>
+                <input 
+                  name="facebookUrl" 
+                  value={formData.facebookUrl} 
+                  onChange={handleInputChange} 
+                  type="url"
+                  placeholder="https://facebook.com/isletmeniz" 
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
+                />
+              </div>
+
+              {/* TikTok */}
+              <div>
+                <label className="block text-xs font-medium text-gray-900 mb-1">
+                  <span className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-black">
+                      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    TikTok
+                  </span>
+                </label>
+                <input 
+                  name="tiktokUrl" 
+                  value={formData.tiktokUrl} 
+                  onChange={handleInputChange} 
+                  type="url"
+                  placeholder="https://tiktok.com/@isletmeniz" 
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all" 
+                />
+              </div>
+
+              {/* X (Twitter) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-900 mb-1">
+                  <span className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-black">
+                      <path d="M4 4l11.733 16h4.267l-11.733-16z" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M6.8 15.6l-2.8 4.4" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M20 4l-6.8 9.6" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    X (Twitter)
+                  </span>
+                </label>
+                <input 
+                  name="xUrl" 
+                  value={formData.xUrl} 
+                  onChange={handleInputChange} 
+                  type="url"
+                  placeholder="https://x.com/isletmeniz" 
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
       {/* Kaydet Butonu - En Altta */}
       <div className="mt-4 sticky bottom-4 z-20">
