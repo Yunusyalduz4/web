@@ -121,6 +121,11 @@ export default function BusinessDetailPage() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [photoSwiper, setPhotoSwiper] = useState<any>(null);
   
+  // Employee photo modal state'leri
+  const [employeePhotoModalOpen, setEmployeePhotoModalOpen] = useState(false);
+  const [selectedEmployeePhoto, setSelectedEmployeePhoto] = useState<string | null>(null);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
+  
   // Hikaye state'leri
   // Hikaye state'leri - GEÇİCİ OLARAK KAPALI
   // const [storiesOpen, setStoriesOpen] = useState(false);
@@ -544,15 +549,32 @@ export default function BusinessDetailPage() {
         </div>
         <div className="overflow-hidden rounded-xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
           <div className="grid grid-cols-[auto_1fr_auto] gap-2 px-3 py-2 text-[10px] uppercase tracking-wide text-gray-600 border-b border-white/40">
+            <span>Fotoğraf</span>
             <span>Ad</span>
-            <span>E-posta</span>
-            <span>Telefon</span>
+            <span>İletişim</span>
           </div>
           <div>
             {employees?.map((e: any) => (
               <div key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-3 border-t border-white/30 active:bg-white/70 transition touch-manipulation min-h-[44px]">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white grid place-items-center text-xs shrink-0">{e.name.charAt(0).toUpperCase()}</div>
+                  <div 
+                    className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      if (e.profile_image_url) {
+                        setSelectedEmployeePhoto(e.profile_image_url);
+                        setSelectedEmployeeName(e.name);
+                        setEmployeePhotoModalOpen(true);
+                      }
+                    }}
+                  >
+                    {e.profile_image_url ? (
+                      <img src={e.profile_image_url} alt={e.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold">
+                        {e.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                   <div className="text-xs font-semibold text-gray-900 truncate">{e.name}</div>
                 </div>
                 <div className="text-xs text-gray-800 truncate">{e.email || '-'}</div>
@@ -1115,6 +1137,38 @@ export default function BusinessDetailPage() {
       />
     )}
     */}
+
+    {/* Employee Photo Modal */}
+    {employeePhotoModalOpen && selectedEmployeePhoto && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+          {/* Close Button */}
+          <button
+            onClick={() => setEmployeePhotoModalOpen(false)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* Employee Info */}
+          <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-2 rounded-lg">
+            <div className="text-sm font-medium">{selectedEmployeeName}</div>
+            <div className="text-xs opacity-80">Çalışan Fotoğrafı</div>
+          </div>
+          
+          {/* Photo */}
+          <div className="bg-white rounded-xl overflow-hidden shadow-2xl">
+            <img
+              src={selectedEmployeePhoto}
+              alt={selectedEmployeeName}
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 } 
