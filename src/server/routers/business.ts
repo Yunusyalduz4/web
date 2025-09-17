@@ -44,6 +44,10 @@ const businessUpdateSchema = z.object({
   longitude: z.number(),
   profileImageUrl: z.string().url().nullable().optional(),
   genderService: z.enum(['male', 'female', 'unisex']).optional(),
+  instagramUrl: z.string().url().optional().or(z.literal('')),
+  facebookUrl: z.string().url().optional().or(z.literal('')),
+  tiktokUrl: z.string().url().optional().or(z.literal('')),
+  xUrl: z.string().url().optional().or(z.literal('')),
 });
 
 const businessProfileUpdateSchema = z.object({
@@ -98,8 +102,8 @@ export const businessRouter = t.router({
     .input(businessUpdateSchema)
     .mutation(async ({ input }) => {
       const result = await pool.query(
-        `UPDATE businesses SET name = $1, description = $2, address = $3, phone = $4, email = $5, latitude = $6, longitude = $7, profile_image_url = $8, gender_service = $9, updated_at = NOW() WHERE id = $10 RETURNING *`,
-        [input.name, input.description || '', input.address, input.phone || '', input.email || '', input.latitude, input.longitude, input.profileImageUrl ?? null, input.genderService || 'unisex', input.id]
+        `UPDATE businesses SET name = $1, description = $2, address = $3, phone = $4, email = $5, latitude = $6, longitude = $7, profile_image_url = $8, gender_service = $9, instagram_url = $10, facebook_url = $11, tiktok_url = $12, x_url = $13, updated_at = NOW() WHERE id = $14 RETURNING *`,
+        [input.name, input.description || '', input.address, input.phone || '', input.email || '', input.latitude, input.longitude, input.profileImageUrl ?? null, input.genderService || 'unisex', input.instagramUrl || null, input.facebookUrl || null, input.tiktokUrl || null, input.xUrl || null, input.id]
       );
       return result.rows[0];
     }),

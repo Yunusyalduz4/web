@@ -486,6 +486,70 @@ export default function BusinessDetailPage() {
               </div>
             </button>
           )}
+
+          {/* Sosyal Medya - Mobile Optimized */}
+          {(business.instagram_url || business.facebook_url || business.tiktok_url || business.x_url) && (
+            <div className="p-3 bg-gradient-to-r from-pink-50/50 to-purple-100/30 rounded-xl border border-pink-100/30">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+                  </svg>
+                </div>
+                <p className="text-xs text-pink-600 font-medium">Sosyal Medya</p>
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                {business.instagram_url && (
+                  <button 
+                    onClick={() => window.open(business.instagram_url, '_blank')}
+                    className="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="Instagram"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
+                      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                  </button>
+                )}
+                {business.facebook_url && (
+                  <button 
+                    onClick={() => window.open(business.facebook_url, '_blank')}
+                    className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="Facebook"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+                    </svg>
+                  </button>
+                )}
+                {business.tiktok_url && (
+                  <button 
+                    onClick={() => window.open(business.tiktok_url, '_blank')}
+                    className="w-10 h-10 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="TikTok"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    </svg>
+                  </button>
+                )}
+                {business.x_url && (
+                  <button 
+                    onClick={() => window.open(business.x_url, '_blank')}
+                    className="w-10 h-10 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="X (Twitter)"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M4 4l11.733 16h4.267l-11.733-16z"/>
+                      <path d="M6.8 15.6l-2.8 4.4"/>
+                      <path d="M20 4l-6.8 9.6"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {/* Segmented Tabs - Mobile Optimized */}
