@@ -74,6 +74,11 @@ export default function BusinessAppointmentsPage() {
   const [optimisticAppointments, setOptimisticAppointments] = useState<any[]>([]);
   const [updatingAppointmentId, setUpdatingAppointmentId] = useState<string | null>(null);
 
+  // Customer photo modal state'leri
+  const [customerPhotoModalOpen, setCustomerPhotoModalOpen] = useState(false);
+  const [selectedCustomerPhoto, setSelectedCustomerPhoto] = useState<string | null>(null);
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
+
   // Reschedule modal state
   const [rescheduleModal, setRescheduleModal] = useState<{
     isOpen: boolean;
@@ -637,8 +642,23 @@ export default function BusinessAppointmentsPage() {
             {/* Header - Compact Design */}
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
-                  {a.user_name ? a.user_name.charAt(0).toUpperCase() : 'M'}
+                <div 
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => {
+                    if (a.user_profile_image_url) {
+                      setSelectedCustomerPhoto(a.user_profile_image_url);
+                      setSelectedCustomerName(a.user_name || 'Müşteri');
+                      setCustomerPhotoModalOpen(true);
+                    }
+                  }}
+                >
+                  {a.user_profile_image_url ? (
+                    <img src={a.user_profile_image_url} alt={a.user_name || 'Müşteri'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
+                      {a.user_name ? a.user_name.charAt(0).toUpperCase() : 'M'}
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
@@ -1110,6 +1130,38 @@ export default function BusinessAppointmentsPage() {
         appointment={rescheduleModal.appointment}
         onRescheduleSubmitted={handleRescheduleSubmitted}
       />
+
+      {/* Customer Photo Modal */}
+      {customerPhotoModalOpen && selectedCustomerPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+            {/* Close Button */}
+            <button
+              onClick={() => setCustomerPhotoModalOpen(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            
+            {/* Customer Info */}
+            <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-2 rounded-lg">
+              <div className="text-sm font-medium">{selectedCustomerName}</div>
+              <div className="text-xs opacity-80">Müşteri Fotoğrafı</div>
+            </div>
+            
+            {/* Photo */}
+            <div className="bg-white rounded-xl overflow-hidden shadow-2xl">
+              <img
+                src={selectedCustomerPhoto}
+                alt={selectedCustomerName}
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
