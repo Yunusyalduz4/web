@@ -131,45 +131,52 @@ export default function UserProfilePage() {
       }
     });
 
-    // Mobil cihazlarda resize yapmaya çalış, başarısız olursa basit yükleme yap
-    if (isMobile) {
-      return dataUrl;
+    // Canvas API kontrolü
+    if (typeof document.createElement('canvas').getContext === 'undefined') {
+      throw new Error('Bu cihazda görsel işleme desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
     }
 
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          
-          if (width > height && width > maxSize) {
-            height = (height * maxSize) / width;
-            width = maxSize;
-          } else if (height > maxSize) {
-            width = (width * maxSize) / height;
-            height = maxSize;
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Canvas context alınamadı'));
-            return;
-          }
-          
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve(compressedDataUrl);
-        } catch (error) {
-          reject(new Error('Görsel işlenemedi'));
-        }
-      };
-      img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // CORS sorunlarını önle
+    
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
       img.src = dataUrl;
     });
+
+    const canvas = document.createElement('canvas');
+    let { width, height } = img;
+    
+    // Mobil cihazlarda daha agresif resize
+    const mobileMaxSize = isMobile ? 1200 : maxSize;
+    const scale = Math.min(1, mobileMaxSize / Math.max(width, height));
+    
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+    
+    // Minimum boyut kontrolü
+    if (width < 100 || height < 100) {
+      throw new Error('Görsel çok küçük. Lütfen daha büyük bir görsel seçin.');
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas desteklenmiyor');
+    
+    // Mobil cihazlarda daha düşük kalite
+    const mobileQuality = isMobile ? Math.min(quality, 0.7) : quality;
+    
+    ctx.drawImage(img, 0, 0, width, height);
+    const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
+    const out = canvas.toDataURL(mime, mobileQuality);
+    
+    // Memory temizliği
+    img.src = '';
+    
+    return out;
   };
 
   // Basit dosya yükleme (mobil fallback)
