@@ -186,7 +186,7 @@ export default function UserProfilePage() {
   const handleProfileFileSelect = async (file: File) => {
     if (!file) return;
     setUploading(true);
-    setUploadError(null);
+    setUploadError(null); // Hata mesajını temizle
     try {
       let dataUrl: string;
       
@@ -204,7 +204,6 @@ export default function UserProfilePage() {
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || 'Upload failed');
-      
       // If API returned data URL fallback, try stronger compression and retry once
       if (json.url && typeof json.url === 'string' && json.url.startsWith('data:')) {
         try {
@@ -225,27 +224,7 @@ export default function UserProfilePage() {
           throw new Error('Görsel çok büyük. Lütfen daha küçük bir görsel yükleyin.');
         }
       }
-      
-      // URL'i düzgün formatla
-      let absoluteUrl: string;
-      if (json.url.startsWith('http')) {
-        absoluteUrl = json.url;
-      } else if (typeof window !== 'undefined') {
-        // Relative URL'i absolute URL'e çevir
-        const baseUrl = window.location.origin;
-        const cleanUrl = json.url.startsWith('/') ? json.url : `/${json.url}`;
-        absoluteUrl = `${baseUrl}${cleanUrl}`;
-      } else {
-        // Server-side için fallback
-        absoluteUrl = json.url;
-      }
-      
-      // URL validation - geçerli URL formatını kontrol et
-      try {
-        new URL(absoluteUrl);
-      } catch (urlError) {
-        throw new Error('Geçersiz URL formatı oluştu. Lütfen tekrar deneyin.');
-      }
+      const absoluteUrl = json.url.startsWith('http') ? json.url : (typeof window !== 'undefined' ? `${window.location.origin}${json.url}` : json.url);
       
       // Update profile image
       if (userId) {
@@ -260,6 +239,7 @@ export default function UserProfilePage() {
     } catch (e: any) {
       const errorMessage = e.message || 'Profil fotoğrafı yüklenemedi';
       setUploadError(errorMessage);
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }
