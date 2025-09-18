@@ -8,7 +8,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import QRCode from 'qrcode';
 // Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
 // import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
@@ -93,7 +93,7 @@ export default function BusinessDetailPage() {
   const router = useRouter();
   const params = useParams();
   const businessId = params?.id as string;
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const businessIdNum = businessId ? parseInt(businessId, 10) : 0;
   const { data: business, isLoading } = trpc.business.getBusinessById.useQuery({ businessId }, { enabled: !!businessId });
@@ -131,6 +131,9 @@ export default function BusinessDetailPage() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [shareUrl, setShareUrl] = useState<string>('');
+  
+  // Login modal state'i
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   
   // Hikaye state'leri
   // Hikaye state'leri - GEÇİCİ OLARAK KAPALI
@@ -1141,6 +1144,34 @@ export default function BusinessDetailPage() {
             <button
               disabled={bookingLoading}
               onClick={async () => {
+                // Oturum kontrolü - loading state'ini de kontrol et
+                if (status === 'loading') {
+                  return; // Henüz yükleniyor, bekle
+                }
+                
+                // Session'ın gerçekten geçerli olup olmadığını kontrol et
+                if (status === 'unauthenticated' || !session || !session.user?.id) {
+                  console.log('Oturum açık değil, login modalı açılıyor...');
+                  setLoginModalOpen(true);
+                  return;
+                }
+                
+                // Session var ama geçerli mi kontrol et
+                try {
+                  const response = await fetch('/api/trpc/user.getProfile?batch=1&input=%7B%220%22%3A%7B%22userId%22%3A%22' + session.user.id + '%22%7D%7D');
+                  
+                  if (!response.ok) {
+                    console.log('Session geçersiz (403), login modalı açılıyor...');
+                    setLoginModalOpen(true);
+                    return;
+                  }
+                } catch (error) {
+                  console.log('Session kontrolü başarısız, login modalı açılıyor...');
+                  setLoginModalOpen(true);
+                  return;
+                }
+                
+                console.log('Oturum açık, randevu sayfasına yönlendiriliyor...');
                 try {
                   setBookingLoading(true);
                   await router.push(`/dashboard/user/businesses/${businessId}/book`);
@@ -1316,9 +1347,9 @@ export default function BusinessDetailPage() {
 
     {/* Paylaş Modal */}
     {shareModalOpen && (
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setShareModalOpen(false)} />
-        <div className="absolute inset-x-0 bottom-20 sm:inset-0 sm:m-auto sm:max-w-md sm:h-auto bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 mb-24">
+        <div className="relative w-full max-w-md max-h-[90vh] bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 overflow-hidden">
           {/* Mobile drag handle */}
           <div className="py-2 flex items-center justify-center sm:hidden">
             <div className="w-12 h-1.5 rounded-full bg-gray-300" />
@@ -1336,7 +1367,7 @@ export default function BusinessDetailPage() {
           </div>
 
           {/* Content */}
-          <div className="px-4 pb-4 flex-1">
+          <div className="px-4 pb-4 flex-1 overflow-y-auto">
             {/* QR Code */}
             {qrCodeDataUrl && (
               <div className="text-center mb-6">
@@ -1358,32 +1389,90 @@ export default function BusinessDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 İşletme Linki
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
-                />
-                <button
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-medium touch-manipulation min-h-[44px]"
-                >
-                  Kopyala
-                </button>
-              </div>
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
+              />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-center">
+            <div className="flex gap-3">
+              <button
+                onClick={handleCopyLink}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="currentColor"/>
+                </svg>
+                Kopyala
+              </button>
               <button
                 onClick={handleNativeShare}
-                className="w-full px-4 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 active:from-rose-800 active:to-pink-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 active:from-rose-800 active:to-pink-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
                   <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" fill="currentColor"/>
                 </svg>
                 Paylaş
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Login Modal */}
+    {loginModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setLoginModalOpen(false)} />
+        <div className="relative w-full max-w-md bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col border border-white/40 overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200/50">
+            <h3 className="font-semibold text-gray-900 text-lg">Giriş Gerekli</h3>
+            <button 
+              className="p-2 rounded-xl hover:bg-gray-100 transition-colors" 
+              onClick={() => setLoginModalOpen(false)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-rose-500 to-fuchsia-500 rounded-full flex items-center justify-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            
+            <h4 className="text-xl font-semibold text-gray-900 mb-2">Randevu Alabilmek İçin</h4>
+            <p className="text-gray-600 mb-6">
+              Randevu oluşturabilmek için lütfen giriş yapınız. Hesabınız yoksa kayıt olabilirsiniz.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLoginModalOpen(false)}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 touch-manipulation min-h-[44px]"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => {
+                  setLoginModalOpen(false);
+                  router.push('/login');
+                }}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-fuchsia-700 active:from-rose-800 active:to-fuchsia-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Giriş Yap
               </button>
             </div>
           </div>

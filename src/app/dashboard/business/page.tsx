@@ -640,9 +640,9 @@ export default function BusinessDashboard() {
 
     {/* Paylaş Modal */}
     {shareModalOpen && (
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setShareModalOpen(false)} />
-        <div className="absolute inset-x-0 bottom-20 sm:inset-0 sm:m-auto sm:max-w-md sm:h-auto bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 mb-24">
+        <div className="relative w-full max-w-md max-h-[90vh] bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 overflow-hidden">
           {/* Mobile drag handle */}
           <div className="py-2 flex items-center justify-center sm:hidden">
             <div className="w-12 h-1.5 rounded-full bg-gray-300" />
@@ -660,7 +660,7 @@ export default function BusinessDashboard() {
           </div>
 
           {/* Content */}
-          <div className="px-4 pb-4 flex-1">
+          <div className="px-4 pb-4 flex-1 overflow-y-auto">
             {/* QR Code */}
             {qrCodeDataUrl && (
               <div className="text-center mb-6">
@@ -682,27 +682,28 @@ export default function BusinessDashboard() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 İşletme Linki
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
-                />
-                <button
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-medium touch-manipulation min-h-[44px]"
-                >
-                  Kopyala
-                </button>
-              </div>
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
+              />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-center">
+            <div className="flex gap-3">
+              <button
+                onClick={handleCopyLink}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="currentColor"/>
+                </svg>
+                Kopyala
+              </button>
               <button
                 onClick={handleNativeShare}
-                className="w-full px-4 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 active:from-rose-800 active:to-pink-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 active:from-rose-800 active:to-pink-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
                   <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" fill="currentColor"/>
