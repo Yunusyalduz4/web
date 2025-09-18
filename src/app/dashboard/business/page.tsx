@@ -5,6 +5,7 @@ import { trpc } from '../../../utils/trpcClient';
 import { usePushNotifications } from '../../../hooks/usePushNotifications';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { skipToken } from '@tanstack/react-query';
+import QRCode from 'qrcode';
 import WeeklySlotView from '../../../components/WeeklySlotView';
 import NotificationsButton from '../../../components/NotificationsButton';
 import { useRealTimeAppointments, useRealTimeBusiness } from '../../../hooks/useRealTimeUpdates';
@@ -23,6 +24,11 @@ export default function BusinessDashboard() {
   // const [showStoryViewer, setShowStoryViewer] = useState(false);
   // const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Paylaş modal state'leri
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [shareUrl, setShareUrl] = useState<string>('');
 
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -168,6 +174,72 @@ export default function BusinessDashboard() {
     a.status === 'pending' || a.status === 'confirmed'
   ).length || 0;
 
+  // Paylaş fonksiyonları
+  const generateQRCode = async (url: string) => {
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(url, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      return qrCodeDataUrl;
+    } catch (error) {
+      console.error('QR kod oluşturma hatası:', error);
+      return '';
+    }
+  };
+
+  const handleShareClick = async () => {
+    if (!business) return;
+    
+    // İşletme detay sayfasının URL'sini oluştur
+    const currentUrl = `${window.location.origin}/dashboard/user/businesses/${business.id}`;
+    setShareUrl(currentUrl);
+    
+    try {
+      const qrCode = await generateQRCode(currentUrl);
+      setQrCodeDataUrl(qrCode);
+      setShareModalOpen(true);
+    } catch (error) {
+      console.error('Paylaş modalı açma hatası:', error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Link kopyalandı!');
+    } catch (error) {
+      console.error('Link kopyalama hatası:', error);
+      alert('Link kopyalanamadı!');
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: business?.name || 'İşletme',
+          text: `${business?.name} işletmesini inceleyin`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        // Kullanıcı paylaşımı iptal ettiyse veya AbortError ise sessizce geç
+        if (error instanceof Error && error.name === 'AbortError') {
+          // Kullanıcı paylaşımı iptal etti, hiçbir şey yapma
+          return;
+        }
+        console.error('Paylaşım hatası:', error);
+      }
+    } else {
+      // Fallback: link kopyala
+      handleCopyLink();
+    }
+  };
+
   if (!businessId) {
     return (
       <div className="p-4">
@@ -254,6 +326,16 @@ export default function BusinessDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Paylaş Butonu */}
+            <button 
+              onClick={handleShareClick}
+              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation bg-gradient-to-r from-rose-500 to-pink-500 rounded-full"
+              title="İşletmeyi Paylaş"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" fill="currentColor"/>
+              </svg>
+            </button>
             <NotificationsButton userType="business" />
           </div>
         </div>
@@ -555,6 +637,83 @@ export default function BusinessDashboard() {
         }
       `}</style>
     </main>
+
+    {/* Paylaş Modal */}
+    {shareModalOpen && (
+      <div className="fixed inset-0 z-50">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setShareModalOpen(false)} />
+        <div className="absolute inset-x-0 bottom-20 sm:inset-0 sm:m-auto sm:max-w-md sm:h-auto bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 mb-24">
+          {/* Mobile drag handle */}
+          <div className="py-2 flex items-center justify-center sm:hidden">
+            <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+          </div>
+          
+          {/* Header */}
+          <div className="px-4 pb-3 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 text-lg">Paylaş</h3>
+            <button 
+              className="px-3 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 text-sm touch-manipulation min-h-[44px]" 
+              onClick={() => setShareModalOpen(false)}
+            >
+              Kapat
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-4 pb-4 flex-1">
+            {/* QR Code */}
+            {qrCodeDataUrl && (
+              <div className="text-center mb-6">
+                <div className="inline-block p-4 bg-white rounded-2xl shadow-lg border border-gray-200">
+                  <img 
+                    src={qrCodeDataUrl} 
+                    alt="QR Code" 
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mt-3">
+                  QR kodu tarayarak işletmeyi görüntüleyin
+                </p>
+              </div>
+            )}
+
+            {/* Link */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                İşletme Linki
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-medium touch-manipulation min-h-[44px]"
+                >
+                  Kopyala
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleNativeShare}
+                className="w-full px-4 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 active:from-rose-800 active:to-pink-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" fill="currentColor"/>
+                </svg>
+                Paylaş
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
