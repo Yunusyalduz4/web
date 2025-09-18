@@ -640,7 +640,7 @@ export default function BusinessDashboard() {
 
     {/* Paylaş Modal */}
     {shareModalOpen && (
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-16">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setShareModalOpen(false)} />
         <div className="relative w-full max-w-md max-h-[90vh] bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 overflow-hidden">
           {/* Mobile drag handle */}
