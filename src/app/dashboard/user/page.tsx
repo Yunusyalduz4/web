@@ -235,9 +235,14 @@ export default function UserDashboard() {
               onClick={() => setHistoryOpen(true)}
               className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 text-gray-900 border border-white/40 shadow-sm transition-all touch-manipulation min-h-[44px]"
               aria-label="Randevu geçmişini aç"
+              style={{
+                border: '2px solid transparent',
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #3b82f6, #ef4444, #ffffff) border-box',
+                borderRadius: '12px'
+              }}
             >
-              <span className="text-sm sm:text-base">🕓</span>
-              <span className="text-xs sm:text-sm font-medium hidden xs:inline">Geçmiş</span>
+              <span className="text-sm sm:text-base">🕓 Geçmiş</span>
+
             </button>
           </div>
         </div>

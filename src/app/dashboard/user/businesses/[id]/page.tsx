@@ -9,6 +9,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import QRCode from 'qrcode';
 // Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
 // import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
 // import StoryViewer from '@/components/story/StoryViewer';
@@ -126,6 +127,11 @@ export default function BusinessDetailPage() {
   const [selectedEmployeePhoto, setSelectedEmployeePhoto] = useState<string | null>(null);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
   
+  // Paylaş modal state'leri
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [shareUrl, setShareUrl] = useState<string>('');
+  
   // Hikaye state'leri
   // Hikaye state'leri - GEÇİCİ OLARAK KAPALI
   // const [storiesOpen, setStoriesOpen] = useState(false);
@@ -138,6 +144,72 @@ export default function BusinessDetailPage() {
     if (nums.length === 0) return null;
     return Math.min(...nums);
   }, [services]);
+
+  // Paylaş fonksiyonları
+  const generateQRCode = async (url: string) => {
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(url, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      return qrCodeDataUrl;
+    } catch (error) {
+      console.error('QR kod oluşturma hatası:', error);
+      return '';
+    }
+  };
+
+  const handleShareClick = async () => {
+    if (!business) return;
+    
+    const currentUrl = window.location.href;
+    setShareUrl(currentUrl);
+    
+    try {
+      const qrCode = await generateQRCode(currentUrl);
+      setQrCodeDataUrl(qrCode);
+      setShareModalOpen(true);
+    } catch (error) {
+      console.error('Paylaş modalı açma hatası:', error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      // Toast mesajı gösterilebilir
+      alert('Link kopyalandı!');
+    } catch (error) {
+      console.error('Link kopyalama hatası:', error);
+      alert('Link kopyalanamadı!');
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: business?.name || 'İşletme',
+          text: `${business?.name} işletmesini inceleyin`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        // Kullanıcı paylaşımı iptal ettiyse veya AbortError ise sessizce geç
+        if (error instanceof Error && error.name === 'AbortError') {
+          // Kullanıcı paylaşımı iptal etti, hiçbir şey yapma
+          return;
+        }
+        console.error('Paylaşım hatası:', error);
+      }
+    } else {
+      // Fallback: link kopyala
+      handleCopyLink();
+    }
+  };
 
   // tRPC mutations - GEÇİCİ OLARAK KAPALI
   // const likeStoryMutation = trpc.story.toggleLike.useMutation();
@@ -359,55 +431,69 @@ export default function BusinessDetailPage() {
             </p>
           )}
 
-          {/* Sosyal Medya Iconları - İşletme Adının Altında */}
-          {(business?.instagram_url || business?.facebook_url || business?.tiktok_url || business?.x_url) && (
-            <div className="flex items-center justify-center gap-3 mb-4">
-              {business.instagram_url && (
-                <button 
-                  onClick={() => window.open(business.instagram_url, '_blank')}
-                  className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
-                  title="Instagram"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="#E4405F"/>
-                  </svg>
-                </button>
-              )}
-              {business.facebook_url && (
-                <button 
-                  onClick={() => window.open(business.facebook_url, '_blank')}
-                  className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
-                  title="Facebook"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
-                  </svg>
-                </button>
-              )}
-              {business.tiktok_url && (
-                <button 
-                  onClick={() => window.open(business.tiktok_url, '_blank')}
-                  className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
-                  title="TikTok"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" fill="#000000"/>
-                  </svg>
-                </button>
-              )}
-              {business.x_url && (
-                <button 
-                  onClick={() => window.open(business.x_url, '_blank')}
-                  className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
-                  title="X (Twitter)"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#000000"/>
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
+          {/* Sosyal Medya Iconları ve Paylaş Butonu - İşletme Adının Altında */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            {/* Sosyal Medya Iconları */}
+            {(business?.instagram_url || business?.facebook_url || business?.tiktok_url || business?.x_url) && (
+              <>
+                {business.instagram_url && (
+                  <button 
+                    onClick={() => window.open(business.instagram_url, '_blank')}
+                    className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="Instagram"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="#E4405F"/>
+                    </svg>
+                  </button>
+                )}
+                {business.facebook_url && (
+                  <button 
+                    onClick={() => window.open(business.facebook_url, '_blank')}
+                    className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="Facebook"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
+                    </svg>
+                  </button>
+                )}
+                {business.tiktok_url && (
+                  <button 
+                    onClick={() => window.open(business.tiktok_url, '_blank')}
+                    className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="TikTok"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" fill="#000000"/>
+                    </svg>
+                  </button>
+                )}
+                {business.x_url && (
+                  <button 
+                    onClick={() => window.open(business.x_url, '_blank')}
+                    className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation"
+                    title="X (Twitter)"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#000000"/>
+                    </svg>
+                  </button>
+                )}
+              </>
+            )}
+            
+            {/* Paylaş Butonu */}
+            <button 
+              onClick={handleShareClick}
+              className="w-10 h-10 flex items-center justify-center active:scale-95 transition-all duration-200 touch-manipulation bg-gradient-to-r from-rose-500 to-pink-500 rounded-full"
+              title="Paylaş"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
 
           {/* Hikayeler Bölümü - Mobile Optimized - GEÇİCİ OLARAK KAPALI */}
           {/*
@@ -1223,6 +1309,83 @@ export default function BusinessDetailPage() {
               alt={selectedEmployeeName}
               className="w-full h-auto max-h-[80vh] object-contain"
             />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Paylaş Modal */}
+    {shareModalOpen && (
+      <div className="fixed inset-0 z-50">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setShareModalOpen(false)} />
+        <div className="absolute inset-x-0 bottom-20 sm:inset-0 sm:m-auto sm:max-w-md sm:h-auto bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col border border-white/40 mb-24">
+          {/* Mobile drag handle */}
+          <div className="py-2 flex items-center justify-center sm:hidden">
+            <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+          </div>
+          
+          {/* Header */}
+          <div className="px-4 pb-3 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 text-lg">Paylaş</h3>
+            <button 
+              className="px-3 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 text-sm touch-manipulation min-h-[44px]" 
+              onClick={() => setShareModalOpen(false)}
+            >
+              Kapat
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-4 pb-4 flex-1">
+            {/* QR Code */}
+            {qrCodeDataUrl && (
+              <div className="text-center mb-6">
+                <div className="inline-block p-4 bg-white rounded-2xl shadow-lg border border-gray-200">
+                  <img 
+                    src={qrCodeDataUrl} 
+                    alt="QR Code" 
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mt-3">
+                  QR kodu tarayarak işletmeyi görüntüleyin
+                </p>
+              </div>
+            )}
+
+            {/* Link */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                İşletme Linki
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-medium touch-manipulation min-h-[44px]"
+                >
+                  Kopyala
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleNativeShare}
+                className="w-full px-4 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 active:from-rose-800 active:to-pink-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" fill="currentColor"/>
+                </svg>
+                Paylaş
+              </button>
+            </div>
           </div>
         </div>
       </div>

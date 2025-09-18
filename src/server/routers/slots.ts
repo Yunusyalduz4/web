@@ -103,8 +103,29 @@ export const slotsRouter = t.router({
         // Her saat için müsait çalışan sayısını ve randevu sayısını hesapla
         const slotCapacity: Record<string, { available: number, busy: number }> = {};
         
-        // Önce tüm slot'ları başlat
-        for (let h = 8; h < 20; h++) {
+        // Önce müsait olan saatleri bul ve sadece onlar için slot capacity oluştur
+        const availableHours = new Set<number>();
+        for (const employeeId of employeeIds) {
+          const empAvailability = employeeAvailability[employeeId] || [];
+          const dayAvailability = empAvailability.filter(a => a.day_of_week === dayOfWeek);
+          
+          for (const avail of dayAvailability) {
+            const [startHour, startMin] = avail.start_time.split(':').map(Number);
+            const [endHour, endMin] = avail.end_time.split(':').map(Number);
+            
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            
+            // Bu çalışanın müsait olduğu her saati ekle
+            for (let totalMinutes = startMinutes; totalMinutes < endMinutes; totalMinutes += 15) {
+              const h = Math.floor(totalMinutes / 60);
+              availableHours.add(h);
+            }
+          }
+        }
+        
+        // Sadece müsait olan saatler için slot capacity oluştur
+        for (const h of availableHours) {
           for (let m = 0; m < 60; m += 15) {
             const slotTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
             slotCapacity[slotTime] = { available: 0, busy: 0 };
@@ -170,8 +191,10 @@ export const slotsRouter = t.router({
           continue;
         }
         
-        // 15dk'lık slot'ları oluştur (08:00-20:00 arası)
-        for (let h = 8; h < 20; h++) {
+        // Müsait olan saatler arasında slot'ları oluştur
+        const sortedHours = Array.from(availableHours).sort((a, b) => a - b);
+        
+        for (const h of sortedHours) {
           for (let m = 0; m < 60; m += 15) {
             const slotTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
             
@@ -347,7 +370,7 @@ export const slotsRouter = t.router({
         }
       }
       
-      // Slot'ları oluştur
+      // Slot'ları oluştur - sadece müsait olan saatler arasında
       const slots: Array<{ time: string; isBusy: boolean; isPast: boolean; status: string }> = [];
       
       for (const timeSlot of availableSlots) {
