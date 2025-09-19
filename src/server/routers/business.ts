@@ -790,4 +790,495 @@ export const businessRouter = t.router({
 
       return busySlots;
     }),
+
+  // Multi-service APIs
+  getEmployeesForMultipleServices: t.procedure
+    .input(z.object({
+      serviceIds: z.array(z.string().uuid()),
+      businessId: z.string().uuid()
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { serviceIds, businessId } = input;
+        
+        // Tüm hizmetleri verebilen çalışanları bul
+        const result = await pool.query(
+          `SELECT e.*, COUNT(es.service_id) as service_count
+           FROM employees e
+           JOIN employee_services es ON e.id = es.employee_id
+           WHERE es.service_id = ANY($1) AND e.business_id = $2
+           GROUP BY e.id
+           HAVING COUNT(es.service_id) = $3`,
+          [serviceIds, businessId, serviceIds.length]
+        );
+        
+        return {
+          canProvideAllServices: result.rows.length > 0,
+          employees: result.rows
+        };
+      } catch (error) {
+        console.error('Error in getEmployeesForMultipleServices:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Çalışanlar getirilemedi'
+        });
+      }
+    }),
+
+  getEmployeesByServices: t.procedure
+    .input(z.object({
+      serviceIds: z.array(z.string().uuid()),
+      businessId: z.string().uuid()
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { serviceIds, businessId } = input;
+        const serviceEmployees: {[key: string]: any[]} = {};
+        
+        // Her hizmet için çalışanları getir
+        for (const serviceId of serviceIds) {
+          const result = await pool.query(
+            `SELECT e.* FROM employees e
+             JOIN employee_services es ON e.id = es.employee_id
+             WHERE es.service_id = $1 AND e.business_id = $2`,
+            [serviceId, businessId]
+          );
+          serviceEmployees[serviceId] = result.rows;
+        }
+        
+        return serviceEmployees;
+      } catch (error) {
+        console.error('Error in getEmployeesByServices:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Çalışanlar getirilemedi'
+        });
+      }
+    }),
+
+  getCommonWeekdaysForEmployees: t.procedure
+    .input(z.object({
+      employeeIds: z.array(z.string().uuid()),
+      businessId: z.string().uuid()
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { employeeIds, businessId } = input;
+        console.log('getCommonWeekdaysForEmployees input:', { employeeIds, businessId });
+        
+        if (employeeIds.length === 0) return [];
+        
+        // Tüm çalışanların ortak müsait günlerini bul
+        const result = await pool.query(
+          `SELECT day_of_week FROM employee_availability ea
+           JOIN employees e ON ea.employee_id = e.id
+           WHERE ea.employee_id = ANY($1) AND e.business_id = $2
+           GROUP BY day_of_week
+           HAVING COUNT(DISTINCT ea.employee_id) = $3`,
+          [employeeIds, businessId, employeeIds.length]
+        );
+        
+        console.log('getCommonWeekdaysForEmployees result:', result.rows);
+        return result.rows.map(row => row.day_of_week);
+      } catch (error) {
+        console.error('Error in getCommonWeekdaysForEmployees:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Müsait günler getirilemedi'
+        });
+      }
+    }),
+
+  getCommonAvailabilityForEmployees: t.procedure
+    .input(z.object({
+      employeeIds: z.array(z.string().uuid()),
+      date: z.string(),
+      businessId: z.string().uuid(),
+      totalDuration: z.number().min(15).default(60)
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { employeeIds, date, businessId, totalDuration } = input;
+        
+        if (employeeIds.length === 0) return { commonSlots: [], employeeSlots: {}, busySlots: {}, hasCommonAvailability: false };
+        
+        // Her çalışan için müsait slotları bul
+        const employeeSlots: {[key: string]: string[]} = {};
+        const busySlots: {[key: string]: boolean} = {};
+        
+        for (const employeeId of employeeIds) {
+          // Çalışanın müsaitlik saatlerini al
+          const availabilityResult = await pool.query(
+            `SELECT day_of_week, start_time, end_time FROM employee_availability ea
+             JOIN employees e ON ea.employee_id = e.id
+             WHERE ea.employee_id = $1 AND e.business_id = $2`,
+            [employeeId, businessId]
+          );
+          
+          const dayOfWeek = new Date(date).getDay();
+          const daySlots = availabilityResult.rows.filter((a: any) => a.day_of_week === dayOfWeek);
+          
+          const slots: string[] = [];
+          daySlots.forEach((slot: any) => {
+            let [h, m] = slot.start_time.split(":").map(Number);
+            const [eh, em] = slot.end_time.split(":").map(Number);
+            while (h < eh || (h === eh && m < em)) {
+              const token = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+              const slotDate = new Date(`${date}T${token}:00`);
+              const isPast = slotDate.getTime() <= Date.now();
+              if (!isPast) {
+                slots.push(token);
+              }
+              m += 15;
+              if (m >= 60) { h++; m = 0; }
+            }
+          });
+          
+          employeeSlots[employeeId] = slots;
+          
+          // Meşgul slotları kontrol et
+          const busyResult = await pool.query(
+            `SELECT appointment_datetime FROM appointments 
+             WHERE employee_id = $1 AND DATE(appointment_datetime) = $2
+             AND status != 'cancelled'`,
+            [employeeId, date]
+          );
+          
+          busyResult.rows.forEach((row: any) => {
+            const appointmentTime = new Date(row.appointment_datetime);
+            const timeSlot = appointmentTime.toTimeString().slice(0, 5);
+            busySlots[timeSlot] = true;
+          });
+        }
+        
+        // Ortak müsait slotları bul
+        const allSlots = new Set<string>();
+        Object.values(employeeSlots).forEach(slots => {
+          slots.forEach(slot => allSlots.add(slot));
+        });
+        
+        const commonSlots = Array.from(allSlots).filter(slot => {
+          // Tüm çalışanlar bu saatte müsait mi?
+          const allAvailable = employeeIds.every(empId => 
+            employeeSlots[empId]?.includes(slot)
+          );
+          
+          // Meşgul değil mi?
+          const notBusy = !busySlots[slot];
+          
+          return allAvailable && notBusy;
+        });
+        
+        return {
+          commonSlots,
+          employeeSlots,
+          busySlots,
+          hasCommonAvailability: commonSlots.length > 0
+        };
+      } catch (error) {
+        console.error('Error in getCommonAvailabilityForEmployees:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Müsaitlik bilgisi getirilemedi'
+        });
+      }
+    }),
+
+  getSequentialAvailability: t.procedure
+    .input(z.object({
+      services: z.array(z.object({
+        serviceId: z.string().uuid(),
+        employeeId: z.string().uuid(),
+        duration: z.number()
+      })),
+      date: z.string(),
+      businessId: z.string().uuid()
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { services, date, businessId } = input;
+        
+        if (services.length === 0) return { availableSlots: [], hasAvailability: false };
+        
+        // Hizmetleri seçim sırasına göre sırala (zaten doğru sırada geliyor)
+        const totalDuration = services.reduce((sum, s) => sum + s.duration, 0);
+        
+        // Ardışık slotları bul
+        const slots = await findSequentialSlots(services, date, businessId, totalDuration);
+        
+        return {
+          availableSlots: slots,
+          hasAvailability: slots.length > 0,
+          totalDuration: totalDuration
+        };
+        
+      } catch (error) {
+        console.error('Error in getSequentialAvailability:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Sıralı müsaitlik bilgisi getirilemedi'
+        });
+      }
+    }),
 });
+
+// Yardımcı fonksiyonlar
+function getPermutations<T>(arr: T[]): T[][] {
+  if (arr.length <= 1) return [arr];
+  
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i++) {
+    const current = arr[i];
+    const remaining = [...arr.slice(0, i), ...arr.slice(i + 1)];
+    const perms = getPermutations(remaining);
+    
+    for (const perm of perms) {
+      result.push([current, ...perm]);
+    }
+  }
+  
+  return result;
+}
+
+async function findSequentialSlots(services: any[], date: string, businessId: string, totalDuration: number) {
+  const slots: any[] = [];
+  const dayOfWeek = new Date(date).getDay();
+  
+  // Her çalışan için müsaitlik saatlerini al
+  const employeeSlots: {[key: string]: string[]} = {};
+  const busySlots: {[key: string]: boolean} = {};
+  
+  for (const service of services) {
+    const employeeId = service.employeeId;
+    
+    if (employeeSlots[employeeId]) continue; // Zaten aldık
+    
+    // Çalışanın müsaitlik saatlerini al
+    const availabilityResult = await pool.query(
+      `SELECT day_of_week, start_time, end_time FROM employee_availability ea
+       JOIN employees e ON ea.employee_id = e.id
+       WHERE ea.employee_id = $1 AND e.business_id = $2`,
+      [employeeId, businessId]
+    );
+    
+    const daySlots = availabilityResult.rows.filter((a: any) => a.day_of_week === dayOfWeek);
+    const slots: string[] = [];
+    
+    daySlots.forEach((slot: any) => {
+      let [h, m] = slot.start_time.split(":").map(Number);
+      const [eh, em] = slot.end_time.split(":").map(Number);
+      
+      while (h < eh || (h === eh && m < em)) {
+        const token = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        const slotDate = new Date(`${date}T${token}:00`);
+        const isPast = slotDate.getTime() <= Date.now();
+        
+        if (!isPast) {
+          slots.push(token);
+        }
+        
+        m += 15;
+        if (m >= 60) { h++; m = 0; }
+      }
+    });
+    
+    employeeSlots[employeeId] = slots;
+    
+    // Meşgul saatleri al
+    const busyResult = await pool.query(
+      `SELECT appointment_datetime FROM appointments 
+       WHERE employee_id = $1 AND DATE(appointment_datetime) = $2
+       AND status != 'cancelled'`,
+      [employeeId, date]
+    );
+    
+    busyResult.rows.forEach((row: any) => {
+      const appointmentTime = new Date(row.appointment_datetime);
+      const timeSlot = appointmentTime.toTimeString().slice(0, 5);
+      busySlots[timeSlot] = true;
+    });
+  }
+  
+  // Tüm müsait saatleri topla ve sırala
+  const allSlots = new Set<string>();
+  Object.values(employeeSlots).forEach(slots => {
+    slots.forEach(slot => allSlots.add(slot));
+  });
+  
+  const sortedSlots = Array.from(allSlots).sort();
+  
+  // Her başlangıç saati için ardışık slotları kontrol et
+  for (let i = 0; i < sortedSlots.length; i++) {
+    const startTime = sortedSlots[i];
+    let canFit = true;
+    let currentTime = startTime;
+    const serviceSchedule: any[] = [];
+    
+    // Her hizmet için sırayla kontrol et
+    for (const service of services) {
+      const employeeId = service.employeeId;
+      const duration = service.duration;
+      
+      // Bu çalışan bu saatte müsait mi?
+      if (!employeeSlots[employeeId]?.includes(currentTime)) {
+        canFit = false;
+        break;
+      }
+      
+      // Meşgul değil mi?
+      if (busySlots[currentTime]) {
+        canFit = false;
+        break;
+      }
+      
+      // Hizmet zamanlamasını kaydet
+      serviceSchedule.push({
+        service: service,
+        startTime: currentTime,
+        endTime: addMinutes(currentTime, duration)
+      });
+      
+      // Süre kadar ilerle
+      currentTime = addMinutes(currentTime, duration);
+    }
+    
+    if (canFit) {
+      slots.push({
+        startTime: startTime,
+        endTime: addMinutes(startTime, totalDuration),
+        services: serviceSchedule,
+        totalDuration: totalDuration
+      });
+    }
+  }
+  
+  return slots;
+}
+
+function addMinutes(timeString: string, minutes: number): string {
+  const [h, m] = timeString.split(":").map(Number);
+  const totalMinutes = h * 60 + m + minutes;
+  const newH = Math.floor(totalMinutes / 60);
+  const newM = totalMinutes % 60;
+  return `${newH.toString().padStart(2, '0')}:${newM.toString().padStart(2, '0')}`;
+}
+
+async function findAvailableSlotsForCombination(services: any[], date: string, businessId: string) {
+  const slots: any[] = [];
+  const dayOfWeek = new Date(date).getDay();
+  
+  // Her hizmet için müsaitlik saatlerini al
+  const employeeSlots: {[key: string]: string[]} = {};
+  const busySlots: {[key: string]: boolean} = {};
+  
+  for (const service of services) {
+    const employeeId = service.employeeId;
+    
+    // Çalışanın müsaitlik saatlerini al
+    const availabilityResult = await pool.query(
+      `SELECT day_of_week, start_time, end_time FROM employee_availability ea
+       JOIN employees e ON ea.employee_id = e.id
+       WHERE ea.employee_id = $1 AND e.business_id = $2`,
+      [employeeId, businessId]
+    );
+    
+    const daySlots = availabilityResult.rows.filter((a: any) => a.day_of_week === dayOfWeek);
+    const slots: string[] = [];
+    
+    daySlots.forEach((slot: any) => {
+      let [h, m] = slot.start_time.split(":").map(Number);
+      const [eh, em] = slot.end_time.split(":").map(Number);
+      
+      while (h < eh || (h === eh && m < em)) {
+        const token = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        const slotDate = new Date(`${date}T${token}:00`);
+        const isPast = slotDate.getTime() <= Date.now();
+        
+        if (!isPast) {
+          slots.push(token);
+        }
+        
+        m += 15;
+        if (m >= 60) { h++; m = 0; }
+      }
+    });
+    
+    employeeSlots[employeeId] = slots;
+    
+    // Meşgul saatleri al
+    const busyResult = await pool.query(
+      `SELECT appointment_datetime FROM appointments 
+       WHERE employee_id = $1 AND DATE(appointment_datetime) = $2
+       AND status != 'cancelled'`,
+      [employeeId, date]
+    );
+    
+    busyResult.rows.forEach((row: any) => {
+      const appointmentTime = new Date(row.appointment_datetime);
+      const timeSlot = appointmentTime.toTimeString().slice(0, 5);
+      busySlots[timeSlot] = true;
+    });
+  }
+  
+  // Sıralı slotları bul
+  const allSlots = new Set<string>();
+  Object.values(employeeSlots).forEach(slots => {
+    slots.forEach(slot => allSlots.add(slot));
+  });
+  
+  const sortedSlots = Array.from(allSlots).sort();
+  
+  for (let i = 0; i < sortedSlots.length; i++) {
+    const startTime = sortedSlots[i];
+    let canFit = true;
+    let currentTime = startTime;
+    
+    // Her hizmet için sırayla kontrol et
+    for (const service of services) {
+      const employeeId = service.employeeId;
+      const duration = service.duration;
+      
+      // Bu çalışan bu saatte müsait mi?
+      if (!employeeSlots[employeeId]?.includes(currentTime)) {
+        canFit = false;
+        break;
+      }
+      
+      // Meşgul değil mi?
+      if (busySlots[currentTime]) {
+        canFit = false;
+        break;
+      }
+      
+      // Süre kadar ilerle
+      const [h, m] = currentTime.split(":").map(Number);
+      const totalMinutes = h * 60 + m + duration;
+      const nextH = Math.floor(totalMinutes / 60);
+      const nextM = totalMinutes % 60;
+      currentTime = `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}`;
+    }
+    
+    if (canFit) {
+      slots.push({
+        startTime: startTime,
+        services: services,
+        totalDuration: services.reduce((sum, s) => sum + s.duration, 0)
+      });
+    }
+  }
+  
+  return slots;
+}
+
+function calculateCombinationScore(slots: any[]): number {
+  if (slots.length === 0) return 0;
+  
+  // En erken başlangıç saati (daha yüksek skor)
+  const earliestStart = Math.min(...slots.map(s => {
+    const [h, m] = s.startTime.split(":").map(Number);
+    return h * 60 + m;
+  }));
+  
+  // Daha erken başlangıç = daha yüksek skor
+  return 1000 - earliestStart;
+}

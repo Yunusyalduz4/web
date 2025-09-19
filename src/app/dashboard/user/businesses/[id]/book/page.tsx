@@ -25,8 +25,8 @@ export default function BookAppointmentPage() {
 
   // Step-by-step state management
   const [currentStep, setCurrentStep] = useState<BookingStep>('service');
-  const [selectedService, setSelectedService] = useState<any>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [selectedServices, setSelectedServices] = useState<any[]>([]);
+  const [serviceEmployeeAssignments, setServiceEmployeeAssignments] = useState<{[serviceId: string]: any}>({});
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [error, setError] = useState('');
@@ -34,26 +34,92 @@ export default function BookAppointmentPage() {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [customDate, setCustomDate] = useState('');
 
-  // Seçilen hizmeti verebilen çalışanları getir
-  const { data: availableEmployees } = trpc.business.getEmployeesByService.useQuery(
-    { serviceId: selectedService?.id || '' },
-    { enabled: !!selectedService?.id }
+  // Multi-service queries
+  const { data: multiServiceData } = trpc.business.getEmployeesForMultipleServices.useQuery(
+    { serviceIds: selectedServices.map(s => s.id), businessId },
+    { enabled: selectedServices.length > 0 }
+  );
+  
+  const { data: serviceEmployees } = trpc.business.getEmployeesByServices.useQuery(
+    { serviceIds: selectedServices.map(s => s.id), businessId },
+    { enabled: selectedServices.length > 0 && !multiServiceData?.canProvideAllServices }
   );
 
-  // Seçilen çalışanın müsaitlik durumunu al
-  const { data: employeeAvailability } = trpc.business.getEmployeeAvailability.useQuery(
-    { employeeId: selectedEmployee?.id || '' },
-    { enabled: !!selectedEmployee?.id }
+  // Sıralı müsaitlik için yeni query
+  const { data: sequentialAvailability } = trpc.business.getSequentialAvailability.useQuery(
+    {
+      services: selectedServices.map(service => ({
+        serviceId: service.id,
+        employeeId: serviceEmployeeAssignments[service.id]?.id || '',
+        duration: service.duration || service.duration_minutes || 30
+      })),
+      date: selectedDate || '',
+      businessId: businessId
+    },
+    { 
+      enabled: selectedServices.length > 1 && 
+               !!selectedDate && 
+               Object.keys(serviceEmployeeAssignments).length === selectedServices.length
+    }
   );
+
+  // Employee availability queries
+  const employeeIdsForAvailability = useMemo(() => {
+    if (multiServiceData?.canProvideAllServices && multiServiceData?.employees?.length > 0) {
+      return multiServiceData.employees.map((emp: any) => emp.id);
+    }
+    
+    if (Object.keys(serviceEmployeeAssignments).length > 0) {
+      const assignedEmployees = Object.values(serviceEmployeeAssignments).filter(emp => emp && emp.id);
+      // Duplicate'leri kaldır
+      const uniqueIds = new Set(assignedEmployees.map(emp => emp.id));
+      return Array.from(uniqueIds);
+    }
+    
+    if (selectedServices.length > 0 && !multiServiceData?.canProvideAllServices) {
+      const allEmployeeIds = new Set<string>();
+      selectedServices.forEach(service => {
+        const employeesForService = serviceEmployees?.[service.id] || [];
+        employeesForService.forEach(emp => allEmployeeIds.add(emp.id));
+      });
+      return Array.from(allEmployeeIds);
+    }
+    
+    return [];
+  }, [multiServiceData, serviceEmployeeAssignments, selectedServices, serviceEmployees]);
+
+  const { data: commonWeekdaysData } = trpc.business.getCommonWeekdaysForEmployees.useQuery(
+    { employeeIds: employeeIdsForAvailability, businessId },
+    { enabled: employeeIdsForAvailability.length > 0 }
+  );
+
+  const { data: commonAvailability } = trpc.business.getCommonAvailabilityForEmployees.useQuery(
+    { 
+      employeeIds: employeeIdsForAvailability, 
+      date: selectedDate, 
+      businessId,
+      totalDuration: selectedServices.reduce((sum, service) => sum + (service.duration || 30), 0) || 60
+    },
+    { enabled: employeeIdsForAvailability.length > 0 && selectedDate !== '' }
+  );
+
+  const commonWeekdays = useMemo(() => {
+    console.log('commonWeekdaysData:', commonWeekdaysData);
+    console.log('employeeIdsForAvailability:', employeeIdsForAvailability);
+    if (commonWeekdaysData) {
+      return new Set(commonWeekdaysData);
+    }
+    return new Set([0, 1, 2, 3, 4, 5, 6]); // Fallback
+  }, [commonWeekdaysData]);
 
   // Meşgul slotları al
   const { data: busySlots } = trpc.appointment.getBusySlotsForEmployees.useQuery(
     {
-      employeeIds: selectedEmployee ? [selectedEmployee.id] : [],
+      employeeIds: employeeIdsForAvailability,
       date: selectedDate || new Date().toISOString().split('T')[0],
-      durationMinutes: selectedService?.duration_minutes || 15,
+      durationMinutes: selectedServices.reduce((sum, service) => sum + (service.duration || 30), 0) || 60,
     },
-    { enabled: !!selectedDate && !!selectedEmployee }
+    { enabled: !!selectedDate && employeeIdsForAvailability.length > 0 }
   );
 
   // Step navigation functions
@@ -66,11 +132,12 @@ export default function BookAppointmentPage() {
     switch (currentStep) {
       case 'employee':
         setCurrentStep('service');
-        setSelectedService(null);
+        setSelectedServices([]);
+        setServiceEmployeeAssignments({});
         break;
       case 'availability':
         setCurrentStep('employee');
-        setSelectedEmployee(null);
+        setServiceEmployeeAssignments({});
         break;
       case 'confirmation':
         setCurrentStep('availability');
@@ -82,21 +149,52 @@ export default function BookAppointmentPage() {
   };
 
   // Service selection
-  const handleServiceSelect = (service: any) => {
-    setSelectedService(service);
+  const handleServiceToggle = (service: any) => {
+    setSelectedServices(prev => {
+      const isSelected = prev.some(s => s.id === service.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== service.id);
+      } else {
+        return [...prev, service];
+      }
+    });
     setError('');
-    // Tek çalışan varsa otomatik geç
-    if (employees && employees.length === 1) {
-      setSelectedEmployee(employees[0]);
-      setCurrentStep('availability');
-    } else {
-      setCurrentStep('employee');
+  };
+
+  const handleServiceComplete = () => {
+    if (selectedServices.length === 0) {
+      setError('Lütfen en az bir hizmet seçin');
+      return;
     }
+    setCurrentStep('employee');
   };
 
   // Employee selection
-  const handleEmployeeSelect = (employee: any) => {
-    setSelectedEmployee(employee);
+  const handleServiceEmployeeSelect = (serviceId: string, employee: any) => {
+    setServiceEmployeeAssignments(prev => ({
+      ...prev,
+      [serviceId]: employee
+    }));
+    setError('');
+  };
+
+  const handleEmployeeAssignmentsComplete = () => {
+    // Tek çalışan tüm hizmetleri verebiliyorsa
+    if (multiServiceData?.canProvideAllServices) {
+      setCurrentStep('availability');
+      return;
+    }
+    
+    // Her hizmet için çalışan seçilmiş mi kontrol et
+    const allServicesAssigned = selectedServices.every(service => 
+      serviceEmployeeAssignments[service.id]
+    );
+    
+    if (!allServicesAssigned) {
+      setError('Tüm hizmetler için çalışan seçmelisiniz.');
+      return;
+    }
+    
     setError('');
     setCurrentStep('availability');
   };
@@ -131,32 +229,39 @@ export default function BookAppointmentPage() {
 
   // Müsait saatleri hesapla
   const availableTimes = useMemo(() => {
-    if (!employeeAvailability || !selectedDate) return [];
+    if (!selectedDate) return [];
     
-    const dayOfWeek = getDayOfWeek(selectedDate);
-    const daySlots = employeeAvailability.filter((a: any) => a.day_of_week === dayOfWeek);
+    // Çoklu hizmet ve farklı çalışanlar için sıralı müsaitlik kullan
+    if (selectedServices.length > 1 && !multiServiceData?.canProvideAllServices && sequentialAvailability) {
+      return sequentialAvailability.availableSlots?.map((slot: any) => slot.startTime) || [];
+    }
     
-    if (daySlots.length === 0) return [];
+    // Tek hizmet veya aynı çalışan için ortak müsaitlik kullan
+    if (commonAvailability) {
+      return commonAvailability.commonSlots || [];
+    }
     
+    // Fallback - basit saatler
     const slots: string[] = [];
-    daySlots.forEach((slot: any) => {
-      let [h, m] = slot.start_time.split(":").map(Number);
-      const [eh, em] = slot.end_time.split(":").map(Number);
-      while (h < eh || (h === eh && m < em)) {
-        const token = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    for (let hour = 8; hour < 20; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const token = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const slotDate = new Date(`${selectedDate}T${token}:00`);
         const isPast = slotDate.getTime() <= Date.now();
         if (!isPast) {
           slots.push(token);
         }
-        m += 15;
-        if (m >= 60) { h++; m = 0; }
       }
-    });
+    }
     return slots;
-  }, [employeeAvailability, selectedDate]);
+  }, [selectedDate, commonAvailability, sequentialAvailability, selectedServices.length, multiServiceData?.canProvideAllServices]);
 
-  // Meşgul slot kontrolü
+  // Toplam süre hesaplama
+  const totalDuration = useMemo(() => {
+    return selectedServices.reduce((sum, service) => sum + (service.duration || service.duration_minutes || 30), 0);
+  }, [selectedServices]);
+
+  // Meşgul slot kontrolü - Toplam süre kadar boşluk kontrolü
   const isSlotBusy = (timeSlot: string) => {
     if (selectedDate === new Date().toISOString().split('T')[0]) {
       const now = new Date();
@@ -169,12 +274,41 @@ export default function BookAppointmentPage() {
       }
     }
     
-    return busySlots?.[timeSlot] || false;
+    // Toplam süre kadar boşluk kontrolü
+    if (totalDuration > 0) {
+      const startTime = timeSlot;
+      const endTime = addMinutesToTime(startTime, totalDuration);
+      
+      // Başlangıç saati meşgul mu?
+      if (busySlots?.[startTime]) {
+        return true;
+      }
+      
+      // Toplam süre boyunca herhangi bir slot meşgul mu?
+      let currentTime = startTime;
+      while (currentTime < endTime) {
+        if (busySlots?.[currentTime]) {
+          return true;
+        }
+        currentTime = addMinutesToTime(currentTime, 15); // 15 dakika aralıklarla kontrol et
+      }
+    }
+    
+    return false;
+  };
+
+  // Zaman ekleme helper fonksiyonu
+  const addMinutesToTime = (timeStr: string, minutes: number): string => {
+    const [hours, mins] = timeStr.split(':').map(Number);
+    const totalMinutes = hours * 60 + mins + minutes;
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMins = totalMinutes % 60;
+    return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
   };
 
   // Randevu oluşturma
   const handleCreateAppointment = async () => {
-    if (!userId || !selectedService || !selectedEmployee || !selectedDate || !selectedTime) {
+    if (!userId || selectedServices.length === 0 || !selectedDate || !selectedTime) {
       setError('Tüm alanları doldurun.');
       return;
     }
@@ -184,18 +318,85 @@ export default function BookAppointmentPage() {
       return;
     }
 
-    const appointmentDatetime = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
+    // Services array oluştur
+    let servicesToBook: any[] = [];
+    
+    if (multiServiceData?.canProvideAllServices) {
+      // Tek çalışan tüm hizmetleri veriyor
+      const employee = multiServiceData.employees?.[0];
+      if (!employee) {
+        setError('Çalışan bulunamadı.');
+        return;
+      }
+      servicesToBook = selectedServices.map(service => ({
+        serviceId: service.id,
+        employeeId: employee.id
+      }));
+    } else {
+      // Her hizmet için ayrı çalışan - Sıralı randevu sistemi
+      const allServicesAssigned = selectedServices.every(service => 
+        serviceEmployeeAssignments[service.id]
+      );
+      
+      if (!allServicesAssigned) {
+        setError('Tüm hizmetler için çalışan seçmelisiniz.');
+        return;
+      }
+      
+      // Sıralı randevu için zamanlamayı hesapla
+      if (sequentialAvailability && sequentialAvailability.hasAvailability) {
+        // Sıralı randevu bulundu, zamanlamayı kullan
+        const selectedSlot = sequentialAvailability.availableSlots?.find((slot: any) => 
+          slot.startTime === selectedTime
+        );
+        
+        if (selectedSlot) {
+          servicesToBook = selectedSlot.services.map((serviceSchedule: any) => ({
+            serviceId: serviceSchedule.service.serviceId,
+            employeeId: serviceSchedule.service.employeeId,
+            appointmentDatetime: `${selectedDate}T${serviceSchedule.startTime}:00`
+          }));
+        } else {
+          setError('Seçilen saat için sıralı randevu bulunamadı.');
+          return;
+        }
+      } else {
+        // Fallback: Aynı saatte tüm hizmetler
+        servicesToBook = selectedServices.map(service => ({
+          serviceId: service.id,
+          employeeId: serviceEmployeeAssignments[service.id].id
+        }));
+      }
+    }
+
+    // Tek çalışan veya fallback için
+    const appointmentDatetime = `${selectedDate}T${selectedTime}:00`;
     
     try {
-      await bookMutation.mutateAsync({
-        userId,
-        businessId,
-        appointmentDatetime,
-        services: [{
-          serviceId: selectedService.id,
-          employeeId: selectedEmployee.id
-        }]
-      });
+      // Sıralı randevu için her hizmet için ayrı randevu oluştur
+      if (servicesToBook.length > 1 && servicesToBook[0].appointmentDatetime) {
+        // Sıralı randevu - her hizmet için ayrı randevu
+        for (const service of servicesToBook) {
+          await bookMutation.mutateAsync({
+            userId,
+            businessId,
+            appointmentDatetime: service.appointmentDatetime,
+            services: [{
+              serviceId: service.serviceId,
+              employeeId: service.employeeId
+            }]
+          });
+        }
+      } else {
+        // Tek çalışan veya aynı saatte tüm hizmetler
+        await bookMutation.mutateAsync({
+          userId,
+          businessId,
+          appointmentDatetime,
+          services: servicesToBook
+        });
+      }
+      
       setSuccess('Randevu başarıyla oluşturuldu!');
       setTimeout(() => router.push(`/dashboard/user`), 1500);
     } catch (err: any) {
@@ -218,29 +419,34 @@ export default function BookAppointmentPage() {
   }, []);
 
   const availableWeekdays = useMemo(() => {
-    if (!employeeAvailability) return new Set<number>();
-    return new Set(employeeAvailability.map((a: any) => a.day_of_week));
-  }, [employeeAvailability]);
+    return commonWeekdays;
+  }, [commonWeekdays]);
 
   // Step 1: Service Selection Component
   const ServiceSelectionStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Hizmet Seçin</h2>
-        <p className="text-gray-600">Randevu almak istediğiniz hizmeti seçin</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Hizmetleri Seçin</h2>
+        <p className="text-gray-600">Randevu almak istediğiniz hizmetleri seçin (birden fazla seçebilirsiniz)</p>
       </div>
 
       <div className="space-y-3">
-        {services?.map((service: any) => (
-          <button
-            key={service.id}
-            onClick={() => handleServiceSelect(service)}
-            className="w-full p-4 rounded-2xl border-2 border-transparent bg-white/80 backdrop-blur-md hover:border-red-300 hover:shadow-lg transition-all duration-200 text-left"
-            style={{
-              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
-              border: '2px solid transparent'
-            }}
-          >
+        {services?.map((service: any) => {
+          const isSelected = selectedServices.some(s => s.id === service.id);
+          return (
+            <button
+              key={service.id}
+              onClick={() => handleServiceToggle(service)}
+              className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left ${
+                isSelected 
+                  ? 'border-red-500 bg-red-50 shadow-lg' 
+                  : 'border-transparent bg-white/80 backdrop-blur-md hover:border-red-300 hover:shadow-lg'
+              }`}
+              style={!isSelected ? {
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+                border: '2px solid transparent'
+              } : {}}
+            >
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{service.name}</h3>
@@ -253,89 +459,187 @@ export default function BookAppointmentPage() {
                     <span className="text-sm text-gray-600 font-medium">{service.duration_minutes} dk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
                     <span className="text-lg font-bold text-blue-600">₺{service.price}</span>
                   </div>
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isSelected 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white border-2 border-gray-200'
+              }`}>
+                {isSelected && (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </div>
             </div>
           </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Step 2: Employee Selection Component
-  const EmployeeSelectionStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Çalışan Seçin</h2>
-        <p className="text-gray-600">Seçilen hizmeti verebilecek çalışanları görüntüleyin</p>
+          );
+        })}
       </div>
 
-      {/* Seçilen Hizmet Bilgisi */}
-      {selectedService && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-red-50 to-blue-50 border border-red-200">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{selectedService.name}</h3>
-              <p className="text-sm text-gray-600">{selectedService.duration_minutes} dk • ₺{selectedService.price}</p>
-            </div>
+      {selectedServices.length > 0 && (
+        <div className="mt-6 p-4 bg-blue-50 rounded-2xl border border-blue-200">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Seçilen Hizmetler:</h3>
+          <div className="space-y-2">
+            {selectedServices.map((service: any) => (
+              <div key={service.id} className="flex items-center justify-between text-sm">
+                <span className="text-blue-800">{service.name}</span>
+                <span className="font-semibold text-blue-600">₺{service.price}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      <div className="space-y-3">
-        {(availableEmployees || employees || []).map((employee: any) => (
-          <button
-            key={employee.id}
-            onClick={() => handleEmployeeSelect(employee)}
-            className="w-full p-4 rounded-2xl border-2 border-transparent bg-white/80 backdrop-blur-md hover:border-red-300 hover:shadow-lg transition-all duration-200 text-left"
-            style={{
-              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
-              border: '2px solid transparent'
-            }}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
-                {employee.profile_image_url ? (
-                  <img src={employee.profile_image_url} alt={employee.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xl font-bold">
-                    {employee.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{employee.name}</h3>
-                <p className="text-sm text-gray-600">{employee.email || 'E-posta yok'}</p>
-                {employee.phone && (
-                  <p className="text-sm text-gray-600">{employee.phone}</p>
-                )}
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
+      <button
+        onClick={handleServiceComplete}
+        disabled={selectedServices.length === 0}
+        className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-500 to-blue-500 text-white font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Devam Et ({selectedServices.length} hizmet seçildi)
+      </button>
     </div>
   );
+
+  // Step 2: Employee Selection Component
+  const EmployeeSelectionStep = () => {
+    const canProvideAllServices = multiServiceData?.canProvideAllServices;
+    
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Çalışanları Seçin</h2>
+          <p className="text-gray-600">
+            {canProvideAllServices 
+              ? 'Tek çalışan tüm hizmetleri verebiliyor' 
+              : 'Her hizmet için ayrı çalışan seçin'
+            }
+          </p>
+        </div>
+
+        {/* Seçilen Hizmetler Bilgisi */}
+        {selectedServices.length > 0 && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-red-50 to-blue-50 border border-red-200">
+            <h3 className="font-semibold text-gray-900 mb-3">Seçilen Hizmetler:</h3>
+            <div className="space-y-2">
+              {selectedServices.map((service: any) => (
+                <div key={service.id} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-800">{service.name}</span>
+                  <span className="font-semibold text-blue-600">₺{service.price}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {canProvideAllServices ? (
+          // Tek çalışan tüm hizmetleri veriyor
+          <div className="space-y-3">
+            {multiServiceData?.employees?.length > 0 ? multiServiceData.employees.map((employee: any) => (
+              <button
+                key={employee.id}
+                onClick={() => {
+                  // Tüm hizmetler için aynı çalışanı ata
+                  const assignments: {[key: string]: any} = {};
+                  selectedServices.forEach(service => {
+                    assignments[service.id] = employee;
+                  });
+                  setServiceEmployeeAssignments(assignments);
+                  setCurrentStep('availability');
+                }}
+                className="w-full p-4 rounded-2xl border-2 border-transparent bg-white/80 backdrop-blur-md hover:border-red-300 hover:shadow-lg transition-all duration-200 text-left"
+                style={{
+                  background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+                  border: '2px solid transparent'
+                }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
+                    <span className="text-lg font-bold">{employee.name.charAt(0)}</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{employee.name}</h3>
+                    <p className="text-sm text-gray-600">{employee.email}</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </button>
+            )) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Bu hizmetleri verebilecek çalışan bulunamadı.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Her hizmet için ayrı çalışan seçimi
+          <div className="space-y-6">
+            {selectedServices.map((service: any) => (
+              <div key={service.id} className="p-4 rounded-2xl bg-white/80 backdrop-blur-md border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{service.name}</h3>
+                <div className="space-y-2">
+                  {serviceEmployees && serviceEmployees[service.id]?.length > 0 ? (serviceEmployees[service.id] || []).map((employee: any) => (
+                    <button
+                      key={employee.id}
+                      onClick={() => handleServiceEmployeeSelect(service.id, employee)}
+                      className={`w-full p-3 rounded-xl border-2 transition-all duration-200 text-left ${
+                        serviceEmployeeAssignments[service.id]?.id === employee.id
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-transparent bg-gray-50 hover:border-red-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
+                          {employee.profile_image_url ? (
+                            <img src={employee.profile_image_url} alt={employee.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold">
+                              {employee.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{employee.name}</h4>
+                          <p className="text-xs text-gray-600">{employee.email}</p>
+                        </div>
+                        {serviceEmployeeAssignments[service.id]?.id === employee.id && (
+                          <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500 text-sm">Bu hizmet için çalışan bulunamadı.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!canProvideAllServices && (
+          <button
+            onClick={handleEmployeeAssignmentsComplete}
+            disabled={!selectedServices.every(service => serviceEmployeeAssignments[service.id])}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-500 to-blue-500 text-white font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Devam Et
+          </button>
+        )}
+      </div>
+    );
+  };
 
   // Step 3: Availability Selection Component
   const AvailabilitySelectionStep = () => (
@@ -347,38 +651,32 @@ export default function BookAppointmentPage() {
 
       {/* Seçilen Bilgiler */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {selectedService && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-red-50 to-blue-50 border border-red-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+        {/* Seçilen Hizmetler */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-red-50 to-blue-50 border border-red-200">
+          <h3 className="font-semibold text-gray-900 mb-3">Seçilen Hizmetler:</h3>
+          <div className="space-y-2">
+            {selectedServices.map((service: any) => (
+              <div key={service.id} className="flex items-center justify-between text-sm">
+                <span className="text-gray-800">{service.name}</span>
+                <span className="font-semibold text-blue-600">₺{service.price}</span>
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{selectedService.name}</h3>
-                <p className="text-sm text-gray-600">{selectedService.duration_minutes} dk • ₺{selectedService.price}</p>
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {selectedEmployee && (
+        {/* Seçilen Çalışanlar */}
+        {Object.keys(serviceEmployeeAssignments).length > 0 && (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
-                {selectedEmployee.profile_image_url ? (
-                  <img src={selectedEmployee.profile_image_url} alt={selectedEmployee.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-sm font-bold">
-                    {selectedEmployee.name.charAt(0).toUpperCase()}
+            <h3 className="font-semibold text-gray-900 mb-3">Seçilen Çalışanlar:</h3>
+            <div className="space-y-2">
+              {Object.entries(serviceEmployeeAssignments).map(([serviceId, employee]) => {
+                const service = selectedServices.find(s => s.id === serviceId);
+                return (
+                  <div key={serviceId} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-800">{service?.name} - {employee?.name}</span>
                   </div>
-                )}
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{selectedEmployee.name}</h3>
-                <p className="text-sm text-gray-600">Seçilen çalışan</p>
-              </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -439,9 +737,28 @@ export default function BookAppointmentPage() {
       {selectedDate && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">Saat Seçin</h3>
+          
+          {/* Sıralı müsaitlik yoksa uyarı mesajı */}
+          {selectedServices.length > 1 && !multiServiceData?.canProvideAllServices && sequentialAvailability && !sequentialAvailability.hasAvailability && (
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-red-100 to-orange-100 flex items-center justify-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-red-500">
+                  <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Uygun Müsaitlik Bulunamadı</h4>
+              <p className="text-gray-600 mb-4">
+                Seçtiğiniz hizmetler için ardışık randevu bulunamadı.
+              </p>
+              <p className="text-sm text-gray-500">
+                Lütfen her hizmet için ayrı randevu oluşturun veya farklı bir tarih deneyin.
+              </p>
+            </div>
+          )}
+          
           {availableTimes.length > 0 ? (
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {availableTimes.map((timeSlot) => {
+              {availableTimes.map((timeSlot: string) => {
                 const selected = selectedTime === timeSlot;
                 const isBusy = isSlotBusy(timeSlot);
                 
