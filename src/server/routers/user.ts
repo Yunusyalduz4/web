@@ -1,4 +1,4 @@
-import { t, isUser, isEmployee } from '../trpc/trpc';
+import { t, isUser, isEmployee, isAuthed } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
 import bcrypt from 'bcrypt';
@@ -10,6 +10,60 @@ export const userRouter = t.router({
       const result = await pool.query(
         `SELECT id, name, email, role, phone, address, profile_image_url, created_at FROM users WHERE id = $1`,
         [input.userId]
+      );
+      return result.rows[0];
+    }),
+
+  // Sadece telefon numarası güncelleme
+  updatePhone: t.procedure.use(isAuthed)
+    .input(z.object({
+      phone: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await pool.query(
+        `UPDATE users SET phone = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, email, role, phone, address, created_at`,
+        [input.phone, ctx.user.id]
+      );
+      return result.rows[0];
+    }),
+
+  // Kullanıcılar için profil güncelleme (hem normal kullanıcılar hem çalışanlar)
+  updateProfile: t.procedure.use(isAuthed)
+    .input(z.object({
+      name: z.string().min(2),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      address: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const updates = [];
+      const values = [];
+      let param = 1;
+
+      if (input.name) {
+        updates.push(`name = $${param++}`);
+        values.push(input.name);
+      }
+      if (input.email) {
+        updates.push(`email = $${param++}`);
+        values.push(input.email);
+      }
+      if (input.phone !== undefined) {
+        updates.push(`phone = $${param++}`);
+        values.push(input.phone);
+      }
+      if (input.address !== undefined) {
+        updates.push(`address = $${param++}`);
+        values.push(input.address);
+      }
+
+      if (updates.length === 0) {
+        throw new Error('Güncellenecek alan bulunamadı');
+      }
+
+      const result = await pool.query(
+        `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${param} RETURNING id, name, email, role, phone, address, created_at`,
+        [...values, ctx.user.id]
       );
       return result.rows[0];
     }),
