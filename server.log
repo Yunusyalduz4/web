@@ -1,0 +1,69 @@
+
+> kuafor-app@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.4.5
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.219:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1732ms
+ ○ Compiling /api/auth/forgot-password ...
+ ✓ Compiled /api/auth/forgot-password in 608ms (133 modules)
+Checking user with email: yalduzyunuseren@gmail.com
+User query result: [ { id: '8b48b209-bcbc-4d24-9373-fa7ea2d8da35', name: 'YALDUZ' } ]
+Password reset email sent successfully: {
+  data: null,
+  error: {
+    statusCode: 403,
+    message: 'You can only send testing emails to your own email address (yalduzbey@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.'
+  }
+}
+ POST /api/auth/forgot-password 200 in 1590ms
+ ✓ Compiled in 190ms (133 modules)
+Checking user with email: yalduzyunuseren@gmail.com
+User query result: [ { id: '8b48b209-bcbc-4d24-9373-fa7ea2d8da35', name: 'YALDUZ' } ]
+Password reset email sent successfully: { data: { id: '3b7caf66-8fdf-4bd4-bbb2-e075c169440f' }, error: null }
+ POST /api/auth/forgot-password 200 in 564ms
+ ✓ Compiled in 183ms (133 modules)
+ ✓ Compiled in 55ms (133 modules)
+ ✓ Compiled in 42ms (133 modules)
+ ✓ Compiled in 70ms (133 modules)
+ ✓ Compiled in 309ms (105 modules)
+ ✓ Compiled /api/auth/forgot-password in 289ms (133 modules)
+Password reset email sent successfully: {
+  data: null,
+  error: {
+    statusCode: 403,
+    message: 'You can only send testing emails to your own email address (yalduzbey@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.'
+  }
+}
+ POST /api/auth/forgot-password 200 in 13396ms
+Password reset email sent successfully: {
+  data: null,
+  error: {
+    statusCode: 403,
+    message: 'You can only send testing emails to your own email address (yalduzbey@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.'
+  }
+}
+ POST /api/auth/forgot-password 200 in 1356ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3.8s (1197 modules)
+ GET /_next/static/css/app/layout.css?v=1758526544226 404 in 4238ms
+ GET /forgot-password 200 in 4326ms
+ GET /forgot-password 200 in 80ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 783ms (684 modules)
+ GET /api/auth/session 304 in 1815ms
+ ✓ Compiled /api/auth/forgot-password in 140ms (687 modules)
+Password reset email sent successfully: {
+  data: null,
+  error: {
+    statusCode: 403,
+    message: 'You can only send testing emails to your own email address (yalduzbey@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.'
+  }
+}
+ POST /api/auth/forgot-password 200 in 1222ms
+Password reset email sent successfully: { data: { id: '01d75a66-2148-4320-813a-88d85b4bd081' }, error: null }
+ POST /api/auth/forgot-password 200 in 1192ms
