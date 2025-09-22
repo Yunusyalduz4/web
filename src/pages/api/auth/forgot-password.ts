@@ -49,34 +49,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Reset link'i oluştur
     const resetLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
-    // Email gönder
+    // Email gönder - Production'da doğrulanmış domain kullanıyoruz
     const fromEmail = process.env.NODE_ENV === 'production' 
-      ? `${process.env.RANDEVUO_DOMAIN || 'Randevuo'} <noreply@${process.env.RANDEVUO_DOMAIN || 'randevuo.com'}>`
+      ? 'noreply@randevuo.com'
       : 'onboarding@resend.dev';
     
-    const emailResult = await resend.emails.send({
-      from: fromEmail,
-      to: [email],
-      subject: 'Şifre Sıfırlama',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #e11d48;">Şifre Sıfırlama</h2>
-          <p>Merhaba ${user.name},</p>
-          <p>Şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:</p>
-          <p style="margin: 20px 0;">
-            <a href="${resetLink}" style="background: #e11d48; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-              Şifremi Sıfırla
-            </a>
-          </p>
-          <p>Bu bağlantı 1 saat sonra geçersiz olacaktır.</p>
-          <p>Eğer bu isteği siz yapmadıysanız, bu emaili görmezden gelebilirsiniz.</p>
-          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 14px;">
-            Bu email ${process.env.RANDEVUO_DOMAIN || 'Randevuo'} uygulamasından gönderilmiştir.
-          </p>
-        </div>
-      `
-    });
+    try {
+      // Domain doğrulandıktan sonra doğrudan kullanıcılara mail gönderiyoruz
+      const emailResult = await resend.emails.send({
+        from: fromEmail,
+        to: [email], // Doğrudan kullanıcıya gönder
+        subject: 'Şifre Sıfırlama - Randevuo',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #e11d48;">Şifre Sıfırlama</h2>
+            <p>Merhaba ${user.name},</p>
+            <p>Şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:</p>
+            <p style="margin: 20px 0;">
+              <a href="${resetLink}" style="background: #e11d48; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                Şifremi Sıfırla
+              </a>
+            </p>
+            <p>Eğer bu isteği siz yapmadıysanız, bu emaili görmezden gelebilirsiniz.</p>
+            <p>Bu bağlantı 1 saat sonra geçersiz olacaktır.</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">
+              Bu email Randevuo uygulamasından gönderilmiştir.
+            </p>
+          </div>
+        `
+      });
+      
+      console.log('Password reset email sent successfully:', emailResult);
+    } catch (emailError: any) {
+      console.error('Email sending failed:', emailError);
+      // Email gönderilemese bile kullanıcıya başarılı mesajı ver (güvenlik için)
+    }
 
 
     res.status(200).json({ message: 'Şifre sıfırlama bağlantısı gönderildi' });

@@ -69,9 +69,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const userTypeText = userType === 'business' ? 'İşletme' : 'Kullanıcı';
 
-      // Try with a verified domain first, fallback to onboarding email
+      // Production'da doğrulanmış domain kullanıyoruz
       const fromEmail = process.env.NODE_ENV === 'production' 
-        ? 'Randevuo Destek <noreply@randevuo.com>'
+        ? 'noreply@randevuo.com'
         : 'onboarding@resend.dev';
 
       // First try a simple test email
