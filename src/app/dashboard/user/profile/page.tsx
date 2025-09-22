@@ -28,7 +28,7 @@ export default function UserProfilePage() {
   const { data: userReviews, isLoading: reviewsLoading } = trpc.review.getByUser.useQuery(
     userId ? { userId, page: 1, limit: 50 } : skipToken
   );
-  const updateMutation = trpc.user.updateProfile.useMutation();
+  const updatePhoneMutation = trpc.user.updatePhone.useMutation();
   const updateProfileImageMutation = trpc.user.updateProfileImage.useMutation();
   const deleteReviewMutation = trpc.review.deleteUserReview.useMutation();
   const [name, setName] = useState('');
@@ -79,11 +79,11 @@ export default function UserProfilePage() {
     setSuccess('');
     if (!userId) return;
     try {
-      await updateMutation.mutateAsync({ name, email, phone });
-      setSuccess('Profil başarıyla güncellendi!');
+      await updatePhoneMutation.mutateAsync({ phone });
+      setSuccess('Telefon numarası başarıyla güncellendi!');
       setTimeout(() => router.refresh(), 1200);
     } catch (err: any) {
-      setError(err.message || 'Profil güncellenemedi');
+      setError(err.message || 'Telefon numarası güncellenemedi');
     }
   };
 
@@ -430,12 +430,35 @@ export default function UserProfilePage() {
               <input
                 type="tel"
                 value={phone}
-                readOnly
-                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-gray-100 border border-gray-200 text-gray-600 cursor-not-allowed touch-manipulation min-h-[44px]"
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded-lg px-3 py-3 text-sm sm:text-base bg-white border border-gray-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all touch-manipulation min-h-[44px]"
                 autoComplete="tel"
                 placeholder="05xx xxx xx xx"
               />
             </div>
+            {/* Profil Güncelleme Butonu */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={updatePhoneMutation.isPending}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md touch-manipulation min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updatePhoneMutation.isPending ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                    <span className="text-sm">Güncelleniyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-sm">Telefon Güncelle</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             {/* Şifre Güncelleme Butonu */}
             <div className="pt-2">
               <button

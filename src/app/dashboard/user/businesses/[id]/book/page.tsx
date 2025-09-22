@@ -557,8 +557,14 @@ export default function BookAppointmentPage() {
                 }}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-red-500 to-blue-500 text-white flex items-center justify-center">
-                    <span className="text-lg font-bold">{employee.name.charAt(0)}</span>
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
+                    {employee.profile_image_url ? (
+                      <img src={employee.profile_image_url} alt={employee.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-lg font-bold">
+                        {employee.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">{employee.name}</h3>

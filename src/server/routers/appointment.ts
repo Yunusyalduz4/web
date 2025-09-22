@@ -93,8 +93,8 @@ export const appointmentRouter = t.router({
         throw new TRPCError({ code: 'CONFLICT', message: 'Bu saat için mevcut bir randevunuz var' });
       }
 
-      // Aynı kullanıcının ardışık çok randevuyu sınırlama (ör: 2 randevu limiti)
-      const CONSECUTIVE_LIMIT = 2;
+      // Aynı kullanıcının ardışık çok randevuyu sınırlama (ör: 10 randevu limiti)
+      const CONSECUTIVE_LIMIT = 10;
       const windowStart = new Date(start.getTime() - 2 * 60 * 60000); // 2 saat önce
       const windowEnd = new Date(end.getTime() + 2 * 60 * 60000);     // 2 saat sonra
       const userWindow = await pool.query(
