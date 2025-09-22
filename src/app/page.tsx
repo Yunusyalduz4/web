@@ -41,6 +41,11 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+        <div className="max-w-md mx-auto px-4 pt-6 pb-2">
+          <div className="block w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white text-lg font-semibold text-center shadow-lg backdrop-blur-sm">
+            İşletmeleri Keşfedin
+          </div>
+        </div>
         <div className="max-w-md mx-auto px-4 py-8 animate-fade-in">
           <div className="text-center mb-6">
             <div className="text-xs font-semibold tracking-wide text-gray-700 select-none">RANDEVUO</div>
@@ -82,12 +87,19 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Hero CTA Button */}
+      <div className="max-w-md mx-auto px-4 pt-6 pb-2">
+        <Link
+          href="/dashboard/user/businesses"
+          className="block w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white text-lg font-semibold text-center shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm"
+        >
+          İşletmeleri Keşfedin
+        </Link>
+      </div>
+
       {/* Main Content */}
       <div className="max-w-md mx-auto px-4 py-8 animate-fade-in">
-        {/* Brand */}
-        <div className="text-center mb-6">
-          <div className="text-xs font-semibold tracking-wide text-gray-700 select-none">RANDEVUO</div>
-        </div>
+
 
         {/* Hero */}
         <div className="text-center">

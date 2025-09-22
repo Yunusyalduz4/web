@@ -4,13 +4,7 @@ import { useEffect, useState } from "react";
 import Link from 'next/link';
 import { useUserCredentials } from '../../hooks/useLocalStorage';
 import { trpc } from '../../utils/trpcClient';
-import LocationPicker from '../../components/LocationPicker';
 
-interface LocationData {
-  latitude: number;
-  longitude: number;
-  address: string;
-}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,10 +24,7 @@ export default function RegisterPage() {
     businessDescription: '',
     businessPhone: '',
     businessEmail: '',
-    businessLocation: null as LocationData | null,
     customerPhone: '',
-    customerAddress: '',
-    customerLocation: null as LocationData | null,
   });
   
   const { saveCredentials } = useUserCredentials();
@@ -82,7 +73,7 @@ export default function RegisterPage() {
   };
 
   const validateRegisterStep1 = () => {
-    if (!registerData.name || !registerData.email || !registerData.password || !registerData.confirmPassword) {
+    if (!registerData.name || !registerData.email || !registerData.password || !registerData.confirmPassword || !registerData.customerPhone) {
       setError('Lütfen tüm alanları doldurun');
       return false;
     }
@@ -103,15 +94,6 @@ export default function RegisterPage() {
         setError('Lütfen işletme adı ve telefon numarasını doldurun');
         return false;
       }
-      if (!registerData.businessLocation) {
-        setError('Lütfen işletme konumunu seçin');
-        return false;
-      }
-    } else {
-      if (!registerData.customerPhone) {
-        setError('Lütfen telefon numaranızı girin');
-        return false;
-      }
     }
     return true;
   };
@@ -119,7 +101,12 @@ export default function RegisterPage() {
   const handleRegisterNext = () => {
     setError('');
     if (registerStep === 1 && validateRegisterStep1()) {
-      setRegisterStep(2);
+      if (registerData.role === 'business') {
+        setRegisterStep(2);
+      } else {
+        // Müşteri için direkt kayıt tamamla
+        handleRegisterSubmit();
+      }
     } else if (registerStep === 2 && validateRegisterStep2()) {
       handleRegisterSubmit();
     }
@@ -141,15 +128,16 @@ export default function RegisterPage() {
         registerPayload.businessDescription = registerData.businessDescription?.trim() || '';
         registerPayload.businessPhone = registerData.businessPhone?.trim() || '';
         registerPayload.businessEmail = registerData.businessEmail?.trim() || '';
-        registerPayload.businessAddress = registerData.businessLocation?.address?.trim() || 'Adres belirtilmedi';
-        registerPayload.businessLatitude = registerData.businessLocation?.latitude || 41.0082;
-        registerPayload.businessLongitude = registerData.businessLocation?.longitude || 28.9784;
+        registerPayload.businessAddress = 'Adres belirtilmedi';
+        registerPayload.businessLatitude = 41.0082;
+        registerPayload.businessLongitude = 28.9784;
       } else {
-        registerPayload.customerPhone = registerData.customerPhone?.trim() || '';
-        registerPayload.customerAddress = registerData.customerAddress?.trim() || '';
-        registerPayload.customerLocation = registerData.customerLocation;
+        registerPayload.customerPhone = '+90' + registerData.customerPhone?.trim() || '';
+        registerPayload.customerAddress = '';
+        // customerLocation'ı göndermiyoruz çünkü backend'de optional
       }
 
+      console.log('Register payload:', registerPayload);
       await registerMutation.mutateAsync(registerPayload);
       
       if (rememberMe) {
@@ -172,39 +160,6 @@ export default function RegisterPage() {
     }
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation desteklenmiyor');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        
-        try {
-          const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-          );
-          const data = await response.json();
-          
-          if (data.results && data.results[0]) {
-            const address = data.results[0].formatted_address;
-            const location = { latitude: lat, longitude: lng, address };
-            updateRegisterData('customerLocation', location);
-          } else {
-            setError('Adres alınamadı');
-          }
-        } catch (err) {
-          setError('Konum alınamadı. Lütfen tekrar deneyin.');
-        }
-      },
-      (error) => {
-        setError('Konum alınamadı. Lütfen tekrar deneyin.');
-      }
-    );
-  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
@@ -244,11 +199,6 @@ export default function RegisterPage() {
       <div className="relative z-10 max-w-md mx-auto px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-rose-500 via-fuchsia-500 to-indigo-500 flex items-center justify-center shadow-2xl">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent mb-3">
             Hesap Oluştur
           </h1>
@@ -262,18 +212,29 @@ export default function RegisterPage() {
           <div className={`w-12 h-12 rounded-2xl grid place-items-center text-lg font-bold shadow-lg transition-all duration-300 ${registerStep>=1?'bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white scale-110':'bg-white/80 text-gray-500 border-2 border-gray-200'}`}>
             1
           </div>
-          <div className={`h-1 w-16 rounded-full transition-all duration-300 ${registerStep>=2?'bg-gradient-to-r from-rose-500 to-fuchsia-600':'bg-gray-200'}`}></div>
-          <div className={`w-12 h-12 rounded-2xl grid place-items-center text-lg font-bold shadow-lg transition-all duration-300 ${registerStep>=2?'bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white scale-110':'bg-white/80 text-gray-500 border-2 border-gray-200'}`}>
-            2
-          </div>
+          {registerData.role === 'business' && (
+            <>
+              <div className={`h-1 w-16 rounded-full transition-all duration-300 ${registerStep>=2?'bg-gradient-to-r from-rose-500 to-fuchsia-600':'bg-gray-200'}`}></div>
+              <div className={`w-12 h-12 rounded-2xl grid place-items-center text-lg font-bold shadow-lg transition-all duration-300 ${registerStep>=2?'bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white scale-110':'bg-white/80 text-gray-500 border-2 border-gray-200'}`}>
+                2
+              </div>
+            </>
+          )}
         </div>
 
         {/* Step 1 - Basic Info */}
         {registerStep === 1 && (
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 mb-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Temel Bilgiler</h2>
-              <p className="text-gray-600">Hesabınız için gerekli bilgileri girin</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {registerData.role === 'business' ? 'Temel Bilgiler' : 'Hesap Bilgileri'}
+              </h2>
+              <p className="text-gray-600">
+                {registerData.role === 'business' 
+                  ? 'Hesabınız için gerekli bilgileri girin' 
+                  : 'Hesabınızı oluşturmak için bilgilerinizi girin'
+                }
+              </p>
             </div>
             
             <div className="space-y-6">
@@ -316,6 +277,45 @@ export default function RegisterPage() {
                     placeholder="ornek@email.com"
                     autoComplete="email"
                   />
+                </div>
+              </div>
+
+              {/* Phone Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 block">Telefon Numarası</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="absolute left-12 text-gray-500 font-medium text-base pointer-events-none">+90</div>
+                    <input
+                      type="tel"
+                      value={registerData.customerPhone}
+                      onChange={e => {
+                        let value = e.target.value.replace(/\D/g, ''); // Sadece rakamları al
+                        if (value.length > 0 && !value.startsWith('5')) {
+                          value = '5' + value; // 5 ile başlamıyorsa 5 ekle
+                        }
+                        if (value.length > 10) {
+                          value = value.substring(0, 10); // Maksimum 10 hane
+                        }
+                        updateRegisterData('customerPhone', value);
+                      }}
+                      onKeyDown={e => {
+                        // Backspace tuşu +90 kısmını silmeye çalışırsa engelle
+                        if (e.key === 'Backspace' && registerData.customerPhone.length === 0) {
+                          e.preventDefault();
+                        }
+                      }}
+                      required
+                      className="w-full pl-20 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="555 123 45 67"
+                      maxLength={10}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -471,7 +471,7 @@ export default function RegisterPage() {
                           onChange={e => updateRegisterData('businessPhone', e.target.value)}
                           required
                           className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
-                          placeholder="+90 555 123 45 67"
+                          placeholder="+90 212 123 45 67 veya 0555 123 45 67"
                         />
                       </div>
                     </div>
@@ -494,96 +494,17 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  {/* Business Location */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 block">İşletme Konumu</label>
-                    {registerData.businessLocation ? (
-                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 font-medium flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        {registerData.businessLocation.address}
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-2xl text-orange-800 font-medium flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        Konum seçin
-                      </div>
-                    )}
-                    <LocationPicker
-                      onLocationSelect={(location) => updateRegisterData('businessLocation', {
-                        latitude: location.lat,
-                        longitude: location.lng,
-                        address: location.address
-                      })}
-                      defaultLocation={registerData.businessLocation ? {
-                        lat: registerData.businessLocation.latitude,
-                        lng: registerData.businessLocation.longitude,
-                        address: registerData.businessLocation.address
-                      } : undefined}
-                      className="mt-2"
-                    />
-                  </div>
                 </>
               ) : (
                 <>
-                  {/* Customer Phone */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 block">Telefon Numarası</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="tel"
-                        value={registerData.customerPhone}
-                        onChange={e => updateRegisterData('customerPhone', e.target.value)}
-                        required
-                        className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
-                        placeholder="+90 555 123 45 67"
-                      />
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
                     </div>
-                  </div>
-
-                  {/* Customer Address */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 block">Adres (Opsiyonel)</label>
-                    <textarea
-                      value={registerData.customerAddress}
-                      onChange={e => updateRegisterData('customerAddress', e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 resize-none text-base"
-                      placeholder="Ev adresinizi yazın..."
-                    />
-                  </div>
-
-                  {/* Customer Location */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 block">Konum (Opsiyonel)</label>
-                    {registerData.customerLocation ? (
-                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 font-medium flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        {registerData.customerLocation.address}
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={getCurrentLocation}
-                        className="w-full py-4 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Mevcut Konumu Al
-                      </button>
-                    )}
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Kayıt Tamamlandı!</h3>
+                    <p className="text-gray-600">Temel bilgileriniz başarıyla kaydedildi. Şimdi hesabınızı aktifleştirebilirsiniz.</p>
                   </div>
                 </>
               )}
@@ -653,10 +574,21 @@ export default function RegisterPage() {
                 </>
               ) : registerStep === 1 ? (
                 <>
-                  İleri
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
+                  {registerData.role === 'business' ? (
+                    <>
+                      İleri
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      Kayıt Ol
+                    </>
+                  )}
                 </>
               ) : (
                 <>
