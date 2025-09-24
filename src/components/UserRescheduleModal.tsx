@@ -529,7 +529,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
                     disabled={isPast}
                     className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl text-center transition-all duration-200 min-h-[60px] sm:min-h-[70px] touch-manipulation ${
                       isSelected 
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105' 
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
                         : isToday 
                         ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-100' 
                         : isPast

@@ -99,14 +99,19 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
 
   const targetEmployeeId = getEmployeeId();
 
+  // Randevu toplam süresi (dakika) - tüm hizmetlerin toplamı
+  const totalDurationMinutes = useMemo(() => {
+    if (!appointment?.services || appointment.services.length === 0) return 0;
+    return appointment.services.reduce((sum, s) => sum + (Number(s.duration_minutes) || 0), 0);
+  }, [appointment?.services]);
+
   // Çalışan müsaitlik verilerini al
   const { data: allAvailability, isLoading: availabilityLoading, error: availabilityError } = trpc.business.getEmployeeAvailability.useQuery(
-    targetEmployeeId && appointment?.business_id ? {
-      employeeId: targetEmployeeId,
-      businessId: appointment.business_id.toString()
+    targetEmployeeId ? {
+      employeeId: targetEmployeeId
     } : skipToken,
     { 
-      enabled: !!targetEmployeeId && !!appointment?.business_id && isOpen,
+      enabled: !!targetEmployeeId && isOpen,
       retry: 1,
       refetchOnWindowFocus: false
     }
@@ -133,7 +138,13 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
     return busySlots.filter(slot => slot.appointmentId !== appointment.id.toString());
   }, [busySlots, appointment]);
 
-  // Seçilen tarih için müsait saatleri hesapla
+  // Yardımcı: HH:MM -> dakika
+  const toMinutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  // Seçilen tarih için müsait saatleri hesapla (tüm randevu süresini dikkate al)
   const availableTimes = useMemo(() => {
     if (!allAvailability || !selectedDate || !targetEmployeeId) {
       return [];
@@ -157,11 +168,21 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
       
       while (start < end) {
         const timeStr = start.toTimeString().slice(0, 5);
-        const isBusy = filteredBusySlots?.some(busySlot => 
-          busySlot.startTime <= timeStr && busySlot.endTime > timeStr
-        );
+        const candidateStartMin = toMinutes(timeStr);
+        const candidateEnd = new Date(start.getTime() + Math.max(totalDurationMinutes, 15) * 60000);
+
+        // Müsait slot sınırı: bitiş, slot end'ini aşmamalı (bitiş eşitlik dışı)
+        const withinSlot = candidateEnd <= end;
+
+        // Meşgul aralıklarla çakışmamalı (start < busyEnd && end > busyStart)
+        const overlapsBusy = filteredBusySlots?.some(busySlot => {
+          const busyStartMin = toMinutes(busySlot.startTime);
+          const busyEndMin = toMinutes(busySlot.endTime);
+          const candidateEndMin = toMinutes(candidateEnd.toTimeString().slice(0, 5));
+          return candidateStartMin < busyEndMin && candidateEndMin > busyStartMin;
+        });
         
-        if (!isBusy) {
+        if (withinSlot && !overlapsBusy) {
           times.push(timeStr);
         }
         
@@ -170,7 +191,7 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
     }
     
     return times.sort();
-  }, [allAvailability, selectedDate, targetEmployeeId, filteredBusySlots]);
+  }, [allAvailability, selectedDate, targetEmployeeId, filteredBusySlots, totalDurationMinutes]);
 
   // Modal açıldığında mevcut randevu tarihini seç
   useEffect(() => {
@@ -215,6 +236,12 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
     
     if (!selectedDate || !selectedTime || !selectedEmployeeId) {
       setError('Lütfen tarih, saat ve çalışan seçin');
+      return;
+    }
+
+    // İsteğe bağlı sebep verildiyse minimum uzunluk kontrolü (sunucu min: 10)
+    if (requestReason && requestReason.trim().length > 0 && requestReason.trim().length < 10) {
+      setError('Lütfen en az 10 karakterlik bir erteleme sebebi yazın veya boş bırakın');
       return;
     }
 
@@ -375,48 +402,69 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                 </div>
               </div>
 
-              {/* Modern Week Grid */}
-              <div className="grid grid-cols-7 gap-2 mb-4">
-                {weekDates.map((date, index) => {
-                  const dateStr = date.toISOString().split('T')[0];
-                  const isSelected = selectedDate === dateStr;
-                  const isToday = dateStr === new Date().toISOString().split('T')[0];
-                  const isPast = date < new Date().setHours(0, 0, 0, 0);
-                  
-                  return (
-                    <button
-                      key={dateStr}
-                      type="button"
-                      onClick={() => !isPast && setSelectedDate(dateStr)}
-                      disabled={isPast}
-                      className={`p-3 rounded-2xl text-center transition-all duration-200 min-h-[70px] ${
-                        isSelected 
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg transform scale-105' 
-                          : isToday 
-                          ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-200 hover:bg-emerald-100' 
-                          : isPast
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-xs font-medium opacity-80">{dayNamesShort[index]}</div>
-                      <div className="text-lg font-bold mt-1">{date.getDate()}</div>
-                    </button>
-                  );
-                })}
+              {/* Modern Week Chips - Horizontal Scroll */}
+              <div className="-mx-1 mb-4 overflow-x-auto no-scrollbar">
+                <div className="px-1 flex items-stretch gap-2 min-w-max">
+                  {weekDates.map((date) => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const isSelected = selectedDate === dateStr;
+                    const isToday = dateStr === new Date().toISOString().split('T')[0];
+                    const todayStart = new Date();
+                    todayStart.setHours(0, 0, 0, 0);
+                    const isPast = date.getTime() < todayStart.getTime();
+
+                    const base = 'inline-flex flex-col items-center justify-center px-3 py-2 rounded-2xl border-2 transition-colors duration-200 select-none min-w-[84px] min-h-[64px]';
+                    const state = isSelected
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-md'
+                      : isToday
+                      ? 'bg-white text-emerald-700 border-emerald-300'
+                      : isPast
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-800 border-gray-200 hover:border-gray-300';
+
+                    return (
+                      <button
+                        key={dateStr}
+                        type="button"
+                        onClick={() => !isPast && setSelectedDate(dateStr)}
+                        disabled={isPast}
+                        className={`${base} ${state}`}
+                        role="button"
+                        aria-pressed={isSelected}
+                        aria-current={isToday ? 'date' : undefined}
+                        title={date.toLocaleDateString('tr-TR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                      >
+                        <span className={`text-[11px] font-semibold ${isSelected ? 'text-white/90' : isToday ? 'text-emerald-700' : 'text-gray-600'}`}>
+                          {date.toLocaleDateString('tr-TR', { weekday: 'short' })}
+                        </span>
+                        <span className={`text-lg leading-none font-extrabold mt-1 ${isSelected ? 'text-white' : 'text-current'}`}>
+                          {date.getDate()}
+                        </span>
+                        {isToday && !isSelected && (
+                          <span className="mt-1 text-[10px] text-emerald-600">Bugün</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* Modern Time Picker Section */}
             {selectedDate && (
               <div className="mb-6">
-                <div className="flex items-center mb-4">
+                <div className="flex items-center justify-between mb-4">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
                     <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <label className="text-sm font-semibold text-gray-900">Müsait Saatler</label>
+                  {availableTimes.length > 0 && (
+                    <span className="ml-auto text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full font-medium">
+                      {availableTimes.length} müsait
+                    </span>
+                  )}
                 </div>
                 
                 {availabilityLoading ? (
@@ -426,7 +474,7 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                   </div>
                 ) : availabilityError ? (
                   <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3" role="img" aria-label="Hata">
                       <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -435,7 +483,7 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                   </div>
                 ) : availableTimes.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3" role="img" aria-label="Bilgi">
                       <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -454,6 +502,9 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                             ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-lg transform scale-105'
                             : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-md active:scale-95'
                         }`}
+                        role="button"
+                        aria-pressed={selectedTime === time}
+                        title={`Saat ${time}`}
                       >
                         {time}
                       </button>
@@ -481,6 +532,9 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                   rows={3}
                   placeholder="Erteleme sebebini belirtin..."
                 />
+                {requestReason && requestReason.trim().length > 0 && requestReason.trim().length < 10 && (
+                  <div className="mt-2 text-xs text-amber-600">En az 10 karakter girin veya boş bırakın.</div>
+                )}
               </div>
             </div>
 
@@ -502,7 +556,13 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
             <div className="flex flex-col gap-3 pt-4">
               <button
                 type="submit"
-                disabled={isSubmitting || !selectedDate || !selectedTime || !selectedEmployeeId}
+                disabled={
+                  isSubmitting ||
+                  !selectedDate ||
+                  !selectedTime ||
+                  !selectedEmployeeId ||
+                  (requestReason.trim().length > 0 && requestReason.trim().length < 10)
+                }
                 className="w-full px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base shadow-lg disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSubmitting ? (
