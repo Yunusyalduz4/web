@@ -196,25 +196,75 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
   // Dolu slot'a tıklama işlemi
   const handleBusySlotClick = (slotTime: string, date: string) => {
-    const targetAppointment = appointments.find((apt: any) => {
-      const aptDate = new Date(apt.appointment_datetime).toLocaleDateString('en-CA');
-      const aptTime = new Date(apt.appointment_datetime).toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-      return aptDate === date && aptTime === slotTime && (apt.status === 'pending' || apt.status === 'confirmed');
-    });
+    // Seçilen slot'un Date nesnesini oluştur
+    const slotStart = new Date(`${date}T${slotTime}:00`);
+
+    // İlgili randevuyu zaman aralığına göre bul (start <= slot < end)
+    let bestMatch: any | null = null;
+    let bestMatchStartTime: number = -Infinity;
+
+    for (const apt of appointments) {
+      // Sadece aktif randevular
+      if (!(apt.status === 'pending' || apt.status === 'confirmed')) continue;
+
+      // Tarih eşleşmesi
+      const aptStart = new Date(apt.appointment_datetime);
+      const aptDateStr = aptStart.toLocaleDateString('en-CA');
+      if (aptDateStr !== date) continue;
+
+      // Seçili çalışana göre filtrele (varsa)
+      if (localSelectedEmployeeId) {
+        let involvesSelectedEmployee = false;
+        if (Array.isArray(apt.services)) {
+          involvesSelectedEmployee = apt.services.some((s: any) => s.employee_id === localSelectedEmployeeId);
+        } else if (Array.isArray(apt.employee_ids)) {
+          involvesSelectedEmployee = apt.employee_ids.includes(localSelectedEmployeeId);
+        } else if (Array.isArray(apt.employee_names)) {
+          // İsimden eşleşme gerekirse, atla (ID yoksa emin olmak zor)
+          involvesSelectedEmployee = true;
+        }
+        if (!involvesSelectedEmployee) continue;
+      }
+
+      // Süre hesapla (services > durations > fallback)
+      let totalMinutes = 0;
+      if (Array.isArray(apt.services) && apt.services.length > 0) {
+        totalMinutes = apt.services.reduce((sum: number, s: any) => sum + (Number(s.duration_minutes) || 0), 0);
+      } else if (Array.isArray(apt.durations) && apt.durations.length > 0) {
+        totalMinutes = apt.durations.reduce((sum: number, d: any) => sum + Number(d || 0), 0);
+      } else {
+        // Varsayılan küçük bir süre; bulunamazsa yalnızca başlangıca eşitle
+        totalMinutes = 0;
+      }
+
+      const aptEnd = new Date(aptStart.getTime() + totalMinutes * 60000);
+
+      const isInRange = totalMinutes > 0
+        ? (slotStart >= aptStart && slotStart < aptEnd)
+        : (slotStart.getHours() === aptStart.getHours() && slotStart.getMinutes() === aptStart.getMinutes());
+
+      if (isInRange) {
+        // Aynı slota birden fazla randevu düşerse, en geç başlayan ama slotStart'tan önce olanı seç
+        const startMs = aptStart.getTime();
+        if (startMs <= slotStart.getTime() && startMs > bestMatchStartTime) {
+          bestMatch = apt;
+          bestMatchStartTime = startMs;
+        }
+      }
+    }
+
+    const targetAppointment = bestMatch;
 
     if (targetAppointment) {
       const appointmentCard = document.getElementById(`appointment-${targetAppointment.id}`);
       if (appointmentCard) {
-        appointmentCard.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        appointmentCard.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
-        
+
         setHighlightedAppointmentId(targetAppointment.id);
-        
+
         setTimeout(() => {
           setHighlightedAppointmentId(null);
         }, 1500);

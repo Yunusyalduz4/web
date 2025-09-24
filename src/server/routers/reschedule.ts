@@ -11,8 +11,8 @@ import {
 
 // Müsaitlik kontrol fonksiyonu - Slot sistemi ile uyumlu
 async function checkRescheduleAvailability(
-  newAppointmentDatetime: string, 
-  employeeId: string, 
+  newAppointmentDatetime: string,
+  employeeId: string,
   appointmentId: string
 ): Promise<{ isAvailable: boolean; reason?: string }> {
   const newDate = new Date(newAppointmentDatetime);
@@ -22,8 +22,22 @@ async function checkRescheduleAvailability(
     return { isAvailable: false, reason: 'Yeni randevu tarihi geçmişte olamaz' };
   }
 
-  // 2. Slot sistemi ile uyumlu kontrol - 15 dakikalık slot kontrolü
-  const appointmentTime = newDate.toTimeString().slice(0, 5); // HH:MM formatında
+  // 2. Randevu toplam süresini hesapla (mevcut randevunun hizmet süreleri toplamı)
+  const durationRes = await pool.query(
+    `SELECT COALESCE(SUM(aps.duration_minutes), 0) AS total_duration
+     FROM appointment_services aps
+     WHERE aps.appointment_id = $1`,
+    [appointmentId]
+  );
+  const totalDuration: number = Number(durationRes.rows[0]?.total_duration || 0);
+  if (totalDuration <= 0) {
+    return { isAvailable: false, reason: 'Randevu süresi bulunamadı' };
+  }
+
+  // 3. Slot sistemi ile uyumlu kontrol - tüm randevu süresini kapsayacak şekilde
+  const appointmentStartTimeStr = newDate.toTimeString().slice(0, 5); // HH:MM
+  const appointmentEnd = new Date(newDate.getTime() + totalDuration * 60000);
+  const appointmentEndTimeStr = appointmentEnd.toTimeString().slice(0, 5); // HH:MM
   const dayOfWeek = newDate.getDay();
   
   // Çalışanın o gün müsaitlik durumunu kontrol et
@@ -37,18 +51,24 @@ async function checkRescheduleAvailability(
     return { isAvailable: false, reason: 'Çalışan bu gün müsait değil' };
   }
 
-  // 3. Seçilen saat çalışanın müsaitlik saatleri içinde mi?
+  // 4. Seçilen zaman aralığı çalışanın müsaitlik saatleri içinde mi?
+  // Başlangıç slot.start_time <= start AND bitiş < slot.end_time (bitişte eşitlik dışı)
   const isWithinAvailability = availabilityRes.rows.some((slot: any) => {
-    return appointmentTime >= slot.start_time && appointmentTime <= slot.end_time;
+    return (
+      appointmentStartTimeStr >= slot.start_time &&
+      appointmentEndTimeStr > slot.start_time &&
+      appointmentEndTimeStr <= slot.end_time &&
+      appointmentStartTimeStr < slot.end_time
+    );
   });
 
   if (!isWithinAvailability) {
     return { isAvailable: false, reason: 'Seçilen saat çalışanın müsaitlik saatleri dışında' };
   }
 
-  // 4. 15 dakikalık slot kontrolü - Slot sistemi ile aynı mantık
+  // 5. Çakışma kontrolü - tüm randevu süresi için
   const slotStart = new Date(newDate);
-  const slotEnd = new Date(slotStart.getTime() + 15 * 60000); // 15 dakika
+  const slotEnd = new Date(slotStart.getTime() + totalDuration * 60000);
 
   // Çakışan randevuları kontrol et - mevcut randevu hariç
   const conflictRes = await pool.query(
@@ -311,8 +331,8 @@ export const rescheduleRouter = t.router({
         }
 
         const availabilityCheck = await checkRescheduleAvailability(
-          request.new_appointment_datetime, 
-          targetEmployeeId, 
+          request.new_appointment_datetime,
+          targetEmployeeId,
           request.appointment_id
         );
 
@@ -343,7 +363,7 @@ export const rescheduleRouter = t.router({
           UPDATE appointments 
           SET appointment_datetime = $1, employee_id = $2, reschedule_status = 'approved', updated_at = NOW()
           WHERE id = $3
-        `, [request.new_appointment_datetime, request.new_employee_id, request.appointment_id]);
+        `, [request.new_appointment_datetime, targetEmployeeId, request.appointment_id]);
 
         // İsteği onayla
         await pool.query(`
