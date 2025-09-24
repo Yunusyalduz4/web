@@ -294,13 +294,13 @@ export default function BusinessProfilePage() {
             <label className="block text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2 font-medium">
               {session?.user?.role === 'employee' ? 'Ad Soyad' : 'İşletme Adı'}
             </label>
-            <div className="flex gap-2">
+            <div className="relative">
               <input 
                 type="text" 
                 value={name} 
                 onChange={e => setName(e.target.value)} 
                 readOnly={!editingName}
-                className={`flex-1 rounded-lg px-3 py-3 text-sm sm:text-base border text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 transition-colors touch-manipulation min-h-[44px] ${
+                className={`w-full rounded-lg px-3 pr-12 py-3 text-sm sm:text-base border text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 transition-colors touch-manipulation min-h-[44px] ${
                   editingName 
                     ? 'bg-white/80 border-slate-200 focus:ring-slate-300' 
                     : 'bg-slate-50 border-slate-200 cursor-not-allowed'
@@ -315,18 +315,18 @@ export default function BusinessProfilePage() {
                     handleFieldUpdate('name', name);
                   } else {
                     setEditingName(true);
-                    // Input'u focus et
                     setTimeout(() => {
                       const input = document.querySelector('input[type="text"]') as HTMLInputElement;
                       if (input) input.focus();
                     }, 100);
                   }
                 }}
-                className={`px-3 py-3 rounded-lg text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${
+                className={`absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm font-semibold transition-all duration-200 touch-manipulation ${
                   editingName 
                     ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md hover:shadow-lg' 
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300'
                 }`}
+                aria-label={editingName ? 'Kaydet' : 'Düzenle'}
               >
                 {editingName ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -345,13 +345,13 @@ export default function BusinessProfilePage() {
           {/* E-posta */}
           <div>
             <label className="block text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2 font-medium">E-posta Adresi</label>
-            <div className="flex gap-2">
+            <div className="relative">
               <input 
                 type="email" 
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
                 readOnly={!editingEmail}
-                className={`flex-1 rounded-lg px-3 py-3 text-sm sm:text-base border text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 transition-colors touch-manipulation min-h-[44px] ${
+                className={`w-full rounded-lg px-3 pr-12 py-3 text-sm sm:text-base border text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 transition-colors touch-manipulation min-h-[44px] ${
                   editingEmail 
                     ? 'bg-white/80 border-slate-200 focus:ring-slate-300' 
                     : 'bg-slate-50 border-slate-200 cursor-not-allowed'
@@ -373,11 +373,12 @@ export default function BusinessProfilePage() {
                     }, 100);
                   }
                 }}
-                className={`px-3 py-3 rounded-lg text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${
+                className={`absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm font-semibold transition-all duration-200 touch-manipulation ${
                   editingEmail 
                     ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md hover:shadow-lg' 
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300'
                 }`}
+                aria-label={editingEmail ? 'Kaydet' : 'Düzenle'}
               >
                 {editingEmail ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -396,13 +397,13 @@ export default function BusinessProfilePage() {
           {/* Telefon */}
           <div>
             <label className="block text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2 font-medium">Telefon Numarası</label>
-            <div className="flex gap-2">
+            <div className="relative">
               <input 
                 type="tel" 
                 value={phone} 
                 onChange={e => setPhone(e.target.value)} 
                 readOnly={!editingPhone}
-                className={`flex-1 rounded-lg px-3 py-3 text-sm sm:text-base border text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 transition-colors touch-manipulation min-h-[44px] ${
+                className={`w-full rounded-lg px-3 pr-12 py-3 text-sm sm:text-base border text-gray-900 placeholder:text-gray-700 focus:outline-none focus:ring-2 transition-colors touch-manipulation min-h-[44px] ${
                   editingPhone 
                     ? 'bg-white/80 border-slate-200 focus:ring-slate-300' 
                     : 'bg-slate-50 border-slate-200 cursor-not-allowed'
@@ -424,11 +425,12 @@ export default function BusinessProfilePage() {
                     }, 100);
                   }
                 }}
-                className={`px-3 py-3 rounded-lg text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${
+                className={`absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm font-semibold transition-all duration-200 touch-manipulation ${
                   editingPhone 
                     ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md hover:shadow-lg' 
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300'
                 }`}
+                aria-label={editingPhone ? 'Kaydet' : 'Düzenle'}
               >
                 {editingPhone ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
