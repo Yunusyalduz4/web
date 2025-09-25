@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "migrate:email-tokens": "node migrate_password_reset.js"
+    "migrate:email-tokens": "node migrate_password_reset.js",
+    "test:google-places": "ts-node -r dotenv/config src/scripts/test-google-places.ts"
   },
   "dependencies": {
     "@fluentui/svg-icons": "^1.1.307",
@@ -63,6 +64,7 @@
     "eslint-config-next": "15.4.5",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "engines": {

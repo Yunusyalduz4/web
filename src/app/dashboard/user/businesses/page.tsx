@@ -22,6 +22,9 @@ export default function UserBusinessesPage() {
   const [hasPhone, setHasPhone] = useState(false);
   const [hasEmail, setHasEmail] = useState(false);
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [category, setCategory] = useState<string>('');
+  const [membersOnly, setMembersOnly] = useState<boolean>(false);
+  const [bookable, setBookable] = useState<'all' | 'bookable' | 'non_bookable'>('all');
 
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -59,7 +62,10 @@ export default function UserBusinessesPage() {
     genderFilter: genderFilter === 'all' ? undefined : genderFilter,
     latitude: userLocation?.lat,
     longitude: userLocation?.lng,
-    radius: maxDistanceKm || undefined
+    radius: maxDistanceKm || undefined,
+    category: category || undefined,
+    membersOnly: membersOnly || undefined,
+    bookable: bookable
   });
 
   // Haversine ile km hesapla
@@ -328,6 +334,31 @@ export default function UserBusinessesPage() {
           </button>
         </div>
       </div>
+      {/* Yeni Filtreler */}
+      <div className="mt-3 flex flex-wrap items-center gap-2 justify-center">
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="px-3 py-2 rounded-xl border border-white/40 bg-white/70 text-sm"
+        >
+          <option value="">Kategori (hepsi)</option>
+          <option value="Beauty Salon">Beauty Salon</option>
+          <option value="Hair Salon">Hair Salon</option>
+        </select>
+        <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/40 bg-white/70 text-sm">
+          <input type="checkbox" checked={membersOnly} onChange={(e) => setMembersOnly(e.target.checked)} />
+          Üyelerimiz
+        </label>
+        <select
+          value={bookable}
+          onChange={(e) => setBookable(e.target.value as any)}
+          className="px-3 py-2 rounded-xl border border-white/40 bg-white/70 text-sm"
+        >
+          <option value="all">Randevu (hepsi)</option>
+          <option value="bookable">Randevu alınabilir</option>
+          <option value="non_bookable">Randevu alınamaz</option>
+        </select>
+      </div>
 
       {/* Eski toolbar kaldırıldı; yalnızca üstteki arama pill'i ve filtre modalı kullanılacak */}
       {isLoading && (
@@ -362,6 +393,12 @@ export default function UserBusinessesPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0 mb-1">
                           <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{b.name}</h3>
+                          {b.is_google_places && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-200 shrink-0">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                              Google
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1 text-xs text-gray-700 shrink-0">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                             {parseFloat(b.overall_rating || 0).toFixed(1)}

@@ -126,6 +126,7 @@ export default function BusinessDetailPage() {
   const [employeePhotoModalOpen, setEmployeePhotoModalOpen] = useState(false);
   const [selectedEmployeePhoto, setSelectedEmployeePhoto] = useState<string | null>(null);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
+  const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
   
   // Paylaş modal state'leri
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -1141,6 +1142,7 @@ export default function BusinessDetailPage() {
                 <div className="text-xs text-gray-600 truncate">{minServicePrice!=null? `Başlangıç ₺${minServicePrice}` : 'Hizmetleri görüntüle'}</div>
               </div>
             </div>
+            {Array.isArray(services) && services.length > 0 && (
             <button
               disabled={bookingLoading}
               onClick={async () => {
@@ -1149,6 +1151,11 @@ export default function BusinessDetailPage() {
                   return; // Henüz yükleniyor, bekle
                 }
                 
+                if (business?.data_source === 'google_places') {
+                  setNotMemberModalOpen(true);
+                  return;
+                }
+
                 // Session'ın gerçekten geçerli olup olmadığını kontrol et
                 if (status === 'unauthenticated' || !session || !session.user?.id) {
                   console.log('Oturum açık değil, login modalı açılıyor...');
@@ -1179,7 +1186,7 @@ export default function BusinessDetailPage() {
                   setTimeout(() => setBookingLoading(false), 600);
                 }
               }}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white font-semibold shadow-2xl transition-all duration-200 active:scale-95 bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 touch-manipulation min-h-[44px] ${bookingLoading? 'opacity-80 cursor-wait':''}`}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white font-semibold shadow-2xl transition-all duration-200 active:scale-95 touch-manipulation min-h-[44px] bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 hover:shadow-2xl ${bookingLoading? 'opacity-80 cursor-wait':''}`}
             >
               {bookingLoading ? (
                 <>
@@ -1193,11 +1200,58 @@ export default function BusinessDetailPage() {
                 </>
               )}
             </button>
+            )}
           </div>
         </div>
       </div>
     </div>
 
+    {/* Photo Slider Modal - Mobile Optimized */}
+    {notMemberModalOpen && (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl max-w-md w-[92%] p-5 shadow-2xl border border-gray-100">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-100 text-yellow-700 grid place-items-center">⚠️</div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold text-gray-900">Randevu alınamıyor</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Bu işletme henüz uygulamamıza üye olmadığı için randevu sistemi aktif değil.
+                İletişim için işletmenin telefon veya web bilgilerini kullanabilirsiniz.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex items-center justify-end gap-2">
+            <button
+              onClick={() => setNotMemberModalOpen(false)}
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
+              Kapat
+            </button>
+            {business?.phone && (
+              <a
+                href={`tel:${business.phone}`}
+                className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => setNotMemberModalOpen(false)}
+              >
+                Ara
+              </a>
+            )}
+            {business?.website_url && (
+              <a
+                href={business.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => setNotMemberModalOpen(false)}
+              >
+                Web Sitesi
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    
     {/* Photo Slider Modal - Mobile Optimized */}
     {photoSliderOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">

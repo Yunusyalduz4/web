@@ -74,7 +74,10 @@ export const userRouter = t.router({
       genderFilter: z.enum(['male', 'female', 'all']).optional(),
       latitude: z.number().optional(),
       longitude: z.number().optional(),
-      radius: z.number().optional() // km cinsinden
+      radius: z.number().optional(), // km cinsinden
+      category: z.string().optional(), // category name
+      membersOnly: z.boolean().optional(), // only our members (exclude google_places)
+      bookable: z.enum(['all', 'bookable', 'non_bookable']).optional()
     }))
     .query(async ({ input }) => {
       let whereClause = '';
@@ -105,19 +108,46 @@ export const userRouter = t.router({
         values.push(input.latitude, input.longitude, input.latitude, input.radius);
       }
 
+      // Kategori filtresi (kategori adı ile)
+      let categoryJoin = '';
+      if (input.category && input.category.trim().length > 0) {
+        categoryJoin = ' JOIN business_category_mapping bcm ON bcm.business_id = b.id JOIN business_categories bc ON bc.id = bcm.category_id ';
+        whereClause += ` AND bc.name = $${param++}`;
+        values.push(input.category.trim());
+      }
+
+      // Üyelerimiz filtresi (sadece kendi üyelerimiz)
+      if (input.membersOnly) {
+        whereClause += ` AND (b.data_source IS NULL OR b.data_source <> 'google_places')`;
+      }
+
+      // Randevu alınabilir/alınamaz filtresi
+      if (input.bookable && input.bookable !== 'all') {
+        if (input.bookable === 'bookable') {
+          whereClause += ` AND (b.data_source IS NULL OR b.data_source <> 'google_places') AND EXISTS (SELECT 1 FROM services s WHERE s.business_id = b.id)`;
+        } else if (input.bookable === 'non_bookable') {
+          whereClause += ` AND ((b.data_source = 'google_places') OR NOT EXISTS (SELECT 1 FROM services s WHERE s.business_id = b.id))`;
+        }
+      }
+
       const result = await pool.query(`
         SELECT 
           b.*,
-          COALESCE(br.overall_rating, 0) AS overall_rating,
-          COALESCE(br.total_reviews, 0) AS total_reviews,
+          COALESCE(br.overall_rating, b.google_rating, 0) AS overall_rating,
+          COALESCE(br.total_reviews, b.google_reviews_count, 0) AS total_reviews,
           (
             SELECT COUNT(*)::int 
             FROM favorites f 
             WHERE f.business_id = b.id
-          ) AS favorites_count
+          ) AS favorites_count,
+          CASE 
+            WHEN b.data_source = 'google_places' THEN true
+            ELSE false
+          END as is_google_places
         FROM businesses b
+        ${categoryJoin}
         LEFT JOIN business_ratings br ON br.business_id = b.id
-        WHERE b.is_approved = true ${whereClause}
+        WHERE (b.is_approved = true OR b.data_source = 'google_places') ${whereClause}
         ORDER BY b.name ASC
       `, values);
 
