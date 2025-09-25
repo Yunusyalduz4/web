@@ -1,5 +1,5 @@
 import { GooglePlacesService, GooglePlace } from './googlePlacesService';
-import { db } from '../server/db/db';
+import { pool as db } from '../server/db';
 
 // Turkey's major cities with coordinates
 export interface TurkeyCity {
