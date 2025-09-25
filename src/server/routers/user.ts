@@ -77,7 +77,8 @@ export const userRouter = t.router({
       radius: z.number().optional(), // km cinsinden
       category: z.string().optional(), // category name
       membersOnly: z.boolean().optional(), // only our members (exclude google_places)
-      bookable: z.enum(['all', 'bookable', 'non_bookable']).optional()
+      bookable: z.enum(['all', 'bookable', 'non_bookable']).optional(),
+      approvedOnly: z.boolean().optional()
     }))
     .query(async ({ input }) => {
       let whereClause = '';
@@ -128,6 +129,11 @@ export const userRouter = t.router({
         } else if (input.bookable === 'non_bookable') {
           whereClause += ` AND ((b.data_source = 'google_places') OR NOT EXISTS (SELECT 1 FROM services s WHERE s.business_id = b.id))`;
         }
+      }
+
+      // Sadece onaylı işletmeler
+      if (input.approvedOnly) {
+        whereClause += ` AND b.is_approved = true`;
       }
 
       const result = await pool.query(`

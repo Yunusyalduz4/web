@@ -25,6 +25,7 @@ export default function UserBusinessesPage() {
   const [category, setCategory] = useState<string>('');
   const [membersOnly, setMembersOnly] = useState<boolean>(false);
   const [bookable, setBookable] = useState<'all' | 'bookable' | 'non_bookable'>('all');
+  const [approvedOnly, setApprovedOnly] = useState<boolean>(false);
 
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -65,7 +66,8 @@ export default function UserBusinessesPage() {
     radius: maxDistanceKm || undefined,
     category: category || undefined,
     membersOnly: membersOnly || undefined,
-    bookable: bookable
+    bookable: bookable,
+    approvedOnly: approvedOnly || undefined
   });
 
   // Haversine ile km hesapla
@@ -334,31 +336,65 @@ export default function UserBusinessesPage() {
           </button>
         </div>
       </div>
-      {/* Yeni Filtreler */}
-      <div className="mt-3 flex flex-wrap items-center gap-2 justify-center">
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-white/40 bg-white/70 text-sm"
+      {/* Onaylı Toggle + Filtreler Butonu */}
+      <div className="mt-3 flex items-center justify-center gap-3">
+        <button
+          onClick={() => setFilterOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 border border-white/40 shadow text-sm text-gray-800 hover:bg-white"
         >
-          <option value="">Kategori (hepsi)</option>
-          <option value="Beauty Salon">Beauty Salon</option>
-          <option value="Hair Salon">Hair Salon</option>
-        </select>
-        <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/40 bg-white/70 text-sm">
-          <input type="checkbox" checked={membersOnly} onChange={(e) => setMembersOnly(e.target.checked)} />
-          Üyelerimiz
-        </label>
-        <select
-          value={bookable}
-          onChange={(e) => setBookable(e.target.value as any)}
-          className="px-3 py-2 rounded-xl border border-white/40 bg-white/70 text-sm"
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 5h18M6 12h12M10 19h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Filtreler
+        </button>
+        <button
+          onClick={() => setApprovedOnly(v => !v)}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm ${approvedOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70 text-gray-800 border-white/40'}`}
         >
-          <option value="all">Randevu (hepsi)</option>
-          <option value="bookable">Randevu alınabilir</option>
-          <option value="non_bookable">Randevu alınamaz</option>
-        </select>
+          <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${approvedOnly ? 'bg-white text-blue-600' : 'bg-gray-200 text-gray-500'}`}>
+            {approvedOnly ? '✔' : ''}
+          </span>
+          Onaylı
+        </button>
       </div>
+
+      {/* Filtre Modal */}
+      {filterOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl w-[92%] max-w-md p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Filtreler</h3>
+              <button onClick={() => setFilterOpen(false)} className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 grid place-items-center">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Kategori</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white">
+                  <option value="">Hepsi</option>
+                  <option value="Beauty Salon">Beauty Salon</option>
+                  <option value="Hair Salon">Hair Salon</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">Üyelerimiz</span>
+                <button onClick={() => setMembersOnly(v => !v)} className={`w-12 h-7 rounded-full relative transition ${membersOnly ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                  <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition ${membersOnly ? 'translate-x-5' : ''}`}></span>
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Randevu Durumu</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => setBookable('all')} className={`px-3 py-2 rounded-xl border ${bookable==='all' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Hepsi</button>
+                  <button onClick={() => setBookable('bookable')} className={`px-3 py-2 rounded-xl border ${bookable==='bookable' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Alınabilir</button>
+                  <button onClick={() => setBookable('non_bookable')} className={`px-3 py-2 rounded-xl border ${bookable==='non_bookable' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Alınamaz</button>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button onClick={() => { setCategory(''); setMembersOnly(false); setBookable('all'); }} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Sıfırla</button>
+              <button onClick={() => setFilterOpen(false)} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Uygula</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Eski toolbar kaldırıldı; yalnızca üstteki arama pill'i ve filtre modalı kullanılacak */}
       {isLoading && (
