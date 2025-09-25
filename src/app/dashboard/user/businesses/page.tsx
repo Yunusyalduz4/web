@@ -158,6 +158,27 @@ export default function UserBusinessesPage() {
               )}
             </div>
           </div>
+          {/* Center View Switch */}
+          <div className="flex absolute left-1/2 -translate-x-1/2">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
+              <button
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 touch-manipulation ${view === 'list' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
+                onClick={() => setView('list')}
+                aria-pressed={view === 'list'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+                <span>Liste</span>
+              </button>
+              <button
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 touch-manipulation ${view === 'map' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
+                onClick={() => setView('map')}
+                aria-pressed={view === 'map'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4l6 2 6-2v16l-6 2-6-2-6 2V6l6-2zM9 6v12l6 2V8L9 6z"/></svg>
+                <span>Harita</span>
+              </button>
+            </div>
+          </div>
           <button
             onClick={() => router.push('/dashboard/user/favorites')}
             className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white/50 hover:bg-white/70 active:bg-white/80 text-gray-900 text-xs sm:text-sm shadow-sm touch-manipulation min-h-[44px] transition-all relative"
@@ -315,38 +336,32 @@ export default function UserBusinessesPage() {
         </div>
       </div>
 
-      {/* View Switch - Mobile Optimized */}
-      <div className="flex items-center justify-center mb-3 mt-4">
-        <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
-          <button
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${view === 'list' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
-            onClick={() => setView('list')}
-            aria-pressed={view === 'list'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z"/></svg>
-            <span>Liste</span>
-          </button>
-          <button
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[44px] ${view === 'map' ? 'bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
-            onClick={() => setView('map')}
-            aria-pressed={view === 'map'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4l6 2 6-2v16l-6 2-6-2-6 2V6l6-2zM9 6v12l6 2V8L9 6z"/></svg>
-            <span>Harita</span>
-          </button>
-        </div>
-      </div>
       {/* Onaylı Toggle + Filtreler Butonu */}
       <div className="mt-3 flex items-center justify-center">
-        <button
-          onClick={() => setApprovedOnly(v => !v)}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm ${approvedOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70 text-gray-800 border-white/40'}`}
-        >
-          <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${approvedOnly ? 'bg-white text-blue-600' : 'bg-gray-200 text-gray-500'}`}>
-            {approvedOnly ? '✔' : ''}
-          </span>
-          Onaylı
-        </button>
+        <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
+          <button
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] border ${!approvedOnly ? 'bg-gray-100 text-gray-700 border-gray-200 shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95 border-white/40'}`}
+            onClick={() => setApprovedOnly(false)}
+            aria-pressed={!approvedOnly}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`${!approvedOnly ? 'text-gray-700' : 'text-gray-500'}`}>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+              <path d="M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span>Onaysız</span>
+          </button>
+          <button
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] ${approvedOnly ? 'bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
+            onClick={() => setApprovedOnly(true)}
+            aria-pressed={approvedOnly}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="${approvedOnly ? 'text-white' : 'text-blue-600'}">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+              <path d="M8 12.5l2.5 2.5L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span>Onaylı</span>
+          </button>
+        </div>
       </div>
 
       {/* (Kaldırıldı) Ek küçük modal – mevcut büyük modal kullanılacak */}
