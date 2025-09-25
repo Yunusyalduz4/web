@@ -133,7 +133,7 @@ export const userRouter = t.router({
 
       // Sadece onaylı işletmeler
       if (input.approvedOnly) {
-        whereClause += ` AND b.is_approved = true`;
+        whereClause += ` AND b.is_approved = true AND (b.data_source IS NULL OR b.data_source <> 'google_places')`;
       }
 
       const result = await pool.query(`
