@@ -337,14 +337,7 @@ export default function UserBusinessesPage() {
         </div>
       </div>
       {/* Onaylı Toggle + Filtreler Butonu */}
-      <div className="mt-3 flex items-center justify-center gap-3">
-        <button
-          onClick={() => setFilterOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 border border-white/40 shadow text-sm text-gray-800 hover:bg-white"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 5h18M6 12h12M10 19h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          Filtreler
-        </button>
+      <div className="mt-3 flex items-center justify-center">
         <button
           onClick={() => setApprovedOnly(v => !v)}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm ${approvedOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/70 text-gray-800 border-white/40'}`}
@@ -356,45 +349,7 @@ export default function UserBusinessesPage() {
         </button>
       </div>
 
-      {/* Filtre Modal */}
-      {filterOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl w-[92%] max-w-md p-5 shadow-2xl">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-gray-900">Filtreler</h3>
-              <button onClick={() => setFilterOpen(false)} className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 grid place-items-center">✕</button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Kategori</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white">
-                  <option value="">Hepsi</option>
-                  <option value="Beauty Salon">Beauty Salon</option>
-                  <option value="Hair Salon">Hair Salon</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Üyelerimiz</span>
-                <button onClick={() => setMembersOnly(v => !v)} className={`w-12 h-7 rounded-full relative transition ${membersOnly ? 'bg-emerald-500' : 'bg-gray-300'}`}>
-                  <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition ${membersOnly ? 'translate-x-5' : ''}`}></span>
-                </button>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Randevu Durumu</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => setBookable('all')} className={`px-3 py-2 rounded-xl border ${bookable==='all' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Hepsi</button>
-                  <button onClick={() => setBookable('bookable')} className={`px-3 py-2 rounded-xl border ${bookable==='bookable' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Alınabilir</button>
-                  <button onClick={() => setBookable('non_bookable')} className={`px-3 py-2 rounded-xl border ${bookable==='non_bookable' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Alınamaz</button>
-                </div>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center justify-end gap-2">
-              <button onClick={() => { setCategory(''); setMembersOnly(false); setBookable('all'); }} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Sıfırla</button>
-              <button onClick={() => setFilterOpen(false)} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Uygula</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* (Kaldırıldı) Ek küçük modal – mevcut büyük modal kullanılacak */}
 
       {/* Eski toolbar kaldırıldı; yalnızca üstteki arama pill'i ve filtre modalı kullanılacak */}
       {isLoading && (
@@ -753,6 +708,46 @@ export default function UserBusinessesPage() {
               </div>
             </div>
 
+            {/* Category & Membership */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+                  <path d="M4 4h16v4H4V4zm0 6h10v4H4v-4zm0 6h16v4H4v-4z" fill="currentColor"/>
+                </svg>
+                <label className="text-sm font-semibold text-gray-900">Kategori & Üyelik</label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Kategori</label>
+                  <select 
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full border-2 border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                  >
+                    <option value="">Hepsi</option>
+                    <option value="Beauty Salon">Beauty Salon</option>
+                    <option value="Hair Salon">Hair Salon</option>
+                  </select>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
+                  <span className="text-sm text-gray-700">Üyelerimiz</span>
+                  <button onClick={() => setMembersOnly(v => !v)} className={`w-12 h-7 rounded-full relative transition ${membersOnly ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                    <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition ${membersOnly ? 'translate-x-5' : ''}`}></span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-600 mb-2">Randevu Durumu</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => setBookable('all')} className={`px-3 py-2 rounded-xl border text-sm ${bookable==='all' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Hepsi</button>
+                  <button onClick={() => setBookable('bookable')} className={`px-3 py-2 rounded-xl border text-sm ${bookable==='bookable' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Alınabilir</button>
+                  <button onClick={() => setBookable('non_bookable')} className={`px-3 py-2 rounded-xl border text-sm ${bookable==='non_bookable' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 bg-white text-gray-700'}`}>Alınamaz</button>
+                </div>
+              </div>
+            </div>
+
             {/* Gender Filter */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -835,6 +830,9 @@ export default function UserBusinessesPage() {
                   setHasPhone(false);
                   setHasEmail(false);
                   setGenderFilter('all');
+                  setCategory('');
+                  setMembersOnly(false);
+                  setBookable('all');
                 }}
               >
                 Temizle
