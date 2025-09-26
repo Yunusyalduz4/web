@@ -9,6 +9,7 @@ import { trpc } from '../../utils/trpcClient';
 export default function RegisterPage() {
   const router = useRouter();
   const [rememberMe, setRememberMe] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [error, setError] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [registerStep, setRegisterStep] = useState(1);
@@ -75,6 +76,10 @@ export default function RegisterPage() {
   const validateRegisterStep1 = () => {
     if (!registerData.name || !registerData.email || !registerData.password || !registerData.confirmPassword || !registerData.customerPhone) {
       setError('Lütfen tüm alanları doldurun');
+      return false;
+    }
+    if (!acceptedPrivacy) {
+      setError('Kayıt için Gizlilik Politikası ve Kullanım Şartları’nı kabul etmelisiniz');
       return false;
     }
     if (registerData.password !== registerData.confirmPassword) {
@@ -513,7 +518,7 @@ export default function RegisterPage() {
         )}
 
         {/* Remember Me */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 mb-6">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 mb-3">
           <label className="flex items-center gap-3 cursor-pointer group">
             <div className="relative">
               <input
@@ -531,6 +536,23 @@ export default function RegisterPage() {
               )}
             </div>
             <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors">Giriş bilgilerimi hatırla</span>
+          </label>
+        </div>
+
+        {/* Privacy Accept */}
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 mb-6">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={acceptedPrivacy}
+              onChange={e => setAcceptedPrivacy(e.target.checked)}
+              className="mt-1 w-5 h-5 text-rose-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-rose-500/20 focus:ring-offset-0 transition-all duration-200"
+            />
+            <span className="text-gray-700">
+              <span className="font-medium">Kayıt olarak</span> {' '}
+              <a href="/gizlilik" target="_blank" className="text-rose-600 hover:text-rose-700 font-semibold underline">Gizlilik Politikası ve Kullanım Şartları</a>
+              {' '}kabul edilmiş sayılacağınızı onaylıyorum.
+            </span>
           </label>
         </div>
 
