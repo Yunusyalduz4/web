@@ -24,23 +24,29 @@ export default function UserLayout({ children }: { children: ReactNode }) {
 
   const handleRefresh = async () => {
     try {
-      // Sayfayı yenile
+      // Synchronous refresh with better UX
       await router.refresh();
       
-      // 500ms bekleyip sonra reload
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Add loading indicator delay for user feedback
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Soft reload that preserves state
+      window.location.reload();
     } catch (error) {
       console.error('Refresh error:', error);
-      // Fallback olarak direct reload
       window.location.reload();
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <PullToRefreshWrapper onRefresh={handleRefresh}>
+      <PullToRefreshWrapper 
+        onRefresh={handleRefresh} 
+        threshold={70}
+        resistance={0.7}
+        showVisualIndicator={true}
+        refreshColor="blue"
+      >
         <main className="pb-20">
           {children}
         </main>

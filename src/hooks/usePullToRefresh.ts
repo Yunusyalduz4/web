@@ -1,170 +1,229 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface UsePullToRefreshOptions {
   onRefresh: () => void | Promise<void>;
-  threshold?: number; // Pull distance to trigger refresh (pixels)
-  resistance?: number; // Resistance to pull (0-1, higher = more resistance)
-  enabled?: boolean; // Enable/disable the feature
+  threshold?: number;
+  resistance?: number;
+  enabled?: boolean;
+  disabledScrollKey?: string[];
 }
 
 interface UsePullToRefreshReturn {
   isRefreshing: boolean;
   pullDistance: number;
-  canPull: boolean; // Whether user can pull
-  isPulling: boolean; // Whether currently pulling
+  canPull: boolean;
+  isPulling: boolean;
 }
 
 export function usePullToRefresh({
   onRefresh,
   threshold = 80,
-  resistance = 0.4,
-  enabled = true
+  resistance = 0.6,
+  enabled = true,
+  disabledScrollKey = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' ', 'Home', 'End']
 }: UsePullToRefreshOptions): UsePullToRefreshReturn {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isPulling, setIsPulling] = useState(false);
-
+  
   const isAtTop = useRef(false);
+  const startY = useRef(0);
+  const isPointerDown = useRef(false);
+  const animationFrame = useRef<number | undefined>(undefined);
+
+  const resetPullDistance = () => setPullDistance(0);
+
+  const executeRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+        resetPullDistance();
+      }, 500);
+    }
+  };
 
   useEffect(() => {
     if (!enabled) return;
 
-    let startY = 0;
-    let currentY = 0;
-    let isMouseDown = false;
-
-    const handleScroll = () => {
+    const updateScrollPosition = () => {
       isAtTop.current = window.scrollY <= 5;
     };
 
-    // Touch events
+    // Touch events for mobile
     const handleTouchStart = (e: TouchEvent) => {
-      if (!isAtTop.current) return;
+      if (!isAtTop.current || isRefreshing) return;
       
-      startY = e.touches[0].clientY;
-      currentY = e.touches[0].clientY;
-      isMouseDown = true;
+      startY.current = e.touches[0].clientY;
+      isPointerDown.current = true;
       setIsPulling(true);
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isAtTop.current || !isMouseDown) return;
-
-      currentY = e.touches[0].clientY;
-      const deltaY = Math.max(0, currentY - startY);
-      const resistanceApplied = Math.min(deltaY * (1 - resistance), threshold * 1.5);
+      if (!isPointerDown.current || !isAtTop.current) return;
       
-      setPullDistance(resistanceApplied);
-
-      if (resistanceApplied > 0) {
+      const clientY = e.touches[0].clientY;
+      const deltaY = Math.max(0, clientY - startY.current);
+      const appliedResistance = Math.min(deltaY * (1 - resistance), threshold * 2);
+      
+      if (appliedResistance > 10) {
         e.preventDefault();
+        setPullDistance(appliedResistance);
       }
     };
 
     const handleTouchEnd = async () => {
-      if (!isMouseDown) return;
-
-      isMouseDown = false;
+      if (!isPointerDown.current) return;
+      
+      isPointerDown.current = false;
       setIsPulling(false);
-
+      
       if (pullDistance >= threshold) {
-        setIsRefreshing(true);
-        try {
-          await onRefresh();
-        } finally {
-          setIsRefreshing(false);
-        }
+        await executeRefresh();
       }
-      setPullDistance(0);
+      
+      // Smooth reset
+      const resetDistance = pullDistance;
+      let currentReset = resetDistance;
+      const resetStep = resetDistance / 10;
+      
+      const animateReset = () => {
+        currentReset -= resetStep;
+        if (currentReset > 0) {
+          setPullDistance(currentReset);
+          animationFrame.current = requestAnimationFrame(animateReset);
+        } else {
+          resetPullDistance();
+        }
+      };
+      
+      if (resetDistance > 0) {
+        animationFrame.current = requestAnimationFrame(animateReset);
+      }
     };
 
     // Mouse events for desktop
     const handleMouseDown = (e: MouseEvent) => {
-      if (!isAtTop.current || e.target !== document.documentElement) return;
-      
-      startY = e.clientY;
-      currentY = e.clientY;
-      isMouseDown = true;
-      setIsPulling(true);
+      if (e.button === 0 && isAtTop.current && !isRefreshing) {
+        startY.current = e.clientY;
+        isPointerDown.current = true;
+        setIsPulling(true);
+        e.preventDefault();
+      }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isAtTop.current || !isMouseDown) return;
-
-      currentY = e.clientY;
-      const deltaY = Math.max(0, currentY - startY);
-      const resistanceApplied = Math.min(deltaY * (1 - resistance), threshold * 1.5);
-      
-      setPullDistance(resistanceApplied);
-
-      if (resistanceApplied > 0) {
-        e.preventDefault();
+      if (isPointerDown.current && isAtTop.current) {
+        const deltaY = Math.max(0, e.clientY - startY.current);
+        const appliedResistance = Math.min(deltaY * (1 - resistance), threshold * 2);
+        
+        if (appliedResistance > 10) {
+          e.preventDefault();
+          setPullDistance(appliedResistance);
+        }
       }
     };
 
-    const handleMouseUp = async () => {
-      if (!isMouseDown) return;
-
-      isMouseDown = false;
+    const handleMouseUp = () => {
+      if (!isPointerDown.current) return;
+      
+      isPointerDown.current = false;
       setIsPulling(false);
-
+      
       if (pullDistance >= threshold) {
-        setIsRefreshing(true);
-        try {
-          await onRefresh();
-        } finally {
-          setIsRefreshing(false);
-        }
+        executeRefresh();
       }
-      setPullDistance(0);
+      
+      const resetDistance = pullDistance;
+      let currentReset = resetDistance;
+      const resetStep = resetDistance / 10;
+      
+      const animateReset = () => {
+        currentReset -= resetStep;
+        if (currentReset > 0) {
+          setPullDistance(currentReset);
+          animationFrame.current = requestAnimationFrame(animateReset);
+        } else {
+          resetPullDistance();
+        }
+      };
+      
+      if (resetDistance > 0) {
+        animationFrame.current = requestAnimationFrame(animateReset);
+      }
     };
 
-    // Wheel events for desktop pull-to-refresh
+    // Wheel tracking for desktop refinement
     const handleWheel = (e: WheelEvent) => {
-      if (!isAtTop.current) return;
-      
-      const isWheelDown = e.deltaY < 0 && 
-        (pullDistance > 0 || 
-         (e.clientY <= 100 && e.clientX <= window.innerWidth)); // Check if close to top
-      
-      if (isWheelDown) {
-        const deltaY = Math.abs(e.deltaY) * 3;
-        const resistanceApplied = Math.min(deltaY + pullDistance, threshold * 1.5);
+      if (isAtTop.current && e.deltaY < 0) {
+        const wheelDelta = Math.abs(e.deltaY);
+        const currentPull = pullDistance;
+        const newPull = Math.min(currentPull + wheelDelta * 2, threshold * 1.5);
         
-        setPullDistance(resistanceApplied);
+        setPullDistance(newPull);
         e.preventDefault();
         
-        if (resistanceApplied >= threshold) {
-          handleTouchEnd();
+        if (newPull >= threshold) {
+          executeRefresh();
         }
       }
     };
 
-    // Initial scroll check
-    handleScroll();
-
-    // Add event listeners
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true });
-    window.addEventListener('mousedown', handleMouseDown, { passive: false });
-    window.addEventListener('mousemove', handleMouseMove, { passive: false });
-    window.addEventListener('mouseup', handleMouseUp, { passive: true });
-    window.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('wheel', handleWheel);
+    // Keyboard lock mechanism
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (disabledScrollKey.includes(e.key)) {
+        setIsPulling(false);
+        resetPullDistance();
+        isPointerDown.current = false;
+      }
     };
-  }, [enabled, pullDistance, threshold, resistance, onRefresh]);
+
+    updateScrollPosition();
+
+    // Event registration
+    window.addEventListener('scroll', updateScrollPosition, { passive: true });
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('mousedown', handleMouseDown, { passive: false });
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp, { passive: true });
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Block scrolling when pull is activate
+    const handlePassive = (e: Event) => {
+      if (isPulling) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('scroll', handlePassive, { passive: false });
+    
+    return () => {
+      if (animationFrame.current) {
+        cancelAnimationFrame(animationFrame.current);
+      }
+      
+      window.removeEventListener('scroll', updateScrollPosition);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handlePassive);
+    };
+  }, [enabled, onRefresh, pullDistance, threshold, isPulling, resistance, disabledScrollKey, isRefreshing]);
 
   return {
     isRefreshing,
