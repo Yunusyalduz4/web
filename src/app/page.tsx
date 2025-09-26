@@ -134,9 +134,11 @@ export default function LandingPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-1">
           <div className="text-[11px] text-gray-500">© {new Date().getFullYear()} RANDEVUO</div>
-        
+          <div className="text-[12px]">
+            <Link href="/gizlilik" className="text-gray-600 hover:text-gray-800 underline">Gizlilik ve Şartlar</Link>
+          </div>
         </div>
       </div>
 
