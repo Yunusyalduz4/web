@@ -229,6 +229,7 @@ export const appointmentRouter = t.router({
         a.*,
         u.name as user_name,
         u.profile_image_url as user_profile_image_url,
+        u.phone as user_phone,
         COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as service_names,
         COALESCE(array_agg(DISTINCT e.name) FILTER (WHERE e.name IS NOT NULL), ARRAY[]::text[]) as employee_names,
         COALESCE(array_agg(aps.price) FILTER (WHERE aps.price IS NOT NULL), ARRAY[]::numeric[]) as prices,
@@ -261,7 +262,7 @@ export const appointmentRouter = t.router({
         params.push(ctx.user.employeeId!);
       }
       
-      query += ` GROUP BY a.id, u.name, u.profile_image_url
+      query += ` GROUP BY a.id, u.name, u.profile_image_url, u.phone
         ORDER BY a.appointment_datetime DESC`;
       
       const result = await pool.query(query, params);
