@@ -55,6 +55,8 @@ select {
   font-size: 16px !important; /* Safari zoom önleme */
   -webkit-text-size-adjust: 100% !important; /* Safari zoom önleme */
   -ms-text-size-adjust: 100% !important; /* IE zoom önleme */
+  touch-action: auto !important; /* Input'lar için touch-action'ı auto yap */
+  pointer-events: auto !important; /* Input'lar için pointer-events'ı aktif et */
 }
 
 input[type="text"]:focus,
@@ -77,6 +79,8 @@ select:focus {
   font-size: 16px !important; /* Safari zoom önleme */
   -webkit-text-size-adjust: 100% !important; /* Safari zoom önleme */
   -ms-text-size-adjust: 100% !important; /* IE zoom önleme */
+  touch-action: auto !important; /* Input'lar için touch-action'ı auto yap */
+  pointer-events: auto !important; /* Input'lar için pointer-events'ı aktif et */
 }
 
 /* Checkbox and radio button styling */
@@ -88,6 +92,8 @@ input[type="radio"] {
   font-size: 16px !important; /* Safari zoom önleme */
   -webkit-text-size-adjust: 100% !important; /* Safari zoom önleme */
   -ms-text-size-adjust: 100% !important; /* IE zoom önleme */
+  touch-action: auto !important; /* Input'lar için touch-action'ı auto yap */
+  pointer-events: auto !important; /* Input'lar için pointer-events'ı aktif et */
 }
 
 input[type="checkbox"]:focus,
@@ -98,6 +104,8 @@ input[type="radio"]:focus {
   font-size: 16px !important; /* Safari zoom önleme */
   -webkit-text-size-adjust: 100% !important; /* Safari zoom önleme */
   -ms-text-size-adjust: 100% !important; /* IE zoom önleme */
+  touch-action: auto !important; /* Input'lar için touch-action'ı auto yap */
+  pointer-events: auto !important; /* Input'lar için pointer-events'ı aktif et */
 }
 
 /* Safari zoom önleme için ek kurallar */
