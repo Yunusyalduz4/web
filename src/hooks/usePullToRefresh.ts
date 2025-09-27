@@ -43,10 +43,9 @@ export function usePullToRefresh({
     } catch (error) {
       console.error('Refresh failed:', error);
     } finally {
-      setTimeout(() => {
-        setIsRefreshing(false);
-        resetPullDistance();
-      }, 500);
+      // Hemen false yap, setTimeout kaldır
+      setIsRefreshing(false);
+      resetPullDistance();
     }
   };
 
@@ -87,25 +86,26 @@ export function usePullToRefresh({
       
       if (pullDistance >= threshold) {
         await executeRefresh();
-      }
-      
-      // Smooth reset
-      const resetDistance = pullDistance;
-      let currentReset = resetDistance;
-      const resetStep = resetDistance / 10;
-      
-      const animateReset = () => {
-        currentReset -= resetStep;
-        if (currentReset > 0) {
-          setPullDistance(currentReset);
+        // executeRefresh zaten reset yapıyor, burada ekstra reset gerekmez
+      } else {
+        // Sadece threshold'a ulaşmadıysa reset yap
+        const resetDistance = pullDistance;
+        let currentReset = resetDistance;
+        const resetStep = resetDistance / 10;
+        
+        const animateReset = () => {
+          currentReset -= resetStep;
+          if (currentReset > 0) {
+            setPullDistance(currentReset);
+            animationFrame.current = requestAnimationFrame(animateReset);
+          } else {
+            resetPullDistance();
+          }
+        };
+        
+        if (resetDistance > 0) {
           animationFrame.current = requestAnimationFrame(animateReset);
-        } else {
-          resetPullDistance();
         }
-      };
-      
-      if (resetDistance > 0) {
-        animationFrame.current = requestAnimationFrame(animateReset);
       }
     };
 
@@ -139,24 +139,26 @@ export function usePullToRefresh({
       
       if (pullDistance >= threshold) {
         executeRefresh();
-      }
-      
-      const resetDistance = pullDistance;
-      let currentReset = resetDistance;
-      const resetStep = resetDistance / 10;
-      
-      const animateReset = () => {
-        currentReset -= resetStep;
-        if (currentReset > 0) {
-          setPullDistance(currentReset);
+        // executeRefresh zaten reset yapıyor
+      } else {
+        // Sadece threshold'a ulaşmadıysa reset yap
+        const resetDistance = pullDistance;
+        let currentReset = resetDistance;
+        const resetStep = resetDistance / 10;
+        
+        const animateReset = () => {
+          currentReset -= resetStep;
+          if (currentReset > 0) {
+            setPullDistance(currentReset);
+            animationFrame.current = requestAnimationFrame(animateReset);
+          } else {
+            resetPullDistance();
+          }
+        };
+        
+        if (resetDistance > 0) {
           animationFrame.current = requestAnimationFrame(animateReset);
-        } else {
-          resetPullDistance();
         }
-      };
-      
-      if (resetDistance > 0) {
-        animationFrame.current = requestAnimationFrame(animateReset);
       }
     };
 

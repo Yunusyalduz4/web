@@ -204,8 +204,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     let bestMatchStartTime: number = -Infinity;
 
     for (const apt of appointments) {
-      // Sadece aktif randevular
-      if (!(apt.status === 'pending' || apt.status === 'confirmed')) continue;
+      // Sadece aktif randevular (pending, confirmed, completed)
+      if (!(apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'completed')) continue;
 
       // Tarih eşleşmesi
       const aptStart = new Date(apt.appointment_datetime);
@@ -620,7 +620,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                       </span>
                     </div>
                     <div className="text-[11px] text-gray-700">
-                      <div>Müşteri: {apt.user_name || apt.customer_name || '—'}</div>
+                      <div>Müşteri: {apt.user_name || 'Müşteri'}</div>
+                      <div>Telefon: {apt.user_phone || apt.customer_phone || apt.phone || '—'}</div>
                       <div>Hizmet: {Array.isArray(apt.service_names) ? apt.service_names.join(', ') : '—'}</div>
                       <div>Çalışan: {Array.isArray(apt.employee_names) ? apt.employee_names.join(', ') : '—'}</div>
                     </div>
@@ -750,7 +751,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                       </span>
                     </div>
                     <div className="text-[11px] text-gray-700">
-                      <div>Müşteri: {apt.user_name || apt.customer_name || '—'}</div>
+                      <div>Müşteri: {apt.user_name || 'Müşteri'}</div>
+                      <div>Telefon: {apt.user_phone || apt.customer_phone || apt.phone || '—'}</div>
                       <div>Hizmet: {Array.isArray(apt.service_names) ? apt.service_names.join(', ') : '—'}</div>
                       <div>Çalışan: {Array.isArray(apt.employee_names) ? apt.employee_names.join(', ') : '—'}</div>
                     </div>
