@@ -661,7 +661,9 @@ export default function BusinessAppointmentsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-gray-900 truncate">{a.user_name || 'Müşteri'}</div>
+                  <div className="text-sm font-bold text-gray-900 truncate">
+                    {a.user_name || a.customer_name || (a.customer_surname ? `${a.customer_name || ''} ${a.customer_surname}`.trim() : 'Müşteri')}
+                  </div>
                   <div className="text-xs text-gray-600 flex items-center gap-3" suppressHydrationWarning>
                     <div className="flex items-center gap-1">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -794,6 +796,27 @@ export default function BusinessAppointmentsPage() {
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span>Ertele</span>
+                  </button>
+                  <button 
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
+                      updatingAppointmentId === a.id 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+                        : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg border-red-300'
+                    }`} 
+                    onClick={() => handleStatus(a.id, 'cancelled')}
+                    disabled={updatingAppointmentId === a.id}
+                  >
+                    {updatingAppointmentId === a.id ? (
+                      <>
+                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                        <span>Güncelleniyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span>İptal Et</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
