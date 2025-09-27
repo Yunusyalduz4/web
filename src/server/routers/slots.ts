@@ -169,7 +169,7 @@ export const slotsRouter = t.router({
             const slotKey = `${hh}:${mm}`;
             
             // Sadece 08:00-20:00 arası slot'ları kaydet
-            if (time.getHours() >= 8 && time.getHours() < 20 && slotCapacity[slotKey]) {
+            if (time.getHours() >= 0 && time.getHours() < 24 && slotCapacity[slotKey]) {
               slotCapacity[slotKey].busy++;
             }
           }
