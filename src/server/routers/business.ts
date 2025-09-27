@@ -550,6 +550,21 @@ export const businessRouter = t.router({
       return result.rows;
     }),
 
+  getServicesByEmployee: t.procedure
+    .input(z.object({ 
+      employeeId: z.string().uuid(),
+      businessId: z.string().uuid()
+    }))
+    .query(async ({ input }) => {
+      const result = await pool.query(
+        `SELECT s.* FROM services s
+         JOIN employee_services es ON s.id = es.service_id
+         WHERE es.employee_id = $1 AND s.business_id = $2`,
+        [input.employeeId, input.businessId]
+      );
+      return result.rows;
+    }),
+
   getBusinessByUserId: t.procedure.use(isBusiness)
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
