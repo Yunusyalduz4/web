@@ -60,6 +60,7 @@ export default function BusinessAppointmentsPage() {
   const [activeServiceFilters, setActiveServiceFilters] = useState<string[]>([]);
   const [activeEmployeeFilters, setActiveEmployeeFilters] = useState<string[]>([]);
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all'|'pending'|'confirmed'>('all');
+  const [showPendingOnly, setShowPendingOnly] = useState(true); // Default: bekleyen randevular
   const [activeDateFrom, setActiveDateFrom] = useState<string>('');
   const [activeDateTo, setActiveDateTo] = useState<string>('');
   const [activeCurrentPage, setActiveCurrentPage] = useState(1);
@@ -234,10 +235,11 @@ export default function BusinessAppointmentsPage() {
     if (!currentAppointments) return [];
     
     return currentAppointments.filter((a: any) => {
-      // Sadece pending ve confirmed randevular
-      if (a.status !== 'pending' && a.status !== 'confirmed') return false;
+      // Switch butonuna göre filtreleme
+      if (showPendingOnly && a.status !== 'pending') return false;
+      if (!showPendingOnly && a.status !== 'confirmed') return false;
       
-      // Status filtresi
+      // Status filtresi (ek filtreleme için)
       if (activeStatusFilter !== 'all' && a.status !== activeStatusFilter) return false;
       
       // Hizmet filtresi
@@ -264,7 +266,7 @@ export default function BusinessAppointmentsPage() {
       
       return true;
     });
-  }, [optimisticAppointments, appointments, activeStatusFilter, activeServiceFilters, activeEmployeeFilters, activeDateFrom, activeDateTo]);
+  }, [optimisticAppointments, appointments, showPendingOnly, activeStatusFilter, activeServiceFilters, activeEmployeeFilters, activeDateFrom, activeDateTo]);
 
   const activeAppointmentsCount = activeAppointments.length;
 
@@ -436,6 +438,34 @@ export default function BusinessAppointmentsPage() {
               <div className="text-xs sm:text-sm font-bold">Aktif Randevular</div>
               <div className="text-[10px] sm:text-xs text-gray-600">{activeAppointmentsCount} randevu</div>
             </div>
+          </div>
+        </div>
+
+        {/* Bekleyen/Onaylanan Switch - Mobile Optimized */}
+        <div className="mt-3 flex items-center justify-center">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
+            <button
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] border ${showPendingOnly ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95 border-white/40'}`}
+              onClick={() => setShowPendingOnly(true)}
+              aria-pressed={showPendingOnly}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`${showPendingOnly ? 'text-white' : 'text-yellow-600'}`}>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span>Bekleyen</span>
+            </button>
+            <button
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] ${!showPendingOnly ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95 border-white/40'}`}
+              onClick={() => setShowPendingOnly(false)}
+              aria-pressed={!showPendingOnly}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`${!showPendingOnly ? 'text-white' : 'text-green-600'}`}>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Onaylanan</span>
+            </button>
           </div>
         </div>
         

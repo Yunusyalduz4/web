@@ -1278,104 +1278,102 @@ export default function BusinessDetailPage() {
       </div>
     )}
     
-    {/* Photo Slider Modal - Mobile Optimized */}
+    {/* Photo Slider Modal - Full Screen Cover */}
     {photoSliderOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
-          {/* Close Button */}
-          <button
-            onClick={() => setPhotoSliderOpen(false)}
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+      <div className="fixed inset-0 z-50 bg-black">
+        {/* Close Button */}
+        <button
+          onClick={() => setPhotoSliderOpen(false)}
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Photo Counter */}
+        <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-2 rounded-lg">
+          <div className="text-sm font-medium">{currentPhotoIndex + 1} / {currentPhotos.length}</div>
+          <div className="text-xs opacity-80">İşletme Fotoğrafı</div>
+        </div>
+
+        {/* Full Screen Photo Container */}
+        <div className="w-full h-full">
+          <Swiper
+            modules={[Navigation, Pagination, EffectFade]}
+            spaceBetween={0}
+            slidesPerView={1}
+            initialSlide={currentPhotoIndex}
+            onSwiper={setPhotoSwiper}
+            onSlideChange={(swiper) => setCurrentPhotoIndex(swiper.activeIndex)}
+            effect="fade"
+            fadeEffect={{ crossFade: true }}
+            navigation={{
+              nextEl: '.swiper-button-next-custom',
+              prevEl: '.swiper-button-prev-custom',
+            }}
+            pagination={{
+              clickable: true,
+              bulletClass: 'swiper-pagination-bullet-custom',
+              bulletActiveClass: 'swiper-pagination-bullet-active-custom',
+            }}
+            className="w-full h-full"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {/* Photo Counter */}
-          <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-2 rounded-lg">
-            <div className="text-sm font-medium">{currentPhotoIndex + 1} / {currentPhotos.length}</div>
-            <div className="text-xs opacity-80">Yorum Fotoğrafı</div>
-          </div>
-
-          {/* Photo Container */}
-          <div className="bg-white rounded-xl overflow-hidden shadow-2xl">
-            <Swiper
-              modules={[Navigation, Pagination, EffectFade]}
-              spaceBetween={0}
-              slidesPerView={1}
-              initialSlide={currentPhotoIndex}
-              onSwiper={setPhotoSwiper}
-              onSlideChange={(swiper) => setCurrentPhotoIndex(swiper.activeIndex)}
-              effect="fade"
-              fadeEffect={{ crossFade: true }}
-              navigation={{
-                nextEl: '.swiper-button-next-custom',
-                prevEl: '.swiper-button-prev-custom',
-              }}
-              pagination={{
-                clickable: true,
-                bulletClass: 'swiper-pagination-bullet-custom',
-                bulletActiveClass: 'swiper-pagination-bullet-active-custom',
-              }}
-              className="w-full h-full"
-            >
-              {currentPhotos.map((photo, index) => (
-                <SwiperSlide key={index}>
-                  <div className="flex items-center justify-center w-full h-full">
-                    <img
-                      src={photo}
-                      alt={`Photo ${index + 1}`}
-                      className="w-full h-auto max-h-[80vh] object-contain"
-                    />
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-
-          {/* Custom Navigation Buttons */}
-          {currentPhotos.length > 1 && (
-            <>
-              <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </>
-          )}
-
-          {/* Thumbnail Strip */}
-          {currentPhotos.length > 1 && (
-            <div className="flex justify-center gap-2 p-4 overflow-x-auto no-scrollbar">
-              {currentPhotos.map((photo, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setCurrentPhotoIndex(index);
-                    photoSwiper?.slideTo(index);
-                  }}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    index === currentPhotoIndex
-                      ? 'border-white'
-                      : 'border-white/30 hover:border-white/60'
-                  }`}
-                >
+            {currentPhotos.map((photo, index) => (
+              <SwiperSlide key={index}>
+                <div className="w-full h-full flex items-center justify-center">
                   <img
                     src={photo}
-                    alt={`Thumbnail ${index + 1}`}
+                    alt={`İşletme Fotoğrafı ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
-                </button>
-              ))}
-            </div>
-          )}
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
+
+        {/* Custom Navigation Buttons */}
+        {currentPhotos.length > 1 && (
+          <>
+            <button className="swiper-button-prev-custom absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button className="swiper-button-next-custom absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* Thumbnail Strip */}
+        {currentPhotos.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center gap-2 p-4 overflow-x-auto no-scrollbar max-w-[90vw]">
+            {currentPhotos.map((photo, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setCurrentPhotoIndex(index);
+                  photoSwiper?.slideTo(index);
+                }}
+                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                  index === currentPhotoIndex
+                    ? 'border-white'
+                    : 'border-white/30 hover:border-white/60'
+                }`}
+              >
+                <img
+                  src={photo}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     )}
 

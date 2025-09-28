@@ -25,7 +25,6 @@ export default function UserBusinessesPage() {
   const [category, setCategory] = useState<string>('');
   const [membersOnly, setMembersOnly] = useState<boolean>(false);
   const [bookable, setBookable] = useState<'all' | 'bookable' | 'non_bookable'>('all');
-  const [approvedOnly, setApprovedOnly] = useState<boolean>(false);
 
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
@@ -67,7 +66,6 @@ export default function UserBusinessesPage() {
     category: category || undefined,
     membersOnly: membersOnly || undefined,
     bookable: bookable,
-    approvedOnly: approvedOnly || undefined
   });
 
   // Haversine ile km hesapla
@@ -336,33 +334,6 @@ export default function UserBusinessesPage() {
         </div>
       </div>
 
-      {/* Onaylı Toggle + Filtreler Butonu */}
-      <div className="mt-3 flex items-center justify-center">
-        <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
-          <button
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] border ${!approvedOnly ? 'bg-gray-100 text-gray-700 border-gray-200 shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95 border-white/40'}`}
-            onClick={() => setApprovedOnly(false)}
-            aria-pressed={!approvedOnly}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`${!approvedOnly ? 'text-gray-700' : 'text-gray-500'}`}>
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <span>Onaysız</span>
-          </button>
-          <button
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] ${approvedOnly ? 'bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95'}`}
-            onClick={() => setApprovedOnly(true)}
-            aria-pressed={approvedOnly}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="${approvedOnly ? 'text-white' : 'text-blue-600'}">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              <path d="M8 12.5l2.5 2.5L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span>Onaylı</span>
-          </button>
-        </div>
-      </div>
 
       {/* (Kaldırıldı) Ek küçük modal – mevcut büyük modal kullanılacak */}
 
