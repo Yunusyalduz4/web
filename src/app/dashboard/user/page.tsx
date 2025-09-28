@@ -287,6 +287,11 @@ export default function UserDashboard() {
                     hour: '2-digit', 
                     minute: '2-digit' 
                   }).format(new Date(request.new_appointment_datetime))}</div>
+                  {request.request_reason && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded text-blue-700">
+                      <strong>Erteleme Sebebi:</strong> {request.request_reason}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

@@ -389,6 +389,11 @@ export default function BusinessAppointmentsPage() {
                       hour: '2-digit', 
                       minute: '2-digit' 
                     }).format(new Date(request.new_appointment_datetime))}</div>
+                    {request.request_reason && (
+                      <div className="mt-1 p-1 bg-blue-50 rounded text-blue-700">
+                        <strong>Sebep:</strong> {request.request_reason}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-1">
                     <button
