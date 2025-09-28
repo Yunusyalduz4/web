@@ -193,6 +193,56 @@ export const authRouter = t.router({
       };
     }),
 
+  // Çalışan hesabı kontrol etme
+  checkEmployeeAccount: t.procedure
+    .input(z.object({
+      businessId: z.string().uuid(),
+      employeeId: z.string().uuid(),
+      email: z.string().email()
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // İşletme sahibi kontrolü
+        const businessCheck = await pool.query(
+          'SELECT owner_user_id FROM businesses WHERE id = $1',
+          [input.businessId]
+        );
+        
+        if (businessCheck.rows.length === 0) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'İşletme bulunamadı' });
+        }
+
+        // Çalışan kontrolü
+        const employeeCheck = await pool.query(
+          'SELECT id, name, user_id FROM employees WHERE id = $1 AND business_id = $2',
+          [input.employeeId, input.businessId]
+        );
+        
+        if (employeeCheck.rows.length === 0) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Çalışan bulunamadı' });
+        }
+
+        // E-posta ile kullanıcı kontrolü
+        const userCheck = await pool.query(
+          'SELECT id, email, role FROM users WHERE email = $1',
+          [input.email]
+        );
+
+        return {
+          hasAccount: userCheck.rows.length > 0,
+          userId: userCheck.rows.length > 0 ? userCheck.rows[0].id : null,
+          userRole: userCheck.rows.length > 0 ? userCheck.rows[0].role : null,
+          employeeName: employeeCheck.rows[0].name,
+          isLinked: userCheck.rows.length > 0 && userCheck.rows[0].id === employeeCheck.rows[0].user_id
+        };
+      } catch (error) {
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'Hesap kontrolü başarısız: ' + (error as Error).message 
+        });
+      }
+    }),
+
   // Çalışan hesabı oluşturma (işletme sahibi tarafından)
   createEmployeeAccount: t.procedure
     .input(z.object({
@@ -308,6 +358,74 @@ export const authRouter = t.router({
         [input.userId, token, input.email, expires]
       );
       return { token }; // Email gönderim servisine verilecek payload
+    }),
+
+  // Çalışan şifre sıfırlama (işletme sahibi tarafından)
+  resetEmployeePassword: t.procedure
+    .input(z.object({
+      businessId: z.string().uuid(),
+      employeeId: z.string().uuid(),
+      email: z.string().email(),
+      newPassword: z.string().min(6)
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // İşletme sahibi kontrolü
+        const businessCheck = await pool.query(
+          'SELECT owner_user_id FROM businesses WHERE id = $1',
+          [input.businessId]
+        );
+        
+        if (businessCheck.rows.length === 0) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'İşletme bulunamadı' });
+        }
+
+        // Çalışan kontrolü
+        const employeeCheck = await pool.query(
+          'SELECT id, name, user_id FROM employees WHERE id = $1 AND business_id = $2',
+          [input.employeeId, input.businessId]
+        );
+        
+        if (employeeCheck.rows.length === 0) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Çalışan bulunamadı' });
+        }
+
+        // Kullanıcı kontrolü
+        const userCheck = await pool.query(
+          'SELECT id, email, role FROM users WHERE email = $1',
+          [input.email]
+        );
+        
+        if (userCheck.rows.length === 0) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Bu e-posta adresine kayıtlı hesap bulunamadı' });
+        }
+
+        // Şifre hashle
+        const password_hash = await bcrypt.hash(input.newPassword, 10);
+
+        // Kullanıcı şifresini güncelle
+        await pool.query(
+          'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+          [password_hash, userCheck.rows[0].id]
+        );
+
+        // Employee kaydındaki şifreyi de güncelle
+        await pool.query(
+          'UPDATE employees SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+          [password_hash, input.employeeId]
+        );
+
+        return { 
+          success: true, 
+          message: 'Çalışan şifresi başarıyla sıfırlandı',
+          employeeName: employeeCheck.rows[0].name
+        };
+      } catch (error) {
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'Şifre sıfırlama başarısız: ' + (error as Error).message 
+        });
+      }
     }),
   verifyEmail: t.procedure
     .input(z.object({ token: z.string() }))

@@ -15,39 +15,63 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<File> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
+    if (!ctx) {
+      reject(new Error('Canvas desteklenmiyor'));
+      return;
+    }
+    
     img.onload = () => {
-      let { width, height } = img;
-      
-      // Calculate new dimensions
-      if (width > height) {
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      ctx?.drawImage(img, 0, 0, width, height);
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(new File([blob], file.name, { type: file.type }));
+      try {
+        let { width, height } = img;
+        
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
         } else {
-          resolve(file);
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
         }
-      }, file.type, 0.8);
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Görsel kalitesi ayarları
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          // Memory temizliği
+          img.onload = null;
+          img.onerror = null;
+          img.src = '';
+          canvas.width = 0;
+          canvas.height = 0;
+          
+          if (blob) {
+            resolve(new File([blob], file.name, { type: file.type }));
+          } else {
+            resolve(file);
+          }
+        }, file.type, 0.8);
+      } catch (error) {
+        reject(new Error('Görsel işleme hatası: ' + (error as Error).message));
+      }
+    };
+    
+    img.onerror = () => {
+      reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
     };
     
     img.src = URL.createObjectURL(file);

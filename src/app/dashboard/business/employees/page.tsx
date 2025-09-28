@@ -43,6 +43,10 @@ export default function BusinessEmployeesPage() {
   );
   const assignService = trpc.business.assignServiceToEmployee.useMutation();
   const removeService = trpc.business.removeServiceFromEmployee.useMutation();
+  
+  // Yeni API'ler
+  const resetEmployeePassword = trpc.auth.resetEmployeePassword.useMutation();
+  const checkEmployeeAccountMutation = trpc.auth.checkEmployeeAccount.useMutation();
 
   const [form, setForm] = useState({ 
     id: '', 
@@ -63,6 +67,66 @@ export default function BusinessEmployeesPage() {
       can_manage_business_settings: false
     }
   });
+  
+  // Hesap kontrolü için yeni state'ler
+  const [accountCheck, setAccountCheck] = useState<{
+    hasAccount: boolean;
+    userId: string | null;
+    userRole: string | null;
+    employeeName: string;
+    isLinked: boolean;
+  } | null>(null);
+  const [isCheckingAccount, setIsCheckingAccount] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  
+  // Hesap kontrolü fonksiyonu
+  const handleCheckAccount = async () => {
+    if (!form.email || !form.id || !businessId) return;
+    
+    setIsCheckingAccount(true);
+    setError('');
+    
+    try {
+      // TRPC client kullan
+      const result = await checkEmployeeAccountMutation.mutateAsync({
+        businessId: businessId,
+        employeeId: form.id,
+        email: form.email
+      });
+      
+      setAccountCheck(result);
+      if (result.hasAccount) {
+        setShowPasswordReset(true);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Hesap kontrolü başarısız');
+    } finally {
+      setIsCheckingAccount(false);
+    }
+  };
+  
+  // Şifre sıfırlama fonksiyonu
+  const handleResetPassword = async () => {
+    if (!form.email || !form.id || !businessId || !form.password) return;
+    
+    setError('');
+    
+    try {
+      await resetEmployeePassword.mutateAsync({
+        businessId: businessId,
+        employeeId: form.id,
+        email: form.email,
+        newPassword: form.password
+      });
+      
+      setSuccess('Çalışan şifresi başarıyla sıfırlandı!');
+      setShowPasswordReset(false);
+      setAccountCheck(null);
+    } catch (err: any) {
+      setError(err.message || 'Şifre sıfırlama başarısız');
+    }
+  };
+  
   const [editing, setEditing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState('');
@@ -119,47 +183,68 @@ export default function BusinessEmployeesPage() {
       throw new Error('Bu cihazda görsel işleme desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
     }
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous'; // CORS sorunlarını önle
-    
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
+    return new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      // crossOrigin ayarını kaldırdık - data URL'ler için gerekli değil ve sorun yaratabilir
+      
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('Canvas desteklenmiyor'));
+            return;
+          }
+
+          let { width, height } = img;
+          
+          // Mobil cihazlarda daha agresif resize
+          const mobileMaxSize = isMobile ? 1200 : maxSize;
+          const scale = Math.min(1, mobileMaxSize / Math.max(width, height));
+          
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+          
+          // Minimum boyut kontrolü
+          if (width < 100 || height < 100) {
+            reject(new Error('Görsel çok küçük. Lütfen daha büyük bir görsel seçin.'));
+            return;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Görsel kalitesi ayarları
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Mobil cihazlarda daha düşük kalite
+          const mobileQuality = isMobile ? Math.min(quality, 0.7) : quality;
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
+          const out = canvas.toDataURL(mime, mobileQuality);
+          
+          // Memory temizliği - event listener'ları temizle
+          img.onload = null;
+          img.onerror = null;
+          img.src = '';
+          canvas.width = 0;
+          canvas.height = 0;
+          
+          resolve(out);
+        } catch (error) {
+          reject(new Error('Görsel işleme hatası: ' + (error as Error).message));
+        }
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
+      };
+      
       img.src = dataUrl;
     });
-
-    const canvas = document.createElement('canvas');
-    let { width, height } = img;
-    
-    // Mobil cihazlarda daha agresif resize
-    const mobileMaxSize = isMobile ? 1200 : maxSize;
-    const scale = Math.min(1, mobileMaxSize / Math.max(width, height));
-    
-    width = Math.round(width * scale);
-    height = Math.round(height * scale);
-    
-    // Minimum boyut kontrolü
-    if (width < 100 || height < 100) {
-      throw new Error('Görsel çok küçük. Lütfen daha büyük bir görsel seçin.');
-    }
-    
-    canvas.width = width;
-    canvas.height = height;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas desteklenmiyor');
-    
-    // Mobil cihazlarda daha düşük kalite
-    const mobileQuality = isMobile ? Math.min(quality, 0.7) : quality;
-    
-    ctx.drawImage(img, 0, 0, width, height);
-    const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
-    const out = canvas.toDataURL(mime, mobileQuality);
-    
-    // Memory temizliği
-    img.src = '';
-    
-    return out;
   };
 
   // Mobil cihazlar için basit dosya yükleme (resize olmadan)
@@ -757,6 +842,90 @@ export default function BusinessEmployeesPage() {
                           </p>
                         </div>
 
+                        {/* Hesap Kontrolü */}
+                        {form.email && form.id && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs sm:text-sm font-medium text-yellow-800">🔍 Hesap Kontrolü</span>
+                              <button
+                                onClick={handleCheckAccount}
+                                disabled={isCheckingAccount}
+                                className="px-3 py-1 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 text-xs font-medium"
+                              >
+                                {isCheckingAccount ? 'Kontrol ediliyor...' : 'Hesap Kontrol Et'}
+                              </button>
+                            </div>
+                            
+                            {accountCheck && (
+                              <div className="mt-2">
+                                {accountCheck.hasAccount ? (
+                                  <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                    <p className="text-xs text-red-700 mb-2">
+                                      ⚠️ Bu e-posta adresine kayıtlı hesap mevcut!
+                                    </p>
+                                    <p className="text-xs text-red-600">
+                                      Hesap türü: {accountCheck.userRole}<br/>
+                                      Bağlı durum: {accountCheck.isLinked ? 'Evet' : 'Hayır'}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                                    <p className="text-xs text-green-700">
+                                      ✅ Bu e-posta adresine kayıtlı hesap yok. Yeni hesap oluşturulabilir.
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Şifre Sıfırlama */}
+                        {showPasswordReset && accountCheck?.hasAccount && (
+                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-orange-600">🔄</span>
+                              <span className="text-xs sm:text-sm font-medium text-orange-800">Şifre Sıfırlama</span>
+                            </div>
+                            <p className="text-[10px] sm:text-xs text-orange-700 mb-3">
+                              Mevcut hesabın şifresini sıfırlayabilirsiniz.
+                            </p>
+                            
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1">
+                                  Yeni Şifre
+                                </label>
+                                <input 
+                                  type="password" 
+                                  value={form.password || ''} 
+                                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))} 
+                                  className="w-full px-3 py-2 rounded-lg bg-white border border-orange-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-200" 
+                                  placeholder="Yeni şifre (en az 6 karakter)"
+                                />
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={handleResetPassword}
+                                  className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-xs font-medium"
+                                >
+                                  Şifre Sıfırla
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowPasswordReset(false);
+                                    setAccountCheck(null);
+                                  }}
+                                  className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-xs font-medium"
+                                >
+                                  İptal
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-1 gap-3 sm:gap-4">
                           <div>
                             <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">
@@ -826,6 +995,103 @@ export default function BusinessEmployeesPage() {
                       </div>
                     )}
                   </>
+                )}
+
+                {/* Düzenleme modunda şifre sıfırlama */}
+                {editing && form.email && (
+                  <div className="space-y-3 sm:space-y-4 bg-orange-50 rounded-xl p-3 sm:p-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-orange-600">🔄</span>
+                        <span className="text-xs sm:text-sm font-medium text-orange-800">Şifre Sıfırlama</span>
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-orange-700">
+                        Çalışanın mevcut hesabının şifresini sıfırlayabilirsiniz.
+                      </p>
+                    </div>
+
+                    {/* Hesap Kontrolü */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs sm:text-sm font-medium text-yellow-800">🔍 Hesap Kontrolü</span>
+                        <button
+                          onClick={handleCheckAccount}
+                          disabled={isCheckingAccount}
+                          className="px-3 py-1 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 text-xs font-medium"
+                        >
+                          {isCheckingAccount ? 'Kontrol ediliyor...' : 'Hesap Kontrol Et'}
+                        </button>
+                      </div>
+                      
+                      {accountCheck && (
+                        <div className="mt-2">
+                          {accountCheck.hasAccount ? (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                              <p className="text-xs text-red-700 mb-2">
+                                ⚠️ Bu e-posta adresine kayıtlı hesap mevcut!
+                              </p>
+                              <p className="text-xs text-red-600">
+                                Hesap türü: {accountCheck.userRole}<br/>
+                                Bağlı durum: {accountCheck.isLinked ? 'Evet' : 'Hayır'}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                              <p className="text-xs text-green-700">
+                                ✅ Bu e-posta adresine kayıtlı hesap yok.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Şifre Sıfırlama */}
+                    {showPasswordReset && accountCheck?.hasAccount && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-orange-600">🔄</span>
+                          <span className="text-xs sm:text-sm font-medium text-orange-800">Şifre Sıfırlama</span>
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-orange-700 mb-3">
+                          Mevcut hesabın şifresini sıfırlayabilirsiniz.
+                        </p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1">
+                              Yeni Şifre
+                            </label>
+                            <input 
+                              type="password" 
+                              value={form.password || ''} 
+                              onChange={e => setForm(f => ({ ...f, password: e.target.value }))} 
+                              className="w-full px-3 py-2 rounded-lg bg-white border border-orange-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-200" 
+                              placeholder="Yeni şifre (en az 6 karakter)"
+                            />
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleResetPassword}
+                              className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-xs font-medium"
+                            >
+                              Şifre Sıfırla
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowPasswordReset(false);
+                                setAccountCheck(null);
+                              }}
+                              className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-xs font-medium"
+                            >
+                              İptal
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
               </div>

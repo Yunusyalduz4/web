@@ -604,28 +604,6 @@ export default function BusinessDetailPage() {
             </button>
           )}
 
-          {/* E-posta Kartı - Mobile Optimized */}
-          {business.email && (
-            <button 
-              onClick={() => {
-                if (business.email) {
-                  window.open(`mailto:${business.email}`, '_self');
-                }
-              }}
-              className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50/50 to-purple-100/30 rounded-xl border border-purple-100/30 active:from-purple-100/60 active:to-purple-200/40 active:border-purple-200/50 transition-all duration-200 cursor-pointer group touch-manipulation active:scale-95 min-h-[44px]"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm group-active:scale-110 transition-transform">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zm0 2l8 5 8-5"/></svg>
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-xs text-purple-600 font-medium">E-posta</p>
-                <p className="text-xs font-semibold text-gray-800 truncate group-active:text-purple-700 transition-colors">{business.email}</p>
-                <p className="text-[10px] text-purple-500 mt-1">
-                  E-posta göndermek için tıklayın →
-                </p>
-              </div>
-            </button>
-          )}
 
         </div>
       </div>
@@ -689,15 +667,14 @@ export default function BusinessDetailPage() {
           <h2 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">Çalışanlar</h2>
         </div>
         <div className="overflow-hidden rounded-xl border border-white/40 bg-white/60 backdrop-blur-md shadow">
-          <div className="grid grid-cols-[auto_1fr_auto_auto] gap-2 px-3 py-2 text-[10px] uppercase tracking-wide text-gray-600 border-b border-white/40">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-2 px-3 py-2 text-[10px] uppercase tracking-wide text-gray-600 border-b border-white/40">
             <span>Fotoğraf</span>
             <span>Ad</span>
             <span>İletişim</span>
-            <span>Instagram</span>
           </div>
           <div>
             {employees?.map((e: any) => (
-              <div key={e.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-3 py-3 border-t border-white/30 active:bg-white/70 transition touch-manipulation min-h-[44px]">
+              <div key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 py-3 border-t border-white/30 active:bg-white/70 transition touch-manipulation min-h-[44px]">
                 <div className="flex items-center gap-2 min-w-0">
                   <div 
                     className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
@@ -719,10 +696,20 @@ export default function BusinessDetailPage() {
                   </div>
                   <div className="text-xs font-semibold text-gray-900 truncate">{e.name}</div>
                 </div>
-                <div className="text-xs text-gray-800 truncate">{e.email || '-'}</div>
-                <div className="text-xs text-gray-800">{e.phone || '-'}</div>
-                <div className="flex items-center justify-center">
-                  {e.instagram ? (
+                <div className="flex items-center justify-center gap-3">
+                  {e.phone && (
+                    <button 
+                      onClick={() => window.open(`tel:${e.phone}`, '_self')}
+                      className="flex items-center gap-1 text-green-600 hover:text-green-700 transition-colors hover:scale-105"
+                      title="Telefon"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6.62 10.79a15.46 15.46 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.49a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z"/>
+                      </svg>
+                      <span className="text-xs font-medium">{e.phone}</span>
+                    </button>
+                  )}
+                  {e.instagram && (
                     <a 
                       href={e.instagram} 
                       target="_blank" 
@@ -737,11 +724,9 @@ export default function BusinessDetailPage() {
                         {e.instagram.includes('instagram.com/') ? e.instagram.split('instagram.com/')[1] : e.instagram}
                       </span>
                     </a>
-                  ) : (
+                  )}
+                  {!e.phone && !e.instagram && (
                     <div className="flex items-center gap-1 text-gray-400">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                      </svg>
                       <span className="text-xs text-gray-500">-</span>
                     </div>
                   )}

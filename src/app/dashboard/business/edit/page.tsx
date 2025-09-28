@@ -151,47 +151,68 @@ export default function BusinessEditPage() {
       throw new Error('Bu cihazda görsel işleme desteklenmiyor. Lütfen daha güncel bir tarayıcı kullanın.');
     }
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous'; // CORS sorunlarını önle
-    
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
+    return new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      // crossOrigin ayarını kaldırdık - data URL'ler için gerekli değil ve sorun yaratabilir
+      
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('Canvas desteklenmiyor'));
+            return;
+          }
+
+          let { width, height } = img;
+          
+          // Mobil cihazlarda daha agresif resize
+          const mobileMaxSize = isMobile ? 1200 : maxSize;
+          const scale = Math.min(1, mobileMaxSize / Math.max(width, height));
+          
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+          
+          // Minimum boyut kontrolü
+          if (width < 100 || height < 100) {
+            reject(new Error('Görsel çok küçük. Lütfen daha büyük bir görsel seçin.'));
+            return;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Görsel kalitesi ayarları
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Mobil cihazlarda daha düşük kalite
+          const mobileQuality = isMobile ? Math.min(quality, 0.7) : quality;
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
+          const out = canvas.toDataURL(mime, mobileQuality);
+          
+          // Memory temizliği - event listener'ları temizle
+          img.onload = null;
+          img.onerror = null;
+          img.src = '';
+          canvas.width = 0;
+          canvas.height = 0;
+          
+          resolve(out);
+        } catch (error) {
+          reject(new Error('Görsel işleme hatası: ' + (error as Error).message));
+        }
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Görsel yüklenemedi - dosya bozuk olabilir'));
+      };
+      
       img.src = dataUrl;
     });
-
-    const canvas = document.createElement('canvas');
-    let { width, height } = img;
-    
-    // Mobil cihazlarda daha agresif resize
-    const mobileMaxSize = isMobile ? 1200 : maxSize;
-    const scale = Math.min(1, mobileMaxSize / Math.max(width, height));
-    
-    width = Math.round(width * scale);
-    height = Math.round(height * scale);
-    
-    // Minimum boyut kontrolü
-    if (width < 100 || height < 100) {
-      throw new Error('Görsel çok küçük. Lütfen daha büyük bir görsel seçin.');
-    }
-    
-    canvas.width = width;
-    canvas.height = height;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas desteklenmiyor');
-    
-    // Mobil cihazlarda daha düşük kalite
-    const mobileQuality = isMobile ? Math.min(quality, 0.7) : quality;
-    
-    ctx.drawImage(img, 0, 0, width, height);
-    const mime = file.type.startsWith('image/png') ? 'image/jpeg' : file.type; // PNG -> JPEG küçültme
-    const out = canvas.toDataURL(mime, mobileQuality);
-    
-    // Memory temizliği
-    img.src = '';
-    
-    return out;
   };
 
   // Mobil cihazlar için basit dosya yükleme (resize olmadan)
