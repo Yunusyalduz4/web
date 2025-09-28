@@ -16,6 +16,7 @@ const employeeSchema = z.object({
   name: z.string().min(2),
   email: z.string().email().optional(),
   phone: z.string().optional(),
+  instagram: z.string().url().optional().or(z.literal('')),
   profileImageUrl: z.string().url().optional(),
   permissions: z.object({
     can_manage_appointments: z.boolean(),
@@ -334,8 +335,8 @@ export const businessRouter = t.router({
       const permissions = input.permissions || defaultPermissions;
       
       const result = await pool.query(
-        `INSERT INTO employees (business_id, name, email, phone, profile_image_url, permissions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [input.businessId, input.name, input.email || '', input.phone || '', input.profileImageUrl || null, JSON.stringify(permissions)]
+        `INSERT INTO employees (business_id, name, email, phone, instagram, profile_image_url, permissions) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [input.businessId, input.name, input.email || '', input.phone || '', input.instagram || null, input.profileImageUrl || null, JSON.stringify(permissions)]
       );
       return result.rows[0];
     }),
@@ -344,14 +345,14 @@ export const businessRouter = t.router({
     .mutation(async ({ input }) => {
       const permissions = input.permissions ? JSON.stringify(input.permissions) : null;
       
-      let query = `UPDATE employees SET name = $1, email = $2, phone = $3, profile_image_url = $4`;
-      let params = [input.name, input.email || '', input.phone || '', input.profileImageUrl || null];
+      let query = `UPDATE employees SET name = $1, email = $2, phone = $3, instagram = $4, profile_image_url = $5`;
+      let params = [input.name, input.email || '', input.phone || '', input.instagram || null, input.profileImageUrl || null];
       
       if (permissions) {
-        query += `, permissions = $5 WHERE id = $6 AND business_id = $7 RETURNING *`;
+        query += `, permissions = $6 WHERE id = $7 AND business_id = $8 RETURNING *`;
         params.push(permissions, input.id, input.businessId);
       } else {
-        query += ` WHERE id = $5 AND business_id = $6 RETURNING *`;
+        query += ` WHERE id = $6 AND business_id = $7 RETURNING *`;
         params.push(input.id, input.businessId);
       }
       
