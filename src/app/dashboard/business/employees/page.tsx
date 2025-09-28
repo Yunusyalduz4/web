@@ -561,31 +561,30 @@ export default function BusinessEmployeesPage() {
           </div>
         </div>
       </div>
-      {/* Create/Edit Modal - Mobile Optimized */}
+      {/* Create/Edit Modal */}
       {addOpen && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAddOpen(false)} />
-          <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-3 sm:p-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div>
-                  <div className="text-sm sm:text-lg font-bold text-gray-900">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-600">Çalışan bilgilerini doldurun</div>
+                  <div className="text-lg font-bold text-gray-900">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</div>
+                  <div className="text-xs text-gray-600">Çalışan bilgilerini doldurun</div>
                 </div>
               </div>
               <button 
                 onClick={() => setAddOpen(false)} 
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation min-h-[44px]"
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
+            <div className="p-4">
             
-            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setAddOpen(false);}} className="space-y-3 sm:space-y-4">
-              <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-3 sm:space-y-4">
                 {/* Profile Image Section */}
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div 
@@ -637,53 +636,85 @@ export default function BusinessEmployeesPage() {
                   </div>
                 )}
                 
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Çalışan Adı</label>
-                  <input 
-                    type="text" 
-                    value={form.name} 
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
-                    required 
-                    className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors touch-manipulation min-h-[44px]" 
-                    placeholder="Çalışan adını girin"
-                    style={{ fontSize: '16px' }}
-                  />
+                {/* Çalışan Adı Input - Login Style */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">Çalışan Adı</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      required
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="Çalışan adını girin"
+                      autoComplete="name"
+                    />
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">E-posta</label>
-                  <input 
-                    type="email" 
-                    value={form.email} 
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))} 
-                    className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors touch-manipulation min-h-[44px]" 
-                    placeholder="E-posta adresi (opsiyonel)"
-                    style={{ fontSize: '16px' }}
-                  />
+                {/* E-posta Input - Login Style */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">E-posta</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                      </svg>
+                    </div>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="E-posta adresi (opsiyonel)"
+                      autoComplete="email"
+                    />
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Telefon</label>
-                  <input 
-                    type="text" 
-                    value={form.phone} 
-                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} 
-                    className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors touch-manipulation min-h-[44px]" 
-                    placeholder="Telefon numarası (opsiyonel)"
-                    style={{ fontSize: '16px' }}
-                  />
+                {/* Telefon Input - Login Style */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">Telefon</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="tel"
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="Telefon numarası (opsiyonel)"
+                      autoComplete="tel"
+                    />
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Instagram</label>
-                  <input 
-                    type="url" 
-                    value={form.instagram} 
-                    onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))} 
-                    className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors touch-manipulation min-h-[44px]" 
-                    placeholder="https://instagram.com/kullaniciadi (opsiyonel)"
-                    style={{ fontSize: '16px' }}
-                  />
+                {/* Instagram Input - Login Style */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">Instagram</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    </div>
+                    <input
+                      type="url"
+                      value={form.instagram}
+                      onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="https://instagram.com/kullaniciadi (opsiyonel)"
+                      autoComplete="url"
+                    />
+                  </div>
                 </div>
 
                 {/* Hesap Oluşturma Bölümü - Mobile Optimized */}
@@ -736,7 +767,7 @@ export default function BusinessEmployeesPage() {
                               value={form.password || ''} 
                               onChange={e => setForm(f => ({ ...f, password: e.target.value }))} 
                               required={form.createAccount}
-                              className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors touch-manipulation min-h-[44px]" 
+                              className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors min-h-[44px] modal-input" 
                               placeholder="En az 6 karakter"
                               style={{ fontSize: '16px' }}
                             />
@@ -750,7 +781,7 @@ export default function BusinessEmployeesPage() {
                               value={form.confirmPassword || ''} 
                               onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} 
                               required={form.createAccount}
-                              className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors touch-manipulation min-h-[44px]" 
+                              className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors min-h-[44px] modal-input" 
                               placeholder="Şifreyi tekrar girin"
                               style={{ fontSize: '16px' }}
                             />
@@ -853,7 +884,7 @@ export default function BusinessEmployeesPage() {
                   <span>İptal</span>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import * as cron from 'node-cron';
 import { sendAllUpcomingReminders } from './appointmentReminder';
+import { checkAndCompleteAppointments } from './autoCompleteAppointments';
 
 let isInitialized = false;
 let cronJobs: any[] = [];
@@ -52,6 +53,21 @@ export function initializeCronJobs(): void {
   
   cronJobs.push(cleanupJob);
 
+  // Her saat başı otomatik tamamlandı kontrolü yap
+  // 24 saat geçmiş confirmed randevuları completed olarak işaretle
+  const autoCompleteJob = cron.schedule('0 * * * *', async () => {
+    try {
+      await checkAndCompleteAppointments();
+    } catch (error) {
+      // Otomatik tamamlandı kontrolü hatası
+      console.error('❌ [Cron] Otomatik tamamlandı kontrolü başarısız:', error);
+    }
+  }, {
+    timezone: 'Europe/Istanbul' // Türkiye saati
+  });
+  
+  cronJobs.push(autoCompleteJob);
+
   isInitialized = true;
 }
 
@@ -85,5 +101,17 @@ export async function runManualReminderCheck(): Promise<void> {
     await sendAllUpcomingReminders();
   } catch (error) {
     // Manuel hatırlatma kontrolü hatası
+  }
+}
+
+/**
+ * Manuel olarak otomatik tamamlandı kontrolü çalıştır (test için)
+ */
+export async function runManualAutoCompleteCheck(): Promise<void> {
+  try {
+    await checkAndCompleteAppointments();
+  } catch (error) {
+    // Manuel otomatik tamamlandı kontrolü hatası
+    console.error('❌ [Manual] Otomatik tamamlandı kontrolü başarısız:', error);
   }
 }

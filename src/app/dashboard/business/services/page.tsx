@@ -45,8 +45,8 @@ export default function BusinessServicesPage() {
       setError('İşletme bulunamadı! Lütfen sayfayı yenileyin veya tekrar giriş yapın.');
       return;
     }
-    if (!form.name || !form.duration_minutes || !form.price) {
-      setError('Tüm zorunlu alanları doldurun.');
+    if (!form.name || form.duration_minutes <= 0 || form.price < 0) {
+      setError('Tüm zorunlu alanları doldurun ve geçerli değerler girin.');
       return;
     }
     try {
@@ -135,83 +135,115 @@ export default function BusinessServicesPage() {
         </div>
       </div>
 
-      {/* Create/Edit Modal - Mobile Optimized */}
+      {/* Create/Edit Modal */}
       {formOpen && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
-          <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div>
-                  <div className="text-sm sm:text-lg font-bold text-gray-900">{editing ? 'Hizmeti Güncelle' : 'Yeni Hizmet Ekle'}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-600">Hizmet bilgilerini doldurun</div>
+                  <div className="text-lg font-bold text-gray-900">{editing ? 'Hizmeti Güncelle' : 'Yeni Hizmet Ekle'}</div>
+                  <div className="text-xs text-gray-600">Hizmet bilgilerini doldurun</div>
                 </div>
               </div>
               <button 
                 onClick={() => setFormOpen(false)} 
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation min-h-[44px]"
+                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
+            <div className="p-4">
             
-            <form onSubmit={(e)=>{handleSubmit(e); if (!error) setFormOpen(false);}} className="space-y-3 sm:space-y-4">
-              <div className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Hizmet Adı</label>
-                  <input 
-                    type="text" 
-                    value={form.name} 
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
-                    required 
-                    className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors touch-manipulation min-h-[44px]" 
-                    placeholder="Hizmet adını girin"
-                    style={{ fontSize: '16px' }}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Süre (dk)</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      value={form.duration_minutes} 
-                      onChange={e => setForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))} 
-                      required 
-                      className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors touch-manipulation min-h-[44px]" 
-                      placeholder="30"
-                      style={{ fontSize: '16px' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Fiyat (₺)</label>
-                    <input 
-                      type="number" 
-                      min={0} 
-                      value={form.price} 
-                      onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} 
-                      required 
-                      className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors touch-manipulation min-h-[44px]" 
-                      placeholder="0"
-                      style={{ fontSize: '16px' }}
+            <div className="space-y-3 sm:space-y-4">
+                {/* Hizmet Adı Input - Login Style */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">Hizmet Adı</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      required
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="Hizmet adını girin"
+                      autoComplete="off"
                     />
                   </div>
                 </div>
                 
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Açıklama</label>
-                  <input 
-                    type="text" 
-                    value={form.description} 
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))} 
-                    className="w-full px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-sm sm:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors touch-manipulation min-h-[44px]" 
-                    placeholder="Hizmet açıklaması (opsiyonel)"
-                    style={{ fontSize: '16px' }}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Süre Input - Login Style */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 block">Süre (dk)</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        value={form.duration_minutes || ''}
+                        onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                        required
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                        placeholder="30"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Fiyat Input - Login Style */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 block">Fiyat (₺)</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        </svg>
+                      </div>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.price || ''}
+                        onChange={e => setForm(f => ({ ...f, price: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                        required
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                        placeholder="0"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Açıklama Input - Login Style */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">Açıklama</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={form.description}
+                      onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      placeholder="Hizmet açıklaması (opsiyonel)"
+                      autoComplete="off"
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -246,7 +278,7 @@ export default function BusinessServicesPage() {
                   <span>İptal</span>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

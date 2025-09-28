@@ -355,6 +355,54 @@ function OverviewPanel({ stats, setActiveTab }: { stats: any; setActiveTab: (tab
         </div>
       </div>
 
+      {/* System Test Actions */}
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6">
+        <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">🧪 Sistem Testleri</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/cron/auto-complete-appointments');
+                const result = await response.json();
+                if (result.success) {
+                  alert('✅ Otomatik tamamlandı kontrolü başarıyla çalıştırıldı!');
+                } else {
+                  alert('❌ Hata: ' + result.error);
+                }
+              } catch (error) {
+                alert('❌ Bağlantı hatası: ' + error);
+              }
+            }}
+            className="p-3 sm:p-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all min-h-[44px]"
+          >
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">🔄</div>
+            <div className="text-[10px] sm:text-sm font-medium">Otomatik Tamamlandı Test</div>
+            <div className="text-[8px] sm:text-xs opacity-80">24 saat geçmiş randevuları kontrol et</div>
+          </button>
+          
+          <button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/cron/init', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                  alert('✅ Cron job sistemi başarıyla başlatıldı!');
+                } else {
+                  alert('❌ Hata: ' + result.error);
+                }
+              } catch (error) {
+                alert('❌ Bağlantı hatası: ' + error);
+              }
+            }}
+            className="p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all min-h-[44px]"
+          >
+            <div className="text-lg sm:text-2xl mb-1 sm:mb-2">⚙️</div>
+            <div className="text-[10px] sm:text-sm font-medium">Cron Job Başlat</div>
+            <div className="text-[8px] sm:text-xs opacity-80">Otomatik sistemleri başlat</div>
+          </button>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-3 sm:p-6">
         <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">🚀 Hızlı İşlemler</h3>
