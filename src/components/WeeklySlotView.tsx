@@ -806,8 +806,7 @@ function ManualAppointmentModal({
   isLoading: boolean;
 }) {
   const [formData, setFormData] = useState({
-    customerName: '',
-    customerSurname: '',
+    customerFullName: '',
     customerPhone: '',
     selectedServices: [] as string[],
     selectedEmployee: '',
@@ -815,6 +814,38 @@ function ManualAppointmentModal({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Rehberden kişi seçimi için Web API
+  const handleContactPicker = async () => {
+    try {
+      // Contact Picker API (Chrome/Edge)
+      if ('contacts' in navigator && 'select' in navigator.contacts) {
+        const contacts = await (navigator.contacts as any).select(['name', 'tel']);
+        if (contacts && contacts.length > 0) {
+          const contact = contacts[0];
+          const name = contact.name?.[0] || '';
+          const phone = contact.tel?.[0] || '';
+          
+          // Ad soyadı ayır
+          const nameParts = name.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || null;
+          
+          setFormData(prev => ({
+            ...prev,
+            customerFullName: name,
+            customerPhone: phone
+          }));
+        }
+      } else {
+        // Fallback: Manuel giriş önerisi
+        alert('Rehber API desteklenmiyor. Telefon numarasını manuel olarak girin.');
+      }
+    } catch (error) {
+      console.log('Contact picker error:', error);
+      alert('Rehber erişimi reddedildi veya desteklenmiyor.');
+    }
+  };
 
   // O gün o saatte müsait olan çalışanları filtrele
   const availableEmployees = useMemo(() => {
@@ -866,11 +897,8 @@ function ManualAppointmentModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.customerName.trim()) {
-      newErrors.customerName = 'Müşteri adı zorunlu';
-    }
-    if (!formData.customerSurname.trim()) {
-      newErrors.customerSurname = 'Müşteri soyadı zorunlu';
+    if (!formData.customerFullName.trim()) {
+      newErrors.customerFullName = 'Müşteri adı soyadı zorunlu';
     }
     if (formData.selectedServices.length === 0) {
       newErrors.selectedServices = 'En az bir hizmet seçin';
@@ -895,12 +923,18 @@ function ManualAppointmentModal({
     // Rastgele müşteri ID oluştur
     const customerId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Ad soyadı ayır
+    const fullName = formData.customerFullName.trim();
+    const nameParts = fullName.split(' ');
+    const customerName = nameParts[0] || '';
+    const customerSurname = nameParts.slice(1).join(' ') || null;
+    
     // Randevu verisi hazırla
     const appointmentData = {
       businessId,
       customerId,
-      customerName: formData.customerName.trim(),
-      customerSurname: formData.customerSurname.trim(),
+      customerName,
+      customerSurname,
       customerPhone: formData.customerPhone.trim() || undefined,
       appointmentDate: slotData.date,
       appointmentTime: slotData.time,
@@ -967,56 +1001,80 @@ function ManualAppointmentModal({
               👤 Müşteri Bilgileri
             </h3>
             
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Ad * <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.customerName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm ${
-                    errors.customerName ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
-                  } focus:outline-none focus:ring-2 focus:ring-rose-200`}
-                  placeholder="Müşteri adı"
-                />
-                {errors.customerName && (
-                  <p className="text-xs text-rose-600 mt-1">{errors.customerName}</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Soyad * <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.customerSurname}
-                  onChange={(e) => setFormData(prev => ({ ...prev, customerSurname: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm ${
-                    errors.customerSurname ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
-                  } focus:outline-none focus:ring-2 focus:ring-rose-200`}
-                  placeholder="Müşteri soyadı"
-                />
-                {errors.customerSurname && (
-                  <p className="text-xs text-rose-600 mt-1">{errors.customerSurname}</p>
-                )}
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Ad Soyad * <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.customerFullName}
+                onChange={(e) => setFormData(prev => ({ ...prev, customerFullName: e.target.value }))}
+                className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                  errors.customerFullName ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
+                } focus:outline-none focus:ring-2 focus:ring-rose-200`}
+                placeholder="Örn: Ahmet Yılmaz"
+              />
+              {errors.customerFullName && (
+                <p className="text-xs text-rose-600 mt-1">{errors.customerFullName}</p>
+              )}
             </div>
             
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Telefon (Opsiyonel)
               </label>
-              <input
-                type="tel"
-                value={formData.customerPhone}
-                onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
-                placeholder="0555 123 45 67"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  value={formData.customerPhone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+                  placeholder="0555 123 45 67"
+                />
+                <button
+                  type="button"
+                  onClick={handleContactPicker}
+                  className="px-3 py-2 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors"
+                  title="Rehberden kişi seç"
+                >
+                  📞
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Mobil cihazda rehberden kişi seçebilirsiniz
+              </p>
             </div>
+          </div>
+
+          {/* Çalışan Seçimi */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              👨‍💼 Çalışan Seçimi <span className="text-rose-500">*</span>
+            </h3>
+            
+            <select
+              value={formData.selectedEmployee}
+              onChange={(e) => handleEmployeeChange(e.target.value)}
+              className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                errors.selectedEmployee ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
+              } focus:outline-none focus:ring-2 focus:ring-rose-200`}
+            >
+              <option value="">Çalışan seçin</option>
+              {availableEmployees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.name}
+                </option>
+              ))}
+            </select>
+            
+            {availableEmployees.length === 0 && (
+              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                ⚠️ Bu saatte müsait çalışan bulunmuyor. Lütfen farklı bir saat seçin.
+              </p>
+            )}
+            {errors.selectedEmployee && (
+              <p className="text-xs text-rose-600">{errors.selectedEmployee}</p>
+            )}
           </div>
 
           {/* Hizmet Seçimi */}
@@ -1056,37 +1114,6 @@ function ManualAppointmentModal({
             )}
             {errors.selectedServices && (
               <p className="text-xs text-rose-600">{errors.selectedServices}</p>
-            )}
-          </div>
-
-          {/* Çalışan Seçimi */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-              👨‍💼 Çalışan Seçimi <span className="text-rose-500">*</span>
-            </h3>
-            
-            <select
-              value={formData.selectedEmployee}
-              onChange={(e) => handleEmployeeChange(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border text-sm ${
-                errors.selectedEmployee ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
-              } focus:outline-none focus:ring-2 focus:ring-rose-200`}
-            >
-              <option value="">Çalışan seçin</option>
-              {availableEmployees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name}
-                </option>
-              ))}
-            </select>
-            
-            {availableEmployees.length === 0 && (
-              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                ⚠️ Bu saatte müsait çalışan bulunmuyor. Lütfen farklı bir saat seçin.
-              </p>
-            )}
-            {errors.selectedEmployee && (
-              <p className="text-xs text-rose-600">{errors.selectedEmployee}</p>
             )}
           </div>
 
