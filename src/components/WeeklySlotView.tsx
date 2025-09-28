@@ -818,18 +818,19 @@ function ManualAppointmentModal({
   // Rehberden kişi seçimi için Web API
   const handleContactPicker = async () => {
     try {
-      // Contact Picker API (Chrome/Edge)
-      if ('contacts' in navigator && 'select' in navigator.contacts) {
-        const contacts = await (navigator.contacts as any).select(['name', 'tel']);
+      // HTTPS kontrolü
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        alert('Rehber erişimi için HTTPS gerekli. Lütfen telefon numarasını manuel olarak girin.');
+        return;
+      }
+
+      // Contact Picker API desteği kontrolü
+      if ('contacts' in navigator && 'select' in (navigator as any).contacts) {
+        const contacts = await (navigator as any).contacts.select(['name', 'tel']);
         if (contacts && contacts.length > 0) {
           const contact = contacts[0];
           const name = contact.name?.[0] || '';
           const phone = contact.tel?.[0] || '';
-          
-          // Ad soyadı ayır
-          const nameParts = name.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || null;
           
           setFormData(prev => ({
             ...prev,
@@ -838,12 +839,23 @@ function ManualAppointmentModal({
           }));
         }
       } else {
-        // Fallback: Manuel giriş önerisi
-        alert('Rehber API desteklenmiyor. Telefon numarasını manuel olarak girin.');
+        // Tarayıcı desteği yok
+        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+        const isEdge = /Edg/.test(navigator.userAgent);
+        
+        if (!isChrome && !isEdge) {
+          alert('Rehber erişimi sadece Chrome ve Edge tarayıcılarında desteklenir. Telefon numarasını manuel olarak girin.');
+        } else {
+          alert('Rehber API desteklenmiyor. Telefon numarasını manuel olarak girin.');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log('Contact picker error:', error);
-      alert('Rehber erişimi reddedildi veya desteklenmiyor.');
+      if (error.name === 'NotAllowedError') {
+        alert('Rehber erişimi reddedildi. Lütfen izin verin veya telefon numarasını manuel olarak girin.');
+      } else {
+        alert('Rehber erişimi sırasında hata oluştu. Telefon numarasını manuel olarak girin.');
+      }
     }
   };
 
@@ -1034,14 +1046,14 @@ function ManualAppointmentModal({
                 <button
                   type="button"
                   onClick={handleContactPicker}
-                  className="px-3 py-2 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors"
-                  title="Rehberden kişi seç"
+                  className="px-3 py-2 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Rehberden kişi seç (Chrome/Edge + HTTPS gerekli)"
                 >
                   📞
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                💡 Mobil cihazda rehberden kişi seçebilirsiniz
+                💡 Rehber erişimi Chrome/Edge tarayıcılarında ve HTTPS üzerinde çalışır
               </p>
             </div>
           </div>
