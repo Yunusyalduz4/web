@@ -1,6 +1,7 @@
 import { t, isAdmin } from '../trpc/trpc';
 import { z } from 'zod';
 import { pool } from '../db';
+import { TRPCError } from '@trpc/server';
 
 export const adminRouter = t.router({
   // Overview Stats

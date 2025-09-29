@@ -67,7 +67,47 @@ const businessImageSchema = z.object({
 
 export const businessRouter = t.router({
   getBusinesses: t.procedure
-    .query(async () => {
+    .input(z.object({ 
+      userLatitude: z.number().optional(),
+      userLongitude: z.number().optional(),
+      maxDistanceKm: z.number().optional()
+    }).optional())
+    .query(async ({ input }) => {
+      let distanceCalculation = '';
+      let whereClause = 'WHERE b.is_approved = true';
+      const params: any[] = [];
+      let paramCount = 0;
+
+      // Add distance calculation if user location is provided
+      if (input?.userLatitude && input?.userLongitude) {
+        paramCount += 2;
+        distanceCalculation = `, (
+          6371 * acos(
+            cos(radians($${paramCount - 1})) * 
+            cos(radians(b.latitude)) * 
+            cos(radians(b.longitude) - radians($${paramCount})) + 
+            sin(radians($${paramCount - 1})) * 
+            sin(radians(b.latitude))
+          )
+        ) AS distance`;
+        params.push(input.userLatitude, input.userLongitude);
+
+        // Add distance filter if maxDistanceKm is provided
+        if (input.maxDistanceKm) {
+          paramCount += 1;
+          whereClause += ` AND (
+            6371 * acos(
+              cos(radians($${paramCount - 2})) * 
+              cos(radians(b.latitude)) * 
+              cos(radians(b.longitude) - radians($${paramCount - 1})) + 
+              sin(radians($${paramCount - 2})) * 
+              sin(radians(b.latitude))
+            )
+          ) <= $${paramCount}`;
+          params.push(input.maxDistanceKm);
+        }
+      }
+
       const result = await pool.query(`
         SELECT 
           b.*,
@@ -77,11 +117,12 @@ export const businessRouter = t.router({
             SELECT COUNT(*)::int 
             FROM favorites f 
             WHERE f.business_id = b.id
-          ) AS favorites_count
+          ) AS favorites_count${distanceCalculation}
         FROM businesses b
         LEFT JOIN business_ratings br ON br.business_id = b.id
-        WHERE b.is_approved = true  -- ✅ Sadece onaylı işletmeler
-      `);
+        ${whereClause}
+        ${input?.userLatitude && input?.userLongitude ? 'ORDER BY distance ASC' : ''}
+      `, params);
       return result.rows;
     }),
   getBusinessById: t.procedure

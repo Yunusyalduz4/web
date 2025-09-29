@@ -33,6 +33,7 @@ export default function UserBusinesses() {
   const [bookable, setBookable] = useState<'all' | 'yes' | 'no'>('all');
   const [isClient, setIsClient] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [distanceFilterOpen, setDistanceFilterOpen] = useState(false);
 
   // Hydration fix
   useEffect(() => {
@@ -40,8 +41,12 @@ export default function UserBusinesses() {
   }, []);
 
   // Data fetching
-  const { data: businesses, isLoading } = trpc.business.getBusinesses.useQuery();
-  // const { data: userLocation } = trpc.user.getUserLocation.useQuery(userId ? { userId } : skipToken);
+  const { data: userLocation } = trpc.user.getUserLocation.useQuery(userId ? { userId } : skipToken);
+  const { data: businesses, isLoading } = trpc.business.getBusinesses.useQuery({
+    userLatitude: userLocation?.latitude,
+    userLongitude: userLocation?.longitude,
+    maxDistanceKm: maxDistanceKm || undefined
+  });
 
   // Filtered businesses
   const filteredBusinesses = useMemo(() => {
@@ -94,22 +99,24 @@ export default function UserBusinesses() {
       filtered.sort((a: any, b: any) => (b.average_rating || 0) - (a.average_rating || 0));
     } else if (sortBy === 'favorites') {
       filtered.sort((a: any, b: any) => (b.favorites_count || 0) - (a.favorites_count || 0));
+    } else if (sortBy === 'distance' && userLocation?.latitude && userLocation?.longitude) {
+      // Distance sorting is already handled by the backend when user location is provided
+      // No need to sort again here
     }
     
     return filtered;
-  }, [businesses, searchQuery, minRating, hasPhone, hasEmail, genderFilter, category, membersOnly, bookable, sortBy]);
+  }, [businesses, searchQuery, minRating, hasPhone, hasEmail, genderFilter, category, membersOnly, bookable, sortBy, userLocation]);
 
   // Businesses with distance calculation
   const businessesWithDistance = useMemo(() => {
     if (!filteredBusinesses) return filteredBusinesses;
     
-    // For now, return filtered businesses without distance calculation
-    // TODO: Add user location functionality
+    // Distance is now calculated in the backend, so we can use it directly
     return filteredBusinesses.map((b: any) => ({
       ...b,
-      distance: null
+      distance: b.distance || null
     }));
-  }, [filteredBusinesses, maxDistanceKm, sortBy]);
+  }, [filteredBusinesses]);
 
   // Map markers
   const mapMarkers = useMemo(() => {
@@ -127,18 +134,6 @@ export default function UserBusinesses() {
   const handleMarkerClick = (markerId: string) => {
     router.push(`/dashboard/user/businesses/${markerId}`);
   };
-
-  // Distance calculation helper
-  function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
 
   return (
     <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -191,16 +186,30 @@ export default function UserBusinesses() {
             </p>
           </div>
           
-          {/* Search Toggle Button */}
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="ml-4 w-10 h-10 rounded-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-manipulation"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-              <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
-            </svg>
-          </button>
+          {/* Search and Distance Filter Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Search Toggle Button */}
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="w-10 h-10 rounded-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-manipulation"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </button>
+            
+            {/* Distance Filter Toggle Button */}
+            <button
+              onClick={() => setDistanceFilterOpen(!distanceFilterOpen)}
+              className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-manipulation"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -227,9 +236,11 @@ export default function UserBusinesses() {
         </div>
       )}
 
-      {/* Distance Filter - Mobile Optimized */}
+      {/* Distance Filter - Animated */}
       {!filterOpen && (
-        <div className="mb-6">
+        <div className={`mb-6 transition-all duration-300 ease-in-out overflow-hidden ${
+          distanceFilterOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+        }`}>
           <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -241,7 +252,7 @@ export default function UserBusinesses() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-600">Maksimum</span>
-                <span className="text-sm font-bold text-rose-600">{maxDistanceKm || 'Sınırsız'} km</span>
+                <span className="text-sm font-bold text-blue-600">{maxDistanceKm || 'Sınırsız'} km</span>
               </div>
             </div>
             
@@ -256,7 +267,7 @@ export default function UserBusinesses() {
                   onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                   style={{
-                    background: `linear-gradient(to right, #f43f5e 0%, #f43f5e ${((maxDistanceKm || 25) - 1) * 2.04}%, #e5e7eb ${((maxDistanceKm || 25) - 1) * 2.04}%, #e5e7eb 100%)`
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((maxDistanceKm || 25) - 1) * 2.04}%, #e5e7eb ${((maxDistanceKm || 25) - 1) * 2.04}%, #e5e7eb 100%)`
                   }}
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -265,13 +276,13 @@ export default function UserBusinesses() {
                 </div>
               </div>
               
-              {/* Unlimited Option */}
+              {/* Quick Distance Options */}
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setMaxDistanceKm(null)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     maxDistanceKm === null 
-                      ? 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white shadow-md' 
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md' 
                       : 'bg-white/60 text-gray-700 hover:bg-white/80'
                   }`}
                 >
@@ -281,17 +292,32 @@ export default function UserBusinesses() {
                   Sınırsız
                 </button>
                 
-                <button
-                  onClick={() => setMaxDistanceKm(5)}
-                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  Hızlı: 5km
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMaxDistanceKm(5)}
+                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1 rounded"
+                  >
+                    5km
+                  </button>
+                  <button
+                    onClick={() => setMaxDistanceKm(10)}
+                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1 rounded"
+                  >
+                    10km
+                  </button>
+                  <button
+                    onClick={() => setMaxDistanceKm(20)}
+                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1 rounded"
+                  >
+                    20km
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
 
       {/* View Toggle */}
       <div className="flex items-center justify-center gap-2 mb-6">

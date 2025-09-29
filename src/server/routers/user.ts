@@ -14,6 +14,16 @@ export const userRouter = t.router({
       return result.rows[0];
     }),
 
+  getUserLocation: t.procedure.use(isUser)
+    .input(z.object({ userId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const result = await pool.query(
+        `SELECT latitude, longitude, address FROM users WHERE id = $1`,
+        [input.userId]
+      );
+      return result.rows[0];
+    }),
+
   // Sadece telefon numarası güncelleme
   updatePhone: t.procedure.use(isAuthed)
     .input(z.object({
