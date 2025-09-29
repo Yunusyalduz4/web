@@ -58,6 +58,8 @@ select {
   -ms-text-size-adjust: 100% !important; /* IE zoom önleme */
   touch-action: auto !important; /* Input'lar için touch-action'ı auto yap */
   pointer-events: auto !important; /* Input'lar için pointer-events'ı aktif et */
+  z-index: 60 !important; /* BottomNav'dan yüksek z-index */
+  position: relative !important; /* Z-index çalışması için */
 }
 
 input[type="text"]:focus,
@@ -82,6 +84,7 @@ select:focus {
   -ms-text-size-adjust: 100% !important; /* IE zoom önleme */
   touch-action: auto !important; /* Input'lar için touch-action'ı auto yap */
   pointer-events: auto !important; /* Input'lar için pointer-events'ı aktif et */
+  z-index: 70 !important; /* Focus durumunda daha yüksek z-index */
 }
 
 /* Checkbox and radio button styling */
@@ -176,4 +179,398 @@ input[type="radio"]:focus {
   touch-action: auto !important;
   pointer-events: auto !important;
   -webkit-touch-callout: default !important;
+}
+
+/* MOBİL UYGULAMA Z-INDEX HİYERARŞİSİ */
+/* 1. BottomNav: z-40 */
+/* 2. Input'lar: z-60 */
+/* 3. Modals: z-50 */
+/* 4. TopBar: z-30 */
+/* 5. PullToRefresh: z-20 */
+
+/* ======================================== */
+/* MODAL STANDART SINIFLARI - MOBİL UYUMLU */
+/* ======================================== */
+
+/* Modal Container - Ana Kapsayıcı */
+.modal-container {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4;
+}
+
+.modal-overlay-bg {
+  @apply absolute inset-0 bg-black/50 backdrop-blur-sm;
+}
+
+.modal-wrapper {
+  @apply relative w-full max-w-md max-h-[90vh] bg-white/95 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden;
+}
+
+/* Modal Header - Sabit Başlık */
+.modal-header {
+  @apply flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0;
+}
+
+.modal-header-content {
+  @apply flex items-center gap-3;
+}
+
+.modal-header-icon {
+  @apply w-8 h-8 rounded-xl flex items-center justify-center;
+}
+
+.modal-header-text {
+  @apply text-lg font-bold text-gray-900;
+}
+
+.modal-header-subtitle {
+  @apply text-xs text-gray-600;
+}
+
+.modal-close-btn {
+  @apply w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 transition-colors touch-manipulation min-h-[44px];
+}
+
+/* Modal Content - Scroll Edilebilir İçerik */
+.modal-content {
+  @apply flex-1 overflow-y-auto p-4;
+}
+
+.modal-content-scroll {
+  @apply space-y-4;
+}
+
+/* Modal Footer - Aksiyon Butonları */
+.modal-footer {
+  @apply flex gap-3 p-4 border-t border-gray-200 flex-shrink-0;
+}
+
+/* Form Elementleri - Standart Input'lar */
+.modal-input {
+  @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 touch-manipulation min-h-[44px];
+}
+
+.modal-input:focus {
+  @apply z-60;
+}
+
+.modal-textarea {
+  @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none touch-manipulation min-h-[44px];
+}
+
+.modal-select {
+  @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 touch-manipulation min-h-[44px];
+}
+
+.modal-file-input {
+  @apply hidden;
+}
+
+.modal-file-label {
+  @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 cursor-pointer touch-manipulation min-h-[44px];
+}
+
+/* Buton Stilleri - Standart Butonlar */
+.modal-btn {
+  @apply flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 touch-manipulation min-h-[44px];
+}
+
+.modal-btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg;
+}
+
+.modal-btn-secondary {
+  @apply bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 border border-gray-300;
+}
+
+.modal-btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg;
+}
+
+.modal-btn-success {
+  @apply bg-green-500 text-white hover:bg-green-600 active:bg-green-700 shadow-md hover:shadow-lg;
+}
+
+.modal-btn-full {
+  @apply w-full;
+}
+
+.modal-btn-flex {
+  @apply flex-1;
+}
+
+/* Layout Elementleri - Düzen Sınıfları */
+.modal-section {
+  @apply space-y-3;
+}
+
+.modal-section-title {
+  @apply text-sm font-semibold text-gray-900 mb-2;
+}
+
+.modal-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
+}
+
+.modal-list {
+  @apply space-y-2;
+}
+
+.modal-list-item {
+  @apply flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl;
+}
+
+.modal-list-item-content {
+  @apply min-w-0 flex-1;
+}
+
+.modal-list-item-title {
+  @apply text-sm font-medium text-gray-900 truncate;
+}
+
+.modal-list-item-subtitle {
+  @apply text-xs text-gray-600;
+}
+
+/* Mesaj Elementleri - Başarı/Hata */
+.modal-message {
+  @apply flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium;
+}
+
+.modal-message-success {
+  @apply bg-green-50 text-green-800 border border-green-200;
+}
+
+.modal-message-error {
+  @apply bg-red-50 text-red-800 border border-red-200;
+}
+
+.modal-message-warning {
+  @apply bg-yellow-50 text-yellow-800 border border-yellow-200;
+}
+
+/* Empty State - Boş Durum */
+.modal-empty {
+  @apply text-center py-6;
+}
+
+.modal-empty-icon {
+  @apply w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-2;
+}
+
+.modal-empty-text {
+  @apply text-xs text-gray-500;
+}
+
+/* Loading State - Yükleme Durumu */
+.modal-loading {
+  @apply flex items-center justify-center gap-2 text-sm text-gray-600;
+}
+
+.modal-spinner {
+  @apply inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin;
+}
+
+/* Responsive Overrides - Mobil Optimizasyon */
+@media (max-width: 640px) {
+  .modal-container {
+    @apply p-2;
+  }
+  
+  .modal-wrapper {
+    @apply max-h-[95vh] rounded-xl;
+  }
+  
+  .modal-header {
+    @apply p-3;
+  }
+  
+  .modal-content {
+    @apply p-3;
+  }
+  
+  .modal-footer {
+    @apply p-3 gap-2;
+  }
+  
+  .modal-btn {
+    @apply text-xs px-3 py-2;
+  }
+}
+
+/* Mobile input touch fix - BottomNav çakışması çözümü */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  textarea,
+  select {
+    z-index: 60 !important;
+    position: relative !important;
+    touch-action: manipulation !important;
+    pointer-events: auto !important;
+    -webkit-touch-callout: default !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+  }
+  
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="tel"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  input[type="url"]:focus,
+  input[type="date"]:focus,
+  input[type="time"]:focus,
+  input[type="datetime-local"]:focus,
+  input[type="month"]:focus,
+  input[type="week"]:focus,
+  textarea:focus,
+  select:focus {
+    z-index: 70 !important;
+    touch-action: manipulation !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* MOBİL UYGULAMA MODAL Z-INDEX STANDARTLARI */
+.modal-overlay {
+  z-index: 50 !important;
+}
+
+.modal-content {
+  z-index: 51 !important;
+}
+
+.modal-input {
+  z-index: 60 !important;
+}
+
+/* MOBİL UYGULAMA - DESKTOP GÖRÜNÜMÜ KALDIR */
+@media (min-width: 769px) {
+  /* Desktop'da sadece mobil görünüm - telefon simülasyonu */
+  body {
+    max-width: 480px !important;
+    margin: 0 auto !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1) !important;
+    background: #f5f5f5 !important;
+  }
+  
+  /* Desktop'da gizlenecek elementler */
+  .desktop-hidden {
+    display: none !important;
+  }
+  
+  /* Desktop'da mobil görünüm zorla */
+  .sm\:max-w-2xl {
+    max-width: 100% !important;
+  }
+  
+  .sm\:items-center {
+    align-items: flex-end !important;
+  }
+  
+  .sm\:pb-0 {
+    padding-bottom: 5rem !important;
+  }
+  
+  .sm\:h-\[80vh\] {
+    height: 85vh !important;
+  }
+  
+  .sm\:rounded-2xl {
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+  }
+}
+
+/* MOBİL UYGULAMA STANDARTLARI */
+.mobile-app {
+  max-width: 480px !important;
+  margin: 0 auto !important;
+}
+
+.mobile-only {
+  display: block !important;
+}
+
+.desktop-only {
+  display: none !important;
+}
+
+/* Tüm responsive class'ları mobil-only yap */
+@media (min-width: 640px) {
+  .sm\\:hidden {
+    display: none !important;
+  }
+  
+  .sm\\:block {
+    display: block !important;
+  }
+  
+  .sm\\:flex {
+    display: flex !important;
+  }
+  
+  .sm\\:grid {
+    display: grid !important;
+  }
+  
+  .sm\\:inline-flex {
+    display: inline-flex !important;
+  }
+}
+
+/* Distance Slider Styles */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f43f5e;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f43f5e;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4);
 }

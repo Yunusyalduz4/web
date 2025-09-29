@@ -32,68 +32,67 @@ function ReplyModal({ review, isOpen, onClose, onSubmit }: any) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+    <div className="modal-container">
+      <div className="modal-overlay-bg" onClick={onClose} />
+      <div className="modal-wrapper">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div className="modal-header">
+          <div className="modal-header-content">
+            <div className="modal-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">{review?.business_reply ? 'Yanıtı Düzenle' : 'Yanıt Ver'}</h3>
-              <p className="text-sm text-gray-600">Müşteri yorumuna yanıt verin</p>
+            <div className="modal-header-text">
+              <h2 className="modal-header-title">{review?.business_reply ? 'Yanıtı Düzenle' : 'Yanıt Ver'}</h2>
+              <p className="modal-header-subtitle">Müşteri yorumuna yanıt verin</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            className="modal-close-btn"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
 
         {/* Content */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Yanıtınız</label>
-            <textarea
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-              placeholder="Müşteri yorumuna yanıt verin..."
-              className="w-full h-32 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              style={{ fontSize: '16px' }}
-            />
+        <div className="modal-content">
+          <div className="modal-content-scroll">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Yanıtınız</label>
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  placeholder="Müşteri yorumuna yanıt verin..."
+                  className="modal-textarea"
+                  rows={4}
+                />
+              </div>
+            </div>
           </div>
-          
-          {/* Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={handleSubmit}
-              disabled={!reply.trim() || isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/></svg>
-                  <span>Gönderiliyor...</span>
-                </>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span>Gönder</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <span>İptal</span>
-            </button>
-          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="modal-footer">
+          <button
+            onClick={onClose}
+            className="modal-btn modal-btn-secondary modal-btn-flex"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span>İptal</span>
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!reply.trim() || isSubmitting}
+            className="modal-btn modal-btn-primary modal-btn-flex"
+          >
+            {isSubmitting ? (
+              <div className="modal-spinner" />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            )}
+            <span>{isSubmitting ? 'Gönderiliyor...' : 'Gönder'}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -223,7 +222,7 @@ export default function BusinessReviewsPage() {
   };
 
   return (
-    <main className="relative max-w-md mx-auto p-4 pb-20 min-h-screen bg-gray-50">
+    <main className="relative max-w-md mx-auto p-3 sm:p-4 pb-20 sm:pb-24 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar */}
       <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/80 backdrop-blur-md border-b border-white/60 mb-3 sm:mb-4">
         <div className="flex items-center justify-between">
@@ -337,19 +336,23 @@ export default function BusinessReviewsPage() {
             </div>
           ) : (
             reviews.map((review: any) => (
-              <div key={review.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200" style={{
-                border: '2px solid',
-                borderImage: 'linear-gradient(45deg, #dc2626, #2563eb, #f8fafc) 1',
-                borderRadius: '16px'
-              }}>
-                {/* Header - Ultra Kompakt */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold">
+              <div 
+                key={review.id} 
+                className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm hover:shadow-md transition-all duration-200 border-2 overflow-hidden"
+                style={{
+                  borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                  border: '2px solid transparent',
+                  background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                }}
+              >
+                {/* Header - Mobile Optimized */}
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
                       {review.user_name ? review.user_name.charAt(0).toUpperCase() : 'M'}
                     </div>
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900">{review.user_name}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-gray-900 truncate">{review.user_name}</div>
                       <div className="text-xs text-gray-500">
                         {new Date(review.appointment_datetime).toLocaleDateString('tr-TR', {
                           day: 'numeric',
@@ -358,7 +361,7 @@ export default function BusinessReviewsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {review.is_approved ? (
                       <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                         ✓
@@ -371,17 +374,17 @@ export default function BusinessReviewsPage() {
                   </div>
                 </div>
                 
-                {/* Rating'ler - Sadece Sayı */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                    <span className="text-xs text-gray-600">Hizmet</span>
-                    <span className="text-sm font-bold text-blue-600">
+                {/* Rating'ler - Mobile Optimized */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3">
+                  <div className="flex items-center justify-between bg-blue-50 rounded-lg px-2 sm:px-3 py-2 min-w-0">
+                    <span className="text-xs text-gray-600 truncate">Hizmet</span>
+                    <span className="text-sm font-bold text-blue-600 flex-shrink-0 ml-1">
                       {review.service_rating || 0}/5
                     </span>
                   </div>
-                  <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
-                    <span className="text-xs text-gray-600">Çalışan</span>
-                    <span className="text-sm font-bold text-green-600">
+                  <div className="flex items-center justify-between bg-green-50 rounded-lg px-2 sm:px-3 py-2 min-w-0">
+                    <span className="text-xs text-gray-600 truncate">Çalışan</span>
+                    <span className="text-sm font-bold text-green-600 flex-shrink-0 ml-1">
                       {review.employee_rating || 0}/5
                     </span>
                   </div>
@@ -392,7 +395,7 @@ export default function BusinessReviewsPage() {
                   <p className="text-sm text-gray-800 leading-relaxed line-clamp-3">{review.comment}</p>
                 </div>
 
-                {/* Yorum Görselleri - Ultra Kompakt */}
+                {/* Yorum Görselleri - Mobile Optimized */}
                 {review.photos && review.photos.length > 0 && (
                   <div className="mb-3">
                     <div className="flex items-center gap-2 mb-2">
@@ -401,11 +404,11 @@ export default function BusinessReviewsPage() {
                         {review.photos.length}
                       </span>
                     </div>
-                    <div className="flex gap-2 overflow-x-auto">
+                    <div className="flex gap-2 overflow-x-auto pb-1">
                       {review.photos.slice(0, 3).map((photo: string, photoIndex: number) => (
                         <div
                           key={photoIndex}
-                          className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer group"
+                          className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer group touch-manipulation"
                           onClick={() => {
                             setCurrentPhotos(review.photos);
                             setCurrentPhotoIndex(photoIndex);
@@ -436,7 +439,7 @@ export default function BusinessReviewsPage() {
                         </div>
                       ))}
                       {review.photos.length > 3 && (
-                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium">
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium flex-shrink-0">
                           +{review.photos.length - 3}
                         </div>
                       )}
@@ -486,13 +489,13 @@ export default function BusinessReviewsPage() {
                   </div>
                 )}
 
-                {/* Yanıt Verme Butonu - Ultra Kompakt */}
+                {/* Yanıt Verme Butonu - Mobile Optimized */}
                 {!isEmployee && (
                   <div className="flex justify-end">
                     {!review.business_reply ? (
                       <button
                         onClick={() => setReplyModal({ isOpen: true, review })}
-                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-105"
+                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-105 touch-manipulation min-h-[44px]"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         Yanıt Ver
@@ -500,7 +503,7 @@ export default function BusinessReviewsPage() {
                     ) : (
                       <button
                         onClick={() => setReplyModal({ isOpen: true, review })}
-                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-105"
+                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-105 touch-manipulation min-h-[44px]"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         Düzenle
@@ -514,36 +517,36 @@ export default function BusinessReviewsPage() {
         </div>
       )}
 
-      {/* Sayfalama - Modern Kompakt */}
+      {/* Sayfalama - Mobile Optimized */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-6 flex justify-center">
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2">
+        <div className="mt-4 sm:mt-6 flex justify-center">
+          <div className="bg-white rounded-2xl p-2 sm:p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="w-8 h-8 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-8 h-8 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center touch-manipulation min-h-[44px]"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              {Array.from({ length: Math.min(3, pagination.totalPages) }, (_, i) => {
                 let pageNum;
-                if (pagination.totalPages <= 5) {
+                if (pagination.totalPages <= 3) {
                   pageNum = i + 1;
-                } else if (currentPage <= 3) {
+                } else if (currentPage <= 2) {
                   pageNum = i + 1;
-                } else if (currentPage >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
+                } else if (currentPage >= pagination.totalPages - 1) {
+                  pageNum = pagination.totalPages - 2 + i;
                 } else {
-                  pageNum = currentPage - 2 + i;
+                  pageNum = currentPage - 1 + i;
                 }
                 
                 return (
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium transition flex items-center justify-center ${
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition flex items-center justify-center touch-manipulation min-h-[44px] ${
                       currentPage === pageNum
                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm'
                         : 'hover:bg-gray-100 text-gray-700'
@@ -557,7 +560,7 @@ export default function BusinessReviewsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
                 disabled={currentPage === pagination.totalPages}
-                className="w-8 h-8 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-8 h-8 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center touch-manipulation min-h-[44px]"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
@@ -589,7 +592,7 @@ export default function BusinessReviewsPage() {
 
       {/* Photo Modal - Swiper */}
       {photoModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-2 sm:p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 modal-overlay p-2 sm:p-4">
           <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
             {/* Close Button */}
             <button

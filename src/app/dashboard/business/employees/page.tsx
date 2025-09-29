@@ -648,28 +648,28 @@ export default function BusinessEmployeesPage() {
       </div>
       {/* Create/Edit Modal */}
       {addOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white flex items-center justify-center">
+        <div className="modal-container">
+          <div className="modal-overlay-bg" onClick={() => setAddOpen(false)} />
+          <div className="modal-wrapper">
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <div className="modal-header-icon bg-gradient-to-r from-purple-500 to-purple-600 text-white">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-gray-900">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</div>
-                  <div className="text-xs text-gray-600">Çalışan bilgilerini doldurun</div>
+                  <div className="modal-header-text">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</div>
+                  <div className="modal-header-subtitle">Çalışan bilgilerini doldurun</div>
                 </div>
               </div>
               <button 
                 onClick={() => setAddOpen(false)} 
-                className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                className="modal-close-btn"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
-            <div className="p-4">
-            
-            <div className="space-y-3 sm:space-y-4">
+            <div className="modal-content">
+              <form onSubmit={handleSubmit} className="modal-content-scroll">
                 {/* Profile Image Section */}
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div 
@@ -735,7 +735,7 @@ export default function BusinessEmployeesPage() {
                       value={form.name}
                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       required
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      className="modal-input pl-12"
                       placeholder="Çalışan adını girin"
                       autoComplete="name"
                     />
@@ -755,7 +755,7 @@ export default function BusinessEmployeesPage() {
                       type="email"
                       value={form.email}
                       onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      className="modal-input pl-12"
                       placeholder="E-posta adresi (opsiyonel)"
                       autoComplete="email"
                     />
@@ -775,7 +775,7 @@ export default function BusinessEmployeesPage() {
                       type="tel"
                       value={form.phone}
                       onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
+                      className="modal-input pl-12"
                       placeholder="Telefon numarası (opsiyonel)"
                       autoComplete="tel"
                     />
@@ -1094,8 +1094,6 @@ export default function BusinessEmployeesPage() {
                   </div>
                 )}
 
-              </div>
-              
               {error && (
                 <div className="flex items-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-red-50 text-red-800 text-[10px] sm:text-sm">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -1110,17 +1108,17 @@ export default function BusinessEmployeesPage() {
                 </div>
               )}
               
-              <div className="flex gap-2 pt-2">
+              <div className="modal-footer">
                 <button 
                   type="submit" 
-                  className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px]"
+                  className="modal-btn modal-btn-primary modal-btn-flex"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>{editing ? 'Güncelle' : 'Ekle'}</span>
                 </button>
                 <button 
                   type="button" 
-                  className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-white/80 border border-white/50 text-gray-700 text-xs sm:text-sm font-semibold hover:bg-white/90 active:bg-white transition-colors touch-manipulation min-h-[44px]" 
+                  className="modal-btn modal-btn-secondary modal-btn-flex" 
                   onClick={() => { 
                     setAddOpen(false); 
                     setEditing(false); 
@@ -1150,10 +1148,12 @@ export default function BusinessEmployeesPage() {
                   <span>İptal</span>
                 </button>
               </div>
+            </form>
             </div>
           </div>
         </div>
       )}
+
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400 animate-pulse">
           <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
@@ -1224,19 +1224,6 @@ export default function BusinessEmployeesPage() {
               )}
             </div>
 
-            {/* Detaylar - Mobile Optimized */}
-            <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-gray-600 mb-3 sm:mb-4">
-              <div className="flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <span>{e.email || 'E-posta yok'}</span>
-              </div>
-              {e.phone && (
-                <div className="flex items-center gap-1">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span>{e.phone}</span>
-                </div>
-              )}
-            </div>
 
             {/* Aksiyon Butonları - Mobile Optimized */}
             <div className="grid grid-cols-2 gap-2">
@@ -1284,7 +1271,7 @@ export default function BusinessEmployeesPage() {
       </div>
       {/* Silme Onay Modalı - Mobile Optimized */}
       {deleteId && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 modal-overlay">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
           <div className="relative mx-auto my-6 max-w-sm w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-3 sm:p-4">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -1513,10 +1500,11 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
   };
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50 modal-overlay">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="relative mx-auto my-6 max-w-md w-[94%] max-h-[85vh] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        {/* Modal Header - Fixed */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white flex items-center justify-center">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -1534,15 +1522,17 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
           </button>
         </div>
         
-        {/* Success Message */}
-        {successMessage && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-800 text-xs rounded-xl mb-4">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="font-medium">{successMessage}</span>
-          </div>
-        )}
-        
-        <div className="space-y-4">
+        {/* Modal Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-800 text-xs rounded-xl mb-4">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <span className="font-medium">{successMessage}</span>
+            </div>
+          )}
+          
+          <div className="space-y-4">
           {/* Atanmış Hizmetler */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -1611,6 +1601,7 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
                 <p className="text-xs text-gray-500">Tüm hizmetler atanmış</p>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
@@ -1722,7 +1713,7 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
   };
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50 modal-overlay">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4 max-h-[90vh] overflow-y-auto">
         
@@ -1941,7 +1932,7 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
 
         {/* Silme Onay Modalı */}
         {deleteAvailabilityId && (
-          <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 z-50 modal-overlay">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div className="relative mx-auto my-6 max-w-sm w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4">
               <div className="flex items-center justify-between mb-4">

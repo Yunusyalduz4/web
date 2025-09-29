@@ -539,10 +539,25 @@ export default function BusinessProfilePage() {
 
       {/* Şifre Değiştirme Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white rounded-2xl p-4 sm:p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Şifre Değiştir</h3>
+        <div className="modal-container">
+          <div className="modal-overlay-bg" onClick={() => {
+            setShowPasswordModal(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setError('');
+          }} />
+          <div className="modal-wrapper">
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <div className="modal-header-icon bg-gradient-to-r from-red-500 to-red-600 text-white">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15l-3-3h6l-3 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div className="modal-header-text">Şifre Değiştir</div>
+                  <div className="modal-header-subtitle">Güvenlik ayarları</div>
+                </div>
+              </div>
               <button
                 onClick={() => {
                   setShowPasswordModal(false);
@@ -551,22 +566,22 @@ export default function BusinessProfilePage() {
                   setConfirmPassword('');
                   setError('');
                 }}
-                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                className="modal-close-btn"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
             
-            <div className="space-y-4">
+            <div className="modal-content">
+              <form onSubmit={handlePasswordChange} className="modal-content-scroll">
               <div>
                 <label className="block text-sm text-gray-600 mb-2 font-medium">Mevcut Şifre</label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
-                  className="w-full rounded-lg px-3 py-3 text-sm bg-white border border-slate-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-colors"
+                  className="modal-input"
                   placeholder="Mevcut şifrenizi girin"
-                  style={{ fontSize: '16px' }}
                 />
               </div>
               
@@ -576,9 +591,8 @@ export default function BusinessProfilePage() {
                   type="password"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full rounded-lg px-3 py-3 text-sm bg-white border border-slate-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-colors"
+                  className="modal-input"
                   placeholder="Yeni şifrenizi girin"
-                  style={{ fontSize: '16px' }}
                 />
               </div>
               
@@ -588,9 +602,8 @@ export default function BusinessProfilePage() {
                   type="password"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-lg px-3 py-3 text-sm bg-white border border-slate-200 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-colors"
+                  className="modal-input"
                   placeholder="Yeni şifrenizi tekrar girin"
-                  style={{ fontSize: '16px' }}
                 />
               </div>
               
@@ -601,8 +614,9 @@ export default function BusinessProfilePage() {
                 </div>
               )}
               
-              <div className="flex gap-3 pt-2">
+              <div className="modal-footer">
                 <button
+                  type="button"
                   onClick={() => {
                     setShowPasswordModal(false);
                     setCurrentPassword('');
@@ -610,18 +624,19 @@ export default function BusinessProfilePage() {
                     setConfirmPassword('');
                     setError('');
                   }}
-                  className="flex-1 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition-colors"
+                  className="modal-btn modal-btn-secondary modal-btn-flex"
                 >
                   İptal
                 </button>
                 <button
-                  onClick={handlePasswordChange}
-                  className="flex-1 py-3 rounded-lg bg-gradient-to-r from-fuchsia-500 to-fuchsia-600 hover:from-fuchsia-600 hover:to-fuchsia-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                  type="submit"
+                  className="modal-btn modal-btn-primary modal-btn-flex"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Değiştir
                 </button>
               </div>
+              </form>
             </div>
           </div>
         </div>

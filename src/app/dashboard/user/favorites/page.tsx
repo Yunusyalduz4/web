@@ -11,6 +11,7 @@ export default function FavoritesPage() {
   const { data: favorites, isLoading } = trpc.favorites.list.useQuery();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'favorites'>('recent');
+  const [searchOpen, setSearchOpen] = useState(false);
   
 
   // WebSocket entegrasyonu
@@ -62,11 +63,27 @@ export default function FavoritesPage() {
 
       {/* Header - Mobile Optimized */}
       <div className="mt-2">
-        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">Favoriler</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent">Favoriler</h1>
+          </div>
+          
+          {/* Search Toggle Button */}
+          <button
+            onClick={() => setSearchOpen(!searchOpen)}
+            className="ml-4 w-10 h-10 rounded-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-manipulation"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+              <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </button>
+        </div>
         
-        
-        {/* Search and Sort - Mobile Optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-4">
+        {/* Search Bar - Animated */}
+        <div className={`mt-4 transition-all duration-300 ease-in-out overflow-hidden ${
+          searchOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+        }`}>
           <div className="flex items-center gap-2 border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-2xl px-3 sm:px-4 py-3 shadow">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-600 shrink-0"><path d="M15.5 15.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="2"/></svg>
             <input
@@ -76,6 +93,10 @@ export default function FavoritesPage() {
               className="flex-1 outline-none text-sm bg-transparent touch-manipulation min-h-[44px]"
             />
           </div>
+        </div>
+        
+        {/* Sort - Always Visible */}
+        <div className="mt-4">
           <div className="flex items-center gap-2 border border-white/40 bg-white/60 backdrop-blur-md text-gray-900 rounded-2xl px-3 sm:px-4 py-3 shadow">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-600 shrink-0"><path d="M4 7h12M4 12h8M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             <select 

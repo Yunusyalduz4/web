@@ -123,7 +123,7 @@ export default function BusinessBottomNav() {
   });
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
       {/* Background with blur effect */}
       <div className="absolute inset-0 bg-white/80 backdrop-blur-md border-t border-white/40" />
       

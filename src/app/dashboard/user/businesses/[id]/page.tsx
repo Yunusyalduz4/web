@@ -121,6 +121,7 @@ export default function BusinessDetailPage() {
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [photoSwiper, setPhotoSwiper] = useState<any>(null);
+  const [currentReview, setCurrentReview] = useState<any>(null);
   
   // Employee photo modal state'leri
   const [employeePhotoModalOpen, setEmployeePhotoModalOpen] = useState(false);
@@ -746,37 +747,39 @@ export default function BusinessDetailPage() {
         </div>
 
         {/* Filtreleme Seçenekleri - Mobile Optimized */}
-        <div className="mb-3 flex flex-col gap-2">
-          {/* Puan Filtresi */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-700">Min Puan:</span>
-            <select 
-              value={minRating}
-              className="px-2 py-2 border border-white/40 rounded-lg bg-white/60 text-xs flex-1 touch-manipulation min-h-[44px]"
-              onChange={(e) => setMinRating(Number(e.target.value))}
-            >
-              <option value={0}>Tümü</option>
-              <option value={3}>3+</option>
-              <option value={4}>4+</option>
-              <option value={4.5}>4.5+</option>
-            </select>
-          </div>
+        {!photoSliderOpen && (
+          <div className="mb-3 flex flex-col gap-2">
+            {/* Puan Filtresi */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-700">Min Puan:</span>
+              <select 
+                value={minRating}
+                className="px-2 py-2 border border-white/40 rounded-lg bg-white/60 text-xs flex-1 touch-manipulation min-h-[44px]"
+                onChange={(e) => setMinRating(Number(e.target.value))}
+              >
+                <option value={0}>Tümü</option>
+                <option value={3}>3+</option>
+                <option value={4}>4+</option>
+                <option value={4.5}>4.5+</option>
+              </select>
+            </div>
 
-          {/* Tarih Filtresi */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-700">Sıralama:</span>
-            <select 
-              value={sortBy}
-              className="px-2 py-2 border border-white/40 rounded-lg bg-white/60 text-xs flex-1 touch-manipulation min-h-[44px]"
-              onChange={(e) => setSortBy(e.target.value as any)}
-            >
-              <option value="newest">En Yeni</option>
-              <option value="oldest">En Eski</option>
-              <option value="highest">En Yüksek Puan</option>
-              <option value="lowest">En Düşük Puan</option>
-            </select>
+            {/* Tarih Filtresi */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-700">Sıralama:</span>
+              <select 
+                value={sortBy}
+                className="px-2 py-2 border border-white/40 rounded-lg bg-white/60 text-xs flex-1 touch-manipulation min-h-[44px]"
+                onChange={(e) => setSortBy(e.target.value as any)}
+              >
+                <option value="newest">En Yeni</option>
+                <option value="oldest">En Eski</option>
+                <option value="highest">En Yüksek Puan</option>
+                <option value="lowest">En Düşük Puan</option>
+              </select>
+            </div>
           </div>
-        </div>
+        )}
         
 
         
@@ -845,17 +848,18 @@ export default function BusinessDetailPage() {
                       {review.photos.slice(0, 3).map((photo: string, index: number) => (
                         <div
                           key={index}
-                          className="relative aspect-square cursor-pointer group"
+                          className="relative aspect-square cursor-pointer group flex items-center justify-center bg-gray-100 rounded-lg"
                           onClick={() => {
                             setCurrentPhotos(review.photos);
                             setCurrentPhotoIndex(index);
+                            setCurrentReview(review);
                             setPhotoSliderOpen(true);
                           }}
                         >
                           <img
                             src={photo}
                             alt={`Review photo ${index + 1}`}
-                            className="w-full h-full object-cover rounded-lg hover:opacity-80 transition-opacity"
+                            className="max-w-full max-h-full object-contain rounded-lg hover:opacity-80 transition-opacity"
                           />
                           {index === 2 && review.photos.length > 3 && (
                             <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
@@ -1087,17 +1091,18 @@ export default function BusinessDetailPage() {
                       {review.photos.slice(0, 5).map((photo: string, index: number) => (
                         <div
                           key={index}
-                          className="relative aspect-square cursor-pointer group"
+                          className="relative aspect-square cursor-pointer group flex items-center justify-center bg-gray-100 rounded-lg"
                           onClick={() => {
                             setCurrentPhotos(review.photos);
                             setCurrentPhotoIndex(index);
+                            setCurrentReview(review);
                             setPhotoSliderOpen(true);
                           }}
                         >
                           <img
                             src={photo}
                             alt={`Review photo ${index + 1}`}
-                            className="w-full h-full object-cover rounded-lg hover:opacity-80 transition-opacity"
+                            className="max-w-full max-h-full object-contain rounded-lg hover:opacity-80 transition-opacity"
                           />
                           {index === 4 && review.photos.length > 5 && (
                             <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
@@ -1150,7 +1155,7 @@ export default function BusinessDetailPage() {
                 <div className="text-xs text-gray-600 truncate">{minServicePrice!=null? `Başlangıç ₺${minServicePrice}` : 'Hizmetleri görüntüle'}</div>
               </div>
             </div>
-            {Array.isArray(services) && services.length > 0 && (
+            {Array.isArray(services) && services.length > 0 && !photoSliderOpen && (
             <button
               disabled={bookingLoading}
               onClick={async () => {
@@ -1276,7 +1281,7 @@ export default function BusinessDetailPage() {
         {/* Photo Counter */}
         <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-2 rounded-lg">
           <div className="text-sm font-medium">{currentPhotoIndex + 1} / {currentPhotos.length}</div>
-          <div className="text-xs opacity-80">İşletme Fotoğrafı</div>
+          <div className="text-xs opacity-80"></div>
         </div>
 
         {/* Full Screen Photo Container */}
@@ -1303,11 +1308,11 @@ export default function BusinessDetailPage() {
           >
             {currentPhotos.map((photo, index) => (
               <SwiperSlide key={index}>
-                <div className="w-full h-full flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center p-4">
                   <img
                     src={photo}
-                    alt={`İşletme Fotoğrafı ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    alt={` ${index + 1}`}
+                    className="max-w-full max-h-full object-contain"
                   />
                 </div>
               </SwiperSlide>
@@ -1356,6 +1361,41 @@ export default function BusinessDetailPage() {
             ))}
           </div>
         )}
+
+        {/* Review Info - Bottom */}
+        {currentReview && (
+          <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4">
+            <div className="text-white">
+              {/* Customer Name and Rating */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium">{currentReview.user_name?.charAt(0) || '👤'}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{currentReview.user_name || 'Müşteri'}</div>
+                    <div className="text-xs opacity-80">
+                      {new Date(currentReview.created_at).toLocaleDateString('tr-TR')}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <span className="text-sm font-medium">{currentReview.rating}</span>
+                </div>
+              </div>
+              
+              {/* Review Comment */}
+              {currentReview.comment && (
+                <div className="text-sm opacity-90 line-clamp-2">
+                  "{currentReview.comment}"
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )}
 
@@ -1394,11 +1434,11 @@ export default function BusinessDetailPage() {
           </div>
           
           {/* Photo */}
-          <div className="bg-white rounded-xl overflow-hidden shadow-2xl">
+          <div className="bg-white rounded-xl overflow-hidden shadow-2xl flex items-center justify-center p-4">
             <img
               src={selectedEmployeePhoto}
               alt={selectedEmployeeName}
-              className="w-full h-auto max-h-[80vh] object-contain"
+              className="max-w-full max-h-[80vh] object-contain"
             />
           </div>
         </div>

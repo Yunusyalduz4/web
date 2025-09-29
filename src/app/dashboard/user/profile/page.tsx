@@ -1042,8 +1042,9 @@ export default function UserProfilePage() {
 
       {/* Photo Modal - Swiper - Mobile Optimized */}
       {photoModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999] p-2 sm:p-4">
-          <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="modal-container">
+          <div className="modal-overlay-bg" onClick={() => setPhotoModalOpen(false)} />
+          <div className="modal-wrapper">
             {/* Close Button - Mobile Optimized */}
             <button
               onClick={() => setPhotoModalOpen(false)}

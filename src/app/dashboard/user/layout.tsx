@@ -39,13 +39,12 @@ export default function UserLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       <PullToRefreshWrapper 
         onRefresh={handleRefresh} 
-        threshold={70}
-        resistance={0.7}
+        threshold={50}
+        resistance={0.8}
         showVisualIndicator={true}
-        refreshColor="blue"
       >
         <main className="pb-20">
           {children}

@@ -60,6 +60,13 @@ export function usePullToRefresh({
     const handleTouchStart = (e: TouchEvent) => {
       if (!isAtTop.current || isRefreshing) return;
       
+      // Input alanlarında pull-to-refresh'ı devre dışı bırak
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || 
+          target.closest('input') || target.closest('textarea') || target.closest('select')) {
+        return;
+      }
+      
       startY.current = e.touches[0].clientY;
       isPointerDown.current = true;
       setIsPulling(true);
@@ -67,6 +74,13 @@ export function usePullToRefresh({
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!isPointerDown.current || !isAtTop.current) return;
+      
+      // Input alanlarında pull-to-refresh'ı devre dışı bırak
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || 
+          target.closest('input') || target.closest('textarea') || target.closest('select')) {
+        return;
+      }
       
       const clientY = e.touches[0].clientY;
       const deltaY = Math.max(0, clientY - startY.current);
@@ -112,6 +126,13 @@ export function usePullToRefresh({
     // Mouse events for desktop
     const handleMouseDown = (e: MouseEvent) => {
       if (e.button === 0 && isAtTop.current && !isRefreshing) {
+        // Input alanlarında pull-to-refresh'ı devre dışı bırak
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || 
+            target.closest('input') || target.closest('textarea') || target.closest('select')) {
+          return;
+        }
+        
         startY.current = e.clientY;
         isPointerDown.current = true;
         setIsPulling(true);
@@ -121,6 +142,13 @@ export function usePullToRefresh({
 
     const handleMouseMove = (e: MouseEvent) => {
       if (isPointerDown.current && isAtTop.current) {
+        // Input alanlarında pull-to-refresh'ı devre dışı bırak
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || 
+            target.closest('input') || target.closest('textarea') || target.closest('select')) {
+          return;
+        }
+        
         const deltaY = Math.max(0, e.clientY - startY.current);
         const appliedResistance = Math.min(deltaY * (1 - resistance), threshold * 2);
         

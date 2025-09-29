@@ -154,6 +154,13 @@ export default function UserDashboard() {
     });
   };
 
+  const handleRescheduleClick = (appointment: any) => {
+    setRescheduleModal({
+      isOpen: true,
+      appointment: appointment
+    });
+  };
+
   const handleReviewSubmitted = () => {
     // Review modal'ı kapat
     setReviewModal({
@@ -164,38 +171,8 @@ export default function UserDashboard() {
       employeeName: ''
     });
     
-    // Sayfayı yenile ve review verilerini güncelle
+    // Sayfayı yenile ve randevu verilerini güncelle
     router.refresh();
-  };
-
-  const handleRescheduleClick = (appointment: any) => {
-    // Bu randevu için erteleme isteği var mı kontrol et
-    const existingRequest = pendingRescheduleRequests?.find((req: any) => req.appointment_id === appointment.id);
-    
-    console.log('🔍 Reschedule Click Debug:', {
-      appointmentId: appointment.id,
-      pendingRescheduleRequests: pendingRescheduleRequests,
-      foundRequest: existingRequest
-    });
-    
-    if (existingRequest) {
-      // Eğer erteleme isteği varsa, mevcut istek bilgisini göster
-      console.log('✅ Existing request found, showing info');
-      setRescheduleModal({
-        isOpen: true,
-        appointment: {
-          ...appointment,
-          existingRescheduleRequest: existingRequest
-        }
-      });
-    } else {
-      // Eğer erteleme isteği yoksa, normal modal aç
-      console.log('❌ No existing request, opening form');
-      setRescheduleModal({
-        isOpen: true,
-        appointment: appointment
-      });
-    }
   };
 
   const handleRescheduleSubmitted = () => {
@@ -210,12 +187,12 @@ export default function UserDashboard() {
   };
 
   return (
-    <main className="relative max-w-2xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+    <main className="relative max-w-md mx-auto p-3 pb-20 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
       {/* Top Bar - Mobile Optimized */}
-      <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
+      <div className="sticky top-0 z-30 -mx-3 px-3 pt-2 pb-2 bg-white/60 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none truncate">randevuo</div>
+            <div className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none truncate">randevuo</div>
             {/* WebSocket Durumu */}
             <div className="flex items-center gap-1">
               {isConnecting && (
@@ -242,7 +219,6 @@ export default function UserDashboard() {
               }}
             >
               <span className="text-sm sm:text-base">🕓 Geçmiş</span>
-
             </button>
           </div>
         </div>
@@ -251,6 +227,7 @@ export default function UserDashboard() {
       <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 sm:mt-4 mb-4 sm:mb-6 text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none animate-soft-in px-2">
         Merhaba, {profile?.name} 👋
       </h1>
+      
       {/* Bekleyen Erteleme İstekleri */}
       {pendingRescheduleRequests && pendingRescheduleRequests.length > 0 && (
         <div className="mb-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4">
@@ -297,17 +274,15 @@ export default function UserDashboard() {
                   <button
                     onClick={() => approveRescheduleMutation.mutate({ requestId: String(request.id), action: 'approve' })}
                     disabled={approveRescheduleMutation.isPending || rejectRescheduleMutation.isPending}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-600 active:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 active:bg-green-800 transition-all touch-manipulation min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Onayla
                   </button>
                   <button
                     onClick={() => rejectRescheduleMutation.mutate({ requestId: String(request.id), action: 'reject' })}
                     disabled={approveRescheduleMutation.isPending || rejectRescheduleMutation.isPending}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 active:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 active:bg-red-800 transition-all touch-manipulation min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Reddet
                   </button>
                 </div>
@@ -317,69 +292,43 @@ export default function UserDashboard() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-3 sm:mb-4 px-1">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Randevularım</h2>
-      </div>
-      <div className="space-y-3">
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400 animate-pulse">
-            <span className="text-5xl mb-2">⏳</span>
-            <span className="text-lg">Randevular yükleniyor...</span>
-          </div>
-        )}
-        {!isLoading && activeAppointments.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-500 animate-soft-in">
-            <span className="text-5xl mb-2">📭</span>
-            <span className="text-lg">Aktif randevunuz yok.</span>
-            <span className="text-sm mt-1">Hemen bir işletmeden randevu alabilirsiniz!</span>
-          </div>
-        )}
+      {/* Randevu Kartları */}
+      <div className="space-y-4">
         {activeAppointments.map((a: any) => (
-          <div
-            key={a.id}
-            className="bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow-sm hover:shadow-md transition-all p-3 sm:p-4 relative"
+          <div 
+            key={a.id} 
+            className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md shadow-sm hover:shadow-md transition-all p-3 sm:p-4 relative"
           >
             {/* Degrade Border */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-red-500 to-white rounded-l-xl"></div>
-            {/* Header */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-red-500 to-white rounded-l-2xl"></div>
+            
             <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-sm sm:text-base font-semibold text-gray-900 truncate">{a.business_name || 'Bilinmiyor'}</div>
-                <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1 mt-1" suppressHydrationWarning>
-                  <span>📅</span>
-                  <span>
-                    {typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(a.appointment_datetime))}
-                  </span>
-                  <span className="mx-1 text-gray-400">•</span>
-                  <span>🕐</span>
-                  <span>
-                    {typeof window === 'undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(a.appointment_datetime))}
-                  </span>
-                </div>
-              </div>
-              <span className={`shrink-0 px-2 py-1 rounded-full text-xs border ${
-                a.status === 'pending' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
-                a.status === 'confirmed' ? 'bg-green-50 text-green-800 border-green-200' :
-                a.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-                'bg-blue-50 text-blue-800 border-blue-200'
+              <div className="font-medium text-gray-900 truncate mr-2 text-sm sm:text-base">{a.business_name || 'Bilinmiyor'}</div>
+              <span className={`px-2 py-1 rounded-full text-xs shrink-0 ${
+                a.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                a.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                a.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-700'
               }`}>
-                {a.status === 'pending' && 'Bekliyor'}
-                {a.status === 'confirmed' && 'Onaylandı'}
-                {a.status === 'cancelled' && 'İptal'}
-                {a.status === 'completed' && 'Tamamlandı'}
+                {a.status === 'pending' ? 'Bekliyor' : 
+                 a.status === 'confirmed' ? 'Onaylandı' : 
+                 a.status === 'completed' ? 'Tamamlandı' : 
+                 a.status === 'cancelled' ? 'İptal Edildi' : a.status}
               </span>
             </div>
-
-            {/* Details */}
-            <div className="space-y-2 mb-3">
-              <div className="text-sm text-gray-800 truncate">
+            
+            <div className="text-xs sm:text-sm text-gray-600 mb-2" suppressHydrationWarning>
+              {typeof window==='undefined' ? '' : new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(a.appointment_datetime))}
+            </div>
+            
+            <div className="space-y-1 mb-3">
+              <div className="text-xs sm:text-sm text-gray-800 truncate">
                 <span className="font-medium">Hizmet:</span> {a.service_names?.length ? a.service_names.join(', ') : '—'}
               </div>
-              <div className="text-sm text-gray-800 truncate">
+              <div className="text-xs sm:text-sm text-gray-800 truncate">
                 <span className="font-medium">Çalışan:</span> {a.employee_names?.length ? a.employee_names.join(', ') : '—'}
               </div>
             </div>
-
+            
             {/* Actions - Mobile Optimized */}
             <div className="flex gap-3 sm:gap-6">
               {a.status === 'pending' && (
@@ -425,6 +374,7 @@ export default function UserDashboard() {
           </div>
         ))}
       </div>
+      
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         :root { 
@@ -507,117 +457,112 @@ export default function UserDashboard() {
 
       {/* Modern History Modal */}
       {historyOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pb-20 sm:pb-0">
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setHistoryOpen(false)} />
-          
-          {/* Modal */}
-          <div className="relative w-full sm:max-w-2xl h-[85vh] sm:h-[80vh] bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/40">
+        <div className="modal-container">
+          <div className="modal-overlay-bg" onClick={() => setHistoryOpen(false)} />
+          <div className="modal-wrapper">
             {/* Header */}
-            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-white/40">
-              {/* Mobile drag handle */}
-              <div className="py-2 flex items-center justify-center sm:hidden">
-                <div className="w-12 h-1.5 rounded-full bg-gray-300" />
-              </div>
-              
-              <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-rose-500 to-fuchsia-500 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
-                      <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">Tüm Randevular</h3>
-                </div>
-                
-                <button 
-                  className="w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center transition-all shadow-sm"
-                  onClick={() => setHistoryOpen(false)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <div className="modal-header-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                </button>
-              </div>
-
-              {/* Filters */}
-              <div className="px-4 sm:px-6 pb-4 space-y-4">
-                {/* Search */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-600">
-                      <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-                      <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <label className="text-sm font-semibold text-gray-900">Arama</label>
-                  </div>
-                  <div className="flex items-center gap-2 border-2 border-gray-200 rounded-xl px-4 py-3 bg-white focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-200 transition-all">
-                    <input
-                      className="w-full outline-none text-sm text-gray-900 bg-transparent placeholder-gray-500"
-                      placeholder="İşletme, hizmet, çalışan ara..."
-                      value={historySearch}
-                      onChange={(e) => setHistorySearch(e.target.value)}
-                    />
-                  </div>
                 </div>
-                
-                {/* Date and Status */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="modal-header-text">
+                  <h2 className="modal-header-title">Tüm Randevular</h2>
+                  <p className="modal-header-subtitle">Randevu geçmişiniz</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setHistoryOpen(false)}
+                className="modal-close-btn"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="modal-content">
+              <div className="modal-content-scroll">
+                {/* Filters */}
+                <div className="space-y-4">
+                  {/* Search */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500">
-                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-600">
+                        <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                        <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
                       </svg>
-                      <label className="text-sm font-semibold text-gray-900">Tarih</label>
+                      <label className="text-sm font-semibold text-gray-900">Arama</label>
                     </div>
-                    <input
-                      type="date"
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all"
-                      value={historyDate}
-                      onChange={(e) => setHistoryDate(e.target.value)}
-                    />
+                    <div className="flex items-center gap-2 border-2 border-gray-200 rounded-xl px-4 py-3 bg-white focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-200 transition-all">
+                      <input
+                        className="w-full outline-none text-sm text-gray-900 bg-transparent placeholder-gray-500"
+                        placeholder="İşletme, hizmet, çalışan ara..."
+                        value={historySearch}
+                        onChange={(e) => setHistorySearch(e.target.value)}
+                      />
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-green-500">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <label className="text-sm font-semibold text-gray-900">Durum</label>
+                  {/* Date and Status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+                          <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <label className="text-sm font-semibold text-gray-900">Tarih</label>
+                      </div>
+                      <input
+                        type="date"
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all"
+                        value={historyDate}
+                        onChange={(e) => setHistoryDate(e.target.value)}
+                      />
                     </div>
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                      {(['all','pending','confirmed','completed','cancelled'] as const).map(st => (
-                        <button
-                          key={st}
-                          onClick={() => setHistoryStatus(st)}
-                          className={`shrink-0 px-3 py-2 rounded-xl text-xs font-medium border-2 transition-all ${
-                            historyStatus===st? 
-                            'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent shadow-md' :
-                            'bg-white text-gray-700 border-gray-200 hover:border-rose-300 hover:bg-rose-50'
-                          }`}
-                        >
-                          {st === 'all' ? 'Tümü' : st === 'pending' ? 'Bekliyor' : st === 'confirmed' ? 'Onaylandı' : st === 'completed' ? 'Tamamlandı' : 'İptal'}
-                        </button>
-                      ))}
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-green-500">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <label className="text-sm font-semibold text-gray-900">Durum</label>
+                      </div>
+                      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                        {(['all','pending','confirmed','completed','cancelled'] as const).map(st => (
+                          <button
+                            key={st}
+                            onClick={() => setHistoryStatus(st)}
+                            className={`shrink-0 px-3 py-2 rounded-xl text-xs font-medium border-2 transition-all ${
+                              historyStatus===st? 
+                              'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white border-transparent shadow-md' :
+                              'bg-white text-gray-700 border-gray-200 hover:border-rose-300 hover:bg-rose-50'
+                            }`}
+                          >
+                            {st === 'all' ? 'Tümü' : st === 'pending' ? 'Bekliyor' : st === 'confirmed' ? 'Onaylandı' : st === 'completed' ? 'Tamamlandı' : 'İptal'}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  
+                  {/* Clear Filters */}
+                  {(historySearch||historyDate||historyStatus!=='all') && (
+                    <button 
+                      onClick={() => { setHistorySearch(''); setHistoryDate(''); setHistoryStatus('all'); }} 
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all font-medium"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-rose-600">
+                        <path d="M3 6h18M8 12h8M5 18h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="18" cy="6" r="3" fill="currentColor"/>
+                        <circle cx="6" cy="12" r="3" fill="currentColor"/>
+                        <circle cx="18" cy="18" r="3" fill="currentColor"/>
+                      </svg>
+                      Filtreleri Temizle
+                    </button>
+                  )}
                 </div>
-                
-                {/* Clear Filters */}
-                {(historySearch||historyDate||historyStatus!=='all') && (
-                  <button 
-                    onClick={() => { setHistorySearch(''); setHistoryDate(''); setHistoryStatus('all'); }} 
-                    className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all font-medium"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-rose-600">
-                      <path d="M3 6h18M8 12h8M5 18h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="18" cy="6" r="3" fill="currentColor"/>
-                      <circle cx="6" cy="12" r="3" fill="currentColor"/>
-                      <circle cx="18" cy="18" r="3" fill="currentColor"/>
-                    </svg>
-                    Filtreleri Temizle
-                  </button>
-                )}
               </div>
             </div>
 
@@ -700,4 +645,4 @@ export default function UserDashboard() {
       {/* Bottom nav, layout üzerinden gelir */}
     </main>
   );
-} 
+}
