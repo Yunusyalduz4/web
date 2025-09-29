@@ -610,6 +610,69 @@ export const adminRouter = t.router({
     `);
     return res.rows;
   }),
+
+  // Recalculate all business ratings
+  recalculateBusinessRatings: t.procedure.use(isAdmin)
+    .mutation(async () => {
+      // Get all businesses
+      const businessesRes = await pool.query('SELECT id FROM businesses');
+      const businesses = businessesRes.rows;
+
+      // Recalculate ratings for each business
+      for (const business of businesses) {
+        try {
+          // Calculate overall ratings - only approved reviews
+          const overallResult = await pool.query(
+            `SELECT 
+               AVG(service_rating) as avg_service,
+               AVG(employee_rating) as avg_employee,
+               COUNT(*) as total_reviews
+             FROM reviews 
+             WHERE business_id = $1 AND is_approved = true`,
+            [business.id]
+          );
+
+          // Calculate last 6 months rating - only approved reviews
+          const last6MonthsResult = await pool.query(
+            `SELECT AVG((service_rating + employee_rating) / 2.0) as last_6_months
+             FROM reviews 
+             WHERE business_id = $1 
+             AND is_approved = true
+             AND created_at >= NOW() - INTERVAL '6 months'`,
+            [business.id]
+          );
+
+          const overall = overallResult.rows[0];
+          const last6Months = last6MonthsResult.rows[0];
+
+          // Upsert business ratings
+          await pool.query(
+            `INSERT INTO business_ratings (business_id, average_service_rating, average_employee_rating, overall_rating, total_reviews, last_6_months_rating)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (business_id) 
+             DO UPDATE SET 
+               average_service_rating = EXCLUDED.average_service_rating,
+               average_employee_rating = EXCLUDED.average_employee_rating,
+               overall_rating = EXCLUDED.overall_rating,
+               total_reviews = EXCLUDED.total_reviews,
+               last_6_months_rating = EXCLUDED.last_6_months_rating,
+               last_updated = NOW()`,
+            [
+              business.id,
+              parseFloat(overall.avg_service || 0),
+              parseFloat(overall.avg_employee || 0),
+              parseFloat(((parseFloat(overall.avg_service || 0) + parseFloat(overall.avg_employee || 0)) / 2).toFixed(2)),
+              parseInt(overall.total_reviews || 0),
+              parseFloat(last6Months.last_6_months || 0),
+            ]
+          );
+        } catch (error) {
+          console.error(`Error updating ratings for business ${business.id}:`, error);
+        }
+      }
+
+      return { success: true, message: `Ratings recalculated for ${businesses.length} businesses` };
+    }),
 });
 
 

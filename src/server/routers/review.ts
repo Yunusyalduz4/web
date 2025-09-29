@@ -496,22 +496,23 @@ export const reviewRouter = t.router({
 
 // Helper functions to update cached ratings
 async function updateBusinessRatings(businessId: string) {
-  // Calculate overall ratings
+  // Calculate overall ratings - only approved reviews
   const overallResult = await pool.query(
     `SELECT 
        AVG(service_rating) as avg_service,
        AVG(employee_rating) as avg_employee,
        COUNT(*) as total_reviews
      FROM reviews 
-     WHERE business_id = $1`,
+     WHERE business_id = $1 AND is_approved = true`,
     [businessId]
   );
 
-  // Calculate last 6 months rating
+  // Calculate last 6 months rating - only approved reviews
   const last6MonthsResult = await pool.query(
     `SELECT AVG((service_rating + employee_rating) / 2.0) as last_6_months
      FROM reviews 
      WHERE business_id = $1 
+     AND is_approved = true
      AND created_at >= NOW() - INTERVAL '6 months'`,
     [businessId]
   );

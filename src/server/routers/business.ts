@@ -111,7 +111,10 @@ export const businessRouter = t.router({
       const result = await pool.query(`
         SELECT 
           b.*,
-          COALESCE(br.overall_rating, 0) AS overall_rating,
+          CASE 
+            WHEN br.overall_rating IS NOT NULL AND br.overall_rating > 0 THEN br.overall_rating
+            ELSE NULL
+          END AS overall_rating,
           COALESCE(br.total_reviews, 0) AS total_reviews,
           (
             SELECT COUNT(*)::int 

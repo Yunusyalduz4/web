@@ -194,6 +194,49 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     }
   };
 
+  // Geçmiş saatlerde randevu var mı kontrol et
+  const getPastAppointment = (slotTime: string, date: string) => {
+    const slotStart = new Date(`${date}T${slotTime}:00`);
+    
+    for (const apt of appointments) {
+      // Sadece aktif randevular (pending, confirmed, completed)
+      if (!(apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'completed')) continue;
+
+      // Tarih eşleşmesi
+      const aptStart = new Date(apt.appointment_datetime);
+      const aptDateStr = aptStart.toLocaleDateString('en-CA');
+      if (aptDateStr !== date) continue;
+
+      // Zaman aralığı kontrolü (start <= slot < end)
+      const aptEnd = new Date(aptStart.getTime() + (apt.duration || 60) * 60000);
+      
+      if (aptStart <= slotStart && slotStart < aptEnd) {
+        return apt;
+      }
+    }
+    return null;
+  };
+
+  // Geçmiş randevuya tıklama işlemi
+  const handlePastAppointmentClick = (slotTime: string, date: string) => {
+    const pastAppointment = getPastAppointment(slotTime, date);
+    if (pastAppointment) {
+      const appointmentCard = document.getElementById(`appointment-${pastAppointment.id}`);
+      if (appointmentCard) {
+        appointmentCard.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        setHighlightedAppointmentId(pastAppointment.id);
+
+        setTimeout(() => {
+          setHighlightedAppointmentId(null);
+        }, 1500);
+      }
+    }
+  };
+
   // Dolu slot'a tıklama işlemi
   const handleBusySlotClick = (slotTime: string, date: string) => {
     // Seçilen slot'un Date nesnesini oluştur
@@ -534,7 +577,9 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 key={index}
                 className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
                   slot.isPast
-                    ? 'bg-orange-100 text-orange-600 border border-orange-200'
+                    ? (selectedDate && getPastAppointment(slot.time, selectedDate) 
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 hover:scale-105 cursor-pointer'
+                        : 'bg-orange-100 text-orange-600 border border-orange-200')
                     : slot.status === 'busy'
                     ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 hover:scale-105 cursor-pointer'
                     : slot.status === 'half-busy'
@@ -545,7 +590,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 }`}
                 onClick={
                   slot.isPast 
-                    ? undefined 
+                    ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? () => handlePastAppointmentClick(slot.time, selectedDate) : undefined)
                     : slot.status === 'busy'
                     ? () => handleBusySlotClick(slot.time, selectedDate)
                     : slot.status === 'half-busy' || slot.status === 'available'
@@ -554,7 +599,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 }
                 title={
                   slot.isPast 
-                    ? 'Geçmiş saat' 
+                    ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? 'Geçmiş randevu - Detayını görmek için tıklayın' : 'Geçmiş saat')
                     : slot.status === 'busy'
                     ? 'Randevu detayını görmek için tıklayın'
                     : slot.status === 'half-busy'
@@ -567,7 +612,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 <div className="font-bold">{slot.time}</div>
                 <div className="text-[10px]">
                   {slot.isPast 
-                    ? '⏰ Geçmiş' 
+                    ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? 'Tamamlandı' : '⏰ Geçmiş')
                     : slot.status === 'busy' 
                     ? '🔴 Dolu' 
                     : slot.status === 'half-busy'
@@ -620,10 +665,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                       </span>
                     </div>
                     <div className="text-[11px] text-gray-700">
-                      <div>Müşteri: {apt.user_name || 'Müşteri'}</div>
+                      <div>Müşteri: {apt.user_name || apt.customer_name || 'Müşteri'}</div>
                       <div>Telefon: {apt.user_phone || apt.customer_phone || apt.phone || '—'}</div>
                       <div>Hizmet: {Array.isArray(apt.service_names) ? apt.service_names.join(', ') : '—'}</div>
                       <div>Çalışan: {Array.isArray(apt.employee_names) ? apt.employee_names.join(', ') : '—'}</div>
+                      {apt.notes && (
+                        <div className="mt-1 p-1 bg-blue-50 rounded text-[10px] text-blue-700">
+                          <strong>Not:</strong> {apt.notes}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -664,7 +714,9 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 key={index}
                 className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
                   slot.isPast
-                    ? 'bg-orange-100 text-orange-600 border border-orange-200'
+                    ? (getPastAppointment(slot.time, customDate) 
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 hover:scale-105 cursor-pointer'
+                        : 'bg-orange-100 text-orange-600 border border-orange-200')
                     : slot.status === 'busy'
                     ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 hover:scale-105 cursor-pointer'
                     : slot.status === 'half-busy'
@@ -675,7 +727,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 }`}
                 onClick={
                   slot.isPast 
-                    ? undefined 
+                    ? (getPastAppointment(slot.time, customDate) ? () => handlePastAppointmentClick(slot.time, customDate) : undefined)
                     : slot.status === 'busy'
                     ? () => handleBusySlotClick(slot.time, customDate)
                     : slot.status === 'half-busy' || slot.status === 'available'
@@ -684,7 +736,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 }
                 title={
                   slot.isPast 
-                    ? 'Geçmiş saat' 
+                    ? (getPastAppointment(slot.time, customDate) ? 'Geçmiş randevu - Detayını görmek için tıklayın' : 'Geçmiş saat')
                     : slot.status === 'busy'
                     ? 'Randevu detayını görmek için tıklayın'
                     : slot.status === 'half-busy'
@@ -697,7 +749,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 <div className="font-bold">{slot.time}</div>
                 <div className="text-[10px]">
                   {slot.isPast 
-                    ? '⏰ Geçmiş' 
+                    ? (customDate && getPastAppointment(slot.time, customDate) ? '📅 Tamamlandı' : '⏰ Geçmiş')
                     : slot.status === 'busy' 
                     ? '🔴 Dolu' 
                     : slot.status === 'half-busy'
@@ -751,10 +803,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                       </span>
                     </div>
                     <div className="text-[11px] text-gray-700">
-                      <div>Müşteri: {apt.user_name || 'Müşteri'}</div>
+                      <div>Müşteri: {apt.user_name || apt.customer_name || 'Müşteri'}</div>
                       <div>Telefon: {apt.user_phone || apt.customer_phone || apt.phone || '—'}</div>
                       <div>Hizmet: {Array.isArray(apt.service_names) ? apt.service_names.join(', ') : '—'}</div>
                       <div>Çalışan: {Array.isArray(apt.employee_names) ? apt.employee_names.join(', ') : '—'}</div>
+                      {apt.notes && (
+                        <div className="mt-1 p-1 bg-blue-50 rounded text-[10px] text-blue-700">
+                          <strong>Not:</strong> {apt.notes}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

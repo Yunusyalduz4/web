@@ -64,7 +64,7 @@ export default function UserBusinesses() {
       }
       
       // Rating filter
-      if (minRating > 0 && (b.average_rating || 0) < minRating) {
+      if (minRating > 0 && (!b.overall_rating || b.overall_rating < minRating)) {
         return false;
       }
       
@@ -96,7 +96,14 @@ export default function UserBusinesses() {
     
     // Sort
     if (sortBy === 'rating') {
-      filtered.sort((a: any, b: any) => (b.average_rating || 0) - (a.average_rating || 0));
+      filtered.sort((a: any, b: any) => {
+        // İşletmeleri puanlarına göre sırala, puanı olmayanlar en sonda
+        const aRating = a.overall_rating || 0;
+        const bRating = b.overall_rating || 0;
+        if (a.overall_rating && !b.overall_rating) return -1;
+        if (!a.overall_rating && b.overall_rating) return 1;
+        return bRating - aRating;
+      });
     } else if (sortBy === 'favorites') {
       filtered.sort((a: any, b: any) => (b.favorites_count || 0) - (a.favorites_count || 0));
     } else if (sortBy === 'distance' && userLocation?.latitude && userLocation?.longitude) {
@@ -175,7 +182,7 @@ export default function UserBusinesses() {
       </div>
 
       {/* Header */}
-      <div className="mt-4 sm:mt-6 mb-6 sm:mb-8">
+      <div className="mt-4 sm:mt-0 mb-0 sm:mb-0">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-center bg-gradient-to-r from-rose-600 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent select-none animate-fade-in">
@@ -320,7 +327,7 @@ export default function UserBusinesses() {
 
 
       {/* View Toggle */}
-      <div className="flex items-center justify-center gap-2 mb-6">
+      <div className="flex items-center justify-center gap-2 mb-1">
         <button
           onClick={() => setView('list')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -384,7 +391,7 @@ export default function UserBusinesses() {
                           <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{b.name}</h3>
                           <span className="inline-flex items-center gap-1 text-xs text-gray-700 shrink-0">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                            {b.average_rating && typeof b.average_rating === 'number' ? b.average_rating.toFixed(1) : '—'}
+                            {parseFloat(b.overall_rating || 0).toFixed(1)}
                           </span>
                         </div>
                       </div>
