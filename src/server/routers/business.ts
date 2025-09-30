@@ -79,7 +79,7 @@ export const businessRouter = t.router({
       let paramCount = 0;
 
       // Add distance calculation if user location is provided
-      if (input?.userLatitude && input?.userLongitude) {
+      if (input?.userLatitude && input?.userLongitude && input.userLatitude !== null && input.userLongitude !== null) {
         paramCount += 2;
         distanceCalculation = `, (
           6371 * acos(

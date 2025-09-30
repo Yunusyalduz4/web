@@ -24,6 +24,20 @@ export const userRouter = t.router({
       return result.rows[0];
     }),
 
+  updateUserLocation: t.procedure.use(isAuthed)
+    .input(z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+      address: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await pool.query(
+        `UPDATE users SET latitude = $1, longitude = $2, address = $3, updated_at = NOW() WHERE id = $4 RETURNING latitude, longitude, address`,
+        [input.latitude, input.longitude, input.address, ctx.user.id]
+      );
+      return result.rows[0];
+    }),
+
   // Sadece telefon numarası güncelleme
   updatePhone: t.procedure.use(isAuthed)
     .input(z.object({

@@ -33,7 +33,7 @@ export default function UserBusinesses() {
   const [bookable, setBookable] = useState<'all' | 'yes' | 'no'>('all');
   const [isClient, setIsClient] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [distanceFilterOpen, setDistanceFilterOpen] = useState(false);
+  const [distanceFilterOpen, setDistanceFilterOpen] = useState(true);
 
   // Hydration fix
   useEffect(() => {
@@ -42,10 +42,38 @@ export default function UserBusinesses() {
 
   // Data fetching
   const { data: userLocation } = trpc.user.getUserLocation.useQuery(userId ? { userId } : skipToken);
-  const { data: businesses, isLoading } = trpc.business.getBusinesses.useQuery({
-    userLatitude: userLocation?.latitude,
-    userLongitude: userLocation?.longitude,
+  const updateUserLocation = trpc.user.updateUserLocation.useMutation();
+
+  // Get user location
+  useEffect(() => {
+    if (isClient && !userLocation?.latitude && !userLocation?.longitude) {
+      navigator.geolocation?.getCurrentPosition(
+        async (position) => {
+          try {
+            await updateUserLocation.mutateAsync({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              address: '' // We can get this later with reverse geocoding
+            });
+          } catch (error) {
+            console.error('Error updating user location:', error);
+          }
+        },
+        (error) => {
+          // Location access denied or error
+        }
+      );
+    }
+  }, [isClient, userLocation, updateUserLocation]);
+  
+  const { data: businesses, isLoading, error } = trpc.business.getBusinesses.useQuery({
+    userLatitude: userLocation?.latitude && userLocation.latitude !== null ? userLocation.latitude : undefined,
+    userLongitude: userLocation?.longitude && userLocation.longitude !== null ? userLocation.longitude : undefined,
     maxDistanceKm: maxDistanceKm || undefined
+  }, {
+    enabled: !!userId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Filtered businesses
@@ -119,10 +147,13 @@ export default function UserBusinesses() {
     if (!filteredBusinesses) return filteredBusinesses;
     
     // Distance is now calculated in the backend, so we can use it directly
-    return filteredBusinesses.map((b: any) => ({
+    const result = filteredBusinesses.map((b: any) => ({
       ...b,
       distance: b.distance || null
     }));
+    
+    
+    return result;
   }, [filteredBusinesses]);
 
   // Map markers
@@ -137,6 +168,27 @@ export default function UserBusinesses() {
       color: '#ef476f'
     })) || [];
   }, [businessesWithDistance]);
+
+  // Dynamic map center
+  const mapCenter = useMemo(() => {
+    // If user location is available, use it
+    if (userLocation?.latitude && userLocation?.longitude) {
+      return { lat: userLocation.latitude, lng: userLocation.longitude };
+    }
+    
+    // If we have businesses, calculate center from them
+    if (businessesWithDistance && businessesWithDistance.length > 0) {
+      const validBusinesses = businessesWithDistance.filter(b => b.latitude && b.longitude);
+      if (validBusinesses.length > 0) {
+        const avgLat = validBusinesses.reduce((sum, b) => sum + b.latitude, 0) / validBusinesses.length;
+        const avgLng = validBusinesses.reduce((sum, b) => sum + b.longitude, 0) / validBusinesses.length;
+        return { lat: avgLat, lng: avgLng };
+      }
+    }
+    
+    // Default to Istanbul
+    return { lat: 41.0082, lng: 28.9784 };
+  }, [userLocation, businessesWithDistance]);
 
   const handleMarkerClick = (markerId: string) => {
     router.push(`/dashboard/user/businesses/${markerId}`);
@@ -270,11 +322,11 @@ export default function UserBusinesses() {
                   type="range"
                   min="1"
                   max="50"
-                  value={maxDistanceKm || 25}
+                  value={maxDistanceKm ?? 25}
                   onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                   style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((maxDistanceKm || 25) - 1) * 2.04}%, #e5e7eb ${((maxDistanceKm || 25) - 1) * 2.04}%, #e5e7eb 100%)`
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((maxDistanceKm ?? 25) - 1) * 2.04}%, #e5e7eb ${((maxDistanceKm ?? 25) - 1) * 2.04}%, #e5e7eb 100%)`
                   }}
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -363,6 +415,13 @@ export default function UserBusinesses() {
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
           </div>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500 mx-auto mb-2"></div>
+              <p className="text-gray-600">İşletmeler yükleniyor...</p>
+            </div>
+          </div>
         ) : view === 'list' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {businessesWithDistance?.map((b: any) => (
@@ -402,7 +461,7 @@ export default function UserBusinesses() {
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        {b.distance.toFixed(1)} km
+                        {typeof b.distance === 'number' ? b.distance.toFixed(1) : b.distance} km
                       </span>
                     )}
                   </div>
@@ -457,9 +516,9 @@ export default function UserBusinesses() {
         )}
         
         {isClient && view === 'map' && (
-          <div className="w-full h-[60vh] sm:h-[55vh] min-h-[300px] sm:min-h-[400px] rounded-2xl overflow-hidden animate-fade-in relative">
+          <div className="w-full h-[60vh] sm:h-[55vh] min-h-[300px] sm:min-h-[400px] rounded-2xl overflow-hidden animate-fade-in relative z-0">
             {/* Harita Header */}
-            <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-r from-rose-500/90 via-fuchsia-500/90 to-indigo-500/90 backdrop-blur-md px-4 py-3 rounded-t-2xl">
+            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-r from-rose-500/90 via-fuchsia-500/90 to-indigo-500/90 backdrop-blur-md px-4 py-3 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
@@ -483,8 +542,8 @@ export default function UserBusinesses() {
             {/* Harita Container */}
             <div className="w-full h-full pt-16">
               <Map
-                center={{ lat: 39.9334, lng: 32.8597 }} // Ankara merkez
-                zoom={10}
+                center={mapCenter}
+                zoom={userLocation?.latitude && userLocation?.longitude ? 12 : 10}
                 markers={mapMarkers.map(m => ({ ...m, color: '#ef476f' }))}
                 onMarkerClick={handleMarkerClick}
                 showUserLocation={true}
