@@ -78,6 +78,9 @@ export default function BusinessEmployeesPage() {
   } | null>(null);
   const [isCheckingAccount, setIsCheckingAccount] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showAccountCreation, setShowAccountCreation] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   
   // Hesap kontrolü fonksiyonu
   const handleCheckAccount = async () => {
@@ -621,14 +624,13 @@ export default function BusinessEmployeesPage() {
                 setShowServiceModal(false); 
                 setAddOpen(true); 
               }} 
-              className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-white text-gray-900 text-[10px] sm:text-xs font-semibold shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation min-h-[44px] border-2 border-transparent"
+              className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white text-gray-900 shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation border-2 border-transparent"
               style={{
                 background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
                 border: '2px solid transparent'
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              <span className="hidden xs:inline">Yeni Çalışan</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             </button>
           </div>
         </div>
@@ -646,70 +648,87 @@ export default function BusinessEmployeesPage() {
           </div>
         </div>
       </div>
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Modal - Modern Mobile Design */}
       {addOpen && (
-        <div className="modal-container">
-          <div className="modal-overlay-bg" onClick={() => setAddOpen(false)} />
-          <div className="modal-wrapper">
-            <div className="modal-header">
-              <div className="modal-header-content">
-                <div className="modal-header-icon bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-                <div>
-                  <div className="modal-header-text">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</div>
-                  <div className="modal-header-subtitle">Çalışan bilgilerini doldurun</div>
-                </div>
-              </div>
-              <button 
-                onClick={() => setAddOpen(false)} 
-                className="modal-close-btn"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-            </div>
-            <div className="modal-content">
-              <form onSubmit={handleSubmit} className="modal-content-scroll">
-                {/* Profile Image Section */}
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div 
-                    className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => {
-                      if (form.profileImageUrl) {
-                        setSelectedEmployeePhoto(form.profileImageUrl);
-                        setSelectedEmployeeName(form.name || 'Çalışan');
-                        setEmployeePhotoModalOpen(true);
-                      }
-                    }}
-                  >
-                    {form.profileImageUrl ? (
-                      <img src={form.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-lg">👤</div>
-                    )}
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden animate-slide-up flex flex-col">
+            {/* Modal Header - Gradient */}
+            <div className="sticky top-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.31 0-10 1.66-10 5v3h20v-3c0-3.34-6.69-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-gray-900 mb-1">Profil Fotoğrafı</div>
-                    <div className="flex items-center gap-2">
-                      <label className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-all cursor-pointer">
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
-                        {uploading ? (
-                          <>
-                            <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
-                            <span>Yükleniyor</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                            <span>Yükle</span>
-                          </>
-                        )}
-                      </label>
-                      {form.profileImageUrl && (
-                        <button type="button" className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200 transition-colors" onClick={() => setForm(prev => ({ ...prev, profileImageUrl: null }))}>
-                          Kaldır
-                        </button>
+                  <div>
+                    <h2 className="text-xl font-bold">{editing ? 'Çalışanı Güncelle' : 'Yeni Çalışan Ekle'}</h2>
+                    <p className="text-sm text-white/90">Çalışan bilgilerini doldurun</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setAddOpen(false)} 
+                  className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              <form id="employee-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
+                {/* Profil Fotoğrafı Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm">
+                      📸
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Profil Fotoğrafı</h3>
+                    <span className="text-gray-500 text-sm">(Opsiyonel)</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <div 
+                      className="w-16 h-16 rounded-xl overflow-hidden border-2 border-gray-200 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                      onClick={() => {
+                        if (form.profileImageUrl) {
+                          setSelectedEmployeePhoto(form.profileImageUrl);
+                          setSelectedEmployeeName(form.name || 'Çalışan');
+                          setEmployeePhotoModalOpen(true);
+                        }
+                      }}
+                    >
+                      {form.profileImageUrl ? (
+                        <img src={form.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-2xl">👤</div>
                       )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all cursor-pointer shadow-sm hover:shadow-md">
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleProfileFileSelect(e.target.files[0])} />
+                          {uploading ? (
+                            <>
+                              <span className="inline-block w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
+                              <span>Yükleniyor</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m6-6H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                              <span>Yükle</span>
+                            </>
+                          )}
+                        </label>
+                        {form.profileImageUrl && (
+                          <button type="button" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium hover:from-red-600 hover:to-red-700 transition-all shadow-sm hover:shadow-md" onClick={() => setForm(prev => ({ ...prev, profileImageUrl: null }))}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span>Kaldır</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -721,92 +740,112 @@ export default function BusinessEmployeesPage() {
                   </div>
                 )}
                 
-                {/* Çalışan Adı Input - Login Style */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">Çalışan Adı</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                {/* Temel Bilgiler Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-sm">
+                      👤
                     </div>
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      required
-                      className="modal-input pl-12"
-                      placeholder="Çalışan adını girin"
-                      autoComplete="name"
-                    />
+                    <h3 className="text-lg font-semibold text-gray-900">Temel Bilgiler</h3>
                   </div>
-                </div>
-                
-                {/* E-posta Input - Login Style */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">E-posta</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                      </svg>
+                  
+                  <div className="space-y-4">
+                    {/* Çalışan Adı */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">Çalışan Adı <span className="text-rose-500">*</span></label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          value={form.name}
+                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                          required
+                          className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                          placeholder="Çalışan adını girin"
+                          autoComplete="name"
+                        />
+                      </div>
                     </div>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      className="modal-input pl-12"
-                      placeholder="E-posta adresi (opsiyonel)"
-                      autoComplete="email"
-                    />
-                  </div>
-                </div>
-                
-                {/* Telefon Input - Login Style */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">Telefon</label>
-                  <div className="relative">
+
+                    {/* E-posta */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">E-posta <span className="text-rose-500">*</span></label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                          </svg>
+                        </div>
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                          className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                          placeholder="E-posta adresi (opsiyonel)"
+                          autoComplete="email"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Telefon */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">Telefon</label>
+                      <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </div>
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      className="modal-input pl-12"
-                      placeholder="Telefon numarası (opsiyonel)"
-                      autoComplete="tel"
-                    />
-                  </div>
-                </div>
-                
-                {/* Instagram Input - Login Style */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">Instagram</label>
-                  <div className="relative">
+                        <input
+                          type="tel"
+                          value={form.phone}
+                          onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                          className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                          placeholder="Telefon numarası (opsiyonel)"
+                          autoComplete="tel"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Instagram */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">Instagram</label>
+                      <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
                     </div>
-                    <input
-                      type="url"
-                      value={form.instagram}
-                      onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all duration-200 text-base"
-                      placeholder="https://instagram.com/kullaniciadi (opsiyonel)"
-                      autoComplete="url"
-                    />
+                        <input
+                          type="url"
+                          value={form.instagram}
+                          onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))}
+                          className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                          placeholder="https://instagram.com/kullaniciadi (opsiyonel)"
+                          autoComplete="url"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Hesap Oluşturma Bölümü - Mobile Optimized */}
+                {/* Hesap Oluşturma Section */}
                 {!editing && (
-                  <>
-                    <div className="border-t border-gray-200 pt-3 sm:pt-4">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm">
+                        🔐
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">Hesap Oluşturma</h3>
+                      <span className="text-gray-500 text-sm">(Opsiyonel)</span>
+                    </div>
+                    
+                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                      <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
                           id="createAccount"
@@ -822,9 +861,9 @@ export default function BusinessEmployeesPage() {
                               can_manage_business_settings: false
                             }
                           }))}
-                          className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 touch-manipulation"
+                          className="w-5 h-5 text-purple-600 bg-white border-purple-300 rounded focus:ring-purple-500 focus:ring-2"
                         />
-                        <label htmlFor="createAccount" className="text-xs sm:text-sm font-semibold text-gray-900">
+                        <label htmlFor="createAccount" className="text-sm font-medium text-gray-900 cursor-pointer">
                           Çalışan için hesap oluştur
                         </label>
                       </div>
@@ -957,44 +996,9 @@ export default function BusinessEmployeesPage() {
                           </div>
                         </div>
 
-                        {/* İzinler - Mobile Optimized */}
-                        <div>
-                          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">
-                            Yetkiler
-                          </label>
-                          <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                            {[
-                              { key: 'can_manage_appointments', label: 'Randevu Yönetimi', icon: '📅' },
-                              { key: 'can_view_analytics', label: 'İstatistik Görüntüleme', icon: '📊' },
-                              { key: 'can_manage_services', label: 'Hizmet Yönetimi', icon: '🔧' },
-                              { key: 'can_manage_employees', label: 'Çalışan Yönetimi', icon: '👥' },
-                              { key: 'can_manage_business_settings', label: 'İşletme Ayarları', icon: '⚙️' }
-                            ].map((permission) => (
-                              <div key={permission.key} className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  id={permission.key}
-                                  checked={form.permissions?.[permission.key as keyof typeof form.permissions] || false}
-                                  onChange={e => setForm(f => ({
-                                    ...f,
-                                    permissions: {
-                                      ...(f.permissions || {}),
-                                      [permission.key]: e.target.checked
-                                    }
-                                  }))}
-                                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 touch-manipulation"
-                                />
-                                <label htmlFor={permission.key} className="text-xs sm:text-sm text-gray-700 flex items-center gap-2">
-                                  <span>{permission.icon}</span>
-                                  {permission.label}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
 
                 {/* Düzenleme modunda şifre sıfırlama */}
@@ -1037,9 +1041,15 @@ export default function BusinessEmployeesPage() {
                             </div>
                           ) : (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-                              <p className="text-xs text-green-700">
+                              <p className="text-xs text-green-700 mb-2">
                                 ✅ Bu e-posta adresine kayıtlı hesap yok.
                               </p>
+                              <button
+                                onClick={() => setShowAccountCreation(!showAccountCreation)}
+                                className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs font-medium"
+                              >
+                                {showAccountCreation ? 'Hesap Oluşturmayı Gizle' : 'Hesap Oluştur'}
+                              </button>
                             </div>
                           )}
                         </div>
@@ -1091,6 +1101,87 @@ export default function BusinessEmployeesPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Hesap Oluşturma - Düzenleme Modalında */}
+                    {showAccountCreation && !accountCheck?.hasAccount && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-blue-600">🔐</span>
+                          <span className="text-xs sm:text-sm font-medium text-blue-800">Hesap Oluştur</span>
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-blue-700 mb-3">
+                          Çalışan için hesap oluşturabilirsiniz.
+                        </p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1">
+                              Şifre
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showPassword ? "text" : "password"}
+                                value={form.password || ''}
+                                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                                placeholder="Şifre girin"
+                                className="w-full px-3 py-2 pl-10 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                                  {showPassword ? (
+                                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  ) : (
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  )}
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1">
+                              Şifre Tekrar
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showPasswordConfirm ? "text" : "password"}
+                                value={form.confirmPassword || ''}
+                                onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                                placeholder="Şifreyi tekrar girin"
+                                className="w-full px-3 py-2 pl-10 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                                  {showPasswordConfirm ? (
+                                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  ) : (
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  )}
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1108,17 +1199,14 @@ export default function BusinessEmployeesPage() {
                 </div>
               )}
               
-              <div className="modal-footer">
-                <button 
-                  type="submit" 
-                  className="modal-btn modal-btn-primary modal-btn-flex"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span>{editing ? 'Güncelle' : 'Ekle'}</span>
-                </button>
-                <button 
-                  type="button" 
-                  className="modal-btn modal-btn-secondary modal-btn-flex" 
+            </form>
+            </div>
+
+            {/* Modal Footer - Fixed */}
+            <div className="bg-white border-t border-gray-100 p-4 sm:p-6">
+              <div className="flex gap-3">
+                <button
+                  type="button"
                   onClick={() => { 
                     setAddOpen(false); 
                     setEditing(false); 
@@ -1143,12 +1231,34 @@ export default function BusinessEmployeesPage() {
                     setError(''); 
                     setSuccess(''); 
                   }}
+                  className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span>İptal</span>
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  form="employee-form"
+                  disabled={createEmployee.isPending || updateEmployee.isPending}
+                  className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {createEmployee.isPending || updateEmployee.isPending ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                        <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
+                      </svg>
+                      {editing ? 'Güncelleniyor...' : 'Ekleniyor...'}
+                    </>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                      </svg>
+                      {editing ? 'Güncelle' : 'Ekle'}
+                    </>
+                  )}
                 </button>
               </div>
-            </form>
             </div>
           </div>
         </div>
@@ -1500,59 +1610,69 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
   };
 
   return (
-    <div className="fixed inset-0 z-50 modal-overlay">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mx-auto my-6 max-w-md w-[94%] max-h-[85vh] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Modal Header - Fixed */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden animate-slide-up flex flex-col">
+        {/* Modal Header - Gradient */}
+        <div className="sticky top-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{employee.name}</h2>
+                <p className="text-sm text-white/90">Hizmet Yönetimi</p>
+              </div>
             </div>
-            <div>
-              <div className="text-lg font-bold text-gray-900">{employee.name}</div>
-              <div className="text-xs text-gray-600">Hizmet Yönetimi</div>
-            </div>
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
-          <button 
-            onClick={onClose} 
-            className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
         </div>
         
         {/* Modal Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {/* Success Message */}
           {successMessage && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-800 text-xs rounded-xl mb-4">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div className="flex items-center gap-2 px-4 py-3 bg-green-50 text-green-800 text-sm rounded-xl border border-green-200">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               <span className="font-medium">{successMessage}</span>
             </div>
           )}
           
+          {/* Atanmış Hizmetler Section */}
           <div className="space-y-4">
-          {/* Atanmış Hizmetler */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-sm">
+                ✅
               </div>
-              <h3 className="text-sm font-semibold text-gray-900">Atanmış Hizmetler</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Atanmış Hizmetler</h3>
             </div>
             {employeeServices && employeeServices.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {employeeServices!.map((service: any) => (
-                  <div key={service.id} className="flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{service.name}</p>
-                      <p className="text-xs text-gray-600">₺{service.price} • {service.duration_minutes} dk</p>
+                  <div key={service.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-sm hover:shadow-md transition-all">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-semibold text-gray-900 truncate">{service.name}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-lg">₺{service.price}</span>
+                        <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-lg">{service.duration_minutes} dk</span>
+                      </div>
                     </div>
                     <button 
                       onClick={() => handleRemoveService(service.id)} 
-                      className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition-colors"
+                      className="ml-3 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
                     >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                       Kaldır
                     </button>
                   </div>
@@ -1568,26 +1688,32 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
             )}
           </div>
           
-          {/* Mevcut Hizmetler */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          {/* Mevcut Hizmetler Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm">
+                ➕
               </div>
-              <h3 className="text-sm font-semibold text-gray-900">Mevcut Hizmetler</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Mevcut Hizmetler</h3>
             </div>
             {availableServices.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {availableServices.map((service: any) => (
-                  <div key={service.id} className="flex items-center justify-between p-3 bg-white/80 border border-white/50 rounded-xl">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{service.name}</p>
-                      <p className="text-xs text-gray-600">₺{service.price} • {service.duration_minutes} dk</p>
+                  <div key={service.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm hover:shadow-md transition-all">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-semibold text-gray-900 truncate">{service.name}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-lg">₺{service.price}</span>
+                        <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-lg">{service.duration_minutes} dk</span>
+                      </div>
                     </div>
                     <button 
                       onClick={() => handleAssignService(service.id)} 
-                      className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600 transition-colors"
+                      className="ml-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
                     >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
                       Ata
                     </button>
                   </div>
@@ -1601,7 +1727,6 @@ function EmployeeServiceModal({ employee, services, onClose, onAssign, onRemove 
                 <p className="text-xs text-gray-500">Tüm hizmetler atanmış</p>
               </div>
             )}
-          </div>
           </div>
         </div>
       </div>
@@ -1713,45 +1838,58 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
   };
 
   return (
-    <div className="fixed inset-0 z-50 modal-overlay">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mx-auto my-6 max-w-md w-[94%] bg-white/90 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl p-4 max-h-[90vh] overflow-y-auto">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden animate-slide-up flex flex-col">
+        {/* Modal Header - Gradient */}
+        <div className="sticky top-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path d="M12 8v5l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{employee.name}</h2>
+                <p className="text-sm text-white/90">Müsaitlik Yönetimi</p>
+              </div>
             </div>
-            <div>
-              <div className="text-lg font-bold text-gray-900">{employee.name}</div>
-              <div className="text-xs text-gray-600">Müsaitlik Yönetimi</div>
-            </div>
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
-          <button 
-            onClick={onClose} 
-            className="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mb-4">
-          <button 
-            onClick={() => {
-              setShowAddForm(true);
-              setEditingAvailability(false);
-              setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' });
-              setError('');
-              setSuccess('');
-            }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            <span>Yeni Müsaitlik Ekle</span>
-          </button>
-        </div>
+        {/* Modal Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          {/* Action Buttons */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-sm">
+                ⏰
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Müsaitlik Yönetimi</h3>
+            </div>
+            
+            <button 
+              onClick={() => {
+                setShowAddForm(true);
+                setEditingAvailability(false);
+                setAvailabilityForm({ id: '', day_of_week: 1, start_time: '09:00', end_time: '18:00' });
+                setError('');
+                setSuccess('');
+              }}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              <span>Yeni Müsaitlik Ekle</span>
+            </button>
+          </div>
 
         {/* Form Section - Sadece form açıkken göster */}
         {(showAddForm || editingAvailability) && (
@@ -1980,7 +2118,8 @@ function EmployeeAvailabilityModal({ employee, onClose, getAvailability, availab
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
-} 
+}

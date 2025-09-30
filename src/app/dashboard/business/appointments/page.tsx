@@ -767,12 +767,12 @@ export default function BusinessAppointmentsPage() {
               )}
             </div>
 
-            {/* Aksiyon Butonları - Compact Design */}
-            <div className="flex gap-1.5">
+            {/* Aksiyon Butonları - Eşit Genişlik */}
+            <div className="grid grid-cols-2 gap-1.5">
               {a.status === 'pending' && (
                 <>
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
                         : 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-md hover:shadow-lg border-emerald-300'
@@ -793,7 +793,7 @@ export default function BusinessAppointmentsPage() {
                     )}
                   </button>
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
                         : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg border-red-300'
@@ -816,9 +816,9 @@ export default function BusinessAppointmentsPage() {
                 </>
               )}
               {a.status === 'confirmed' && (
-                <div className="flex gap-1.5">
+                <>
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
                         : 'bg-indigo-500 text-white hover:bg-indigo-600 active:bg-indigo-700 shadow-md hover:shadow-lg border-indigo-300'
@@ -839,14 +839,14 @@ export default function BusinessAppointmentsPage() {
                     )}
                   </button>
                   <button 
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg border border-blue-300"
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg border border-blue-300"
                     onClick={() => handleRescheduleClick(a)}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span>Ertele</span>
                   </button>
                   <button 
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
+                    className={`col-span-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
                       updatingAppointmentId === a.id 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
                         : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg border-red-300'
@@ -866,16 +866,16 @@ export default function BusinessAppointmentsPage() {
                       </>
                     )}
                   </button>
-                </div>
+                </>
               )}
               {a.status === 'completed' && (
-                <div className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-800 text-xs font-semibold border border-green-200">
+                <div className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-800 text-xs font-semibold border border-green-200">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>Tamamlandı</span>
                 </div>
               )}
               {a.status === 'cancelled' && (
-                <div className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-800 text-xs font-semibold border border-red-200">
+                <div className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-800 text-xs font-semibold border border-red-200">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span>İptal Edildi</span>
                 </div>

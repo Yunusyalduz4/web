@@ -30,7 +30,7 @@ export default function BusinessServicesPage() {
   const updateService = trpc.business.updateService.useMutation();
   const deleteService = trpc.business.deleteService.useMutation();
 
-  const [form, setForm] = useState({ id: '', name: '', description: '', duration_minutes: 30, price: 0 });
+  const [form, setForm] = useState({ id: '', name: '', description: '', duration_minutes: '', price: '' });
   const [editing, setEditing] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +45,7 @@ export default function BusinessServicesPage() {
       setError('İşletme bulunamadı! Lütfen sayfayı yenileyin veya tekrar giriş yapın.');
       return;
     }
-    if (!form.name || form.duration_minutes <= 0 || form.price < 0) {
+    if (!form.name || !form.duration_minutes || Number(form.duration_minutes) <= 0 || !form.price || Number(form.price) < 0) {
       setError('Tüm zorunlu alanları doldurun ve geçerli değerler girin.');
       return;
     }
@@ -57,8 +57,9 @@ export default function BusinessServicesPage() {
         await createService.mutateAsync({ ...form, businessId, price: Number(form.price), duration_minutes: Number(form.duration_minutes) });
         setSuccess('Hizmet eklendi!');
       }
-      setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 });
+      setForm({ id: '', name: '', description: '', duration_minutes: '', price: '' });
       setEditing(false);
+      setFormOpen(false); // Modal'ı kapat
       servicesQuery.refetch();
       setTimeout(() => setSuccess(''), 1200);
     } catch (err: any) {
@@ -106,10 +107,14 @@ export default function BusinessServicesPage() {
             </div>
           </div>
           <button 
-            onClick={() => { setFormOpen(true); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}
-            className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-rose-500 text-white shadow-sm hover:bg-rose-600 active:bg-rose-700 transition-colors touch-manipulation min-h-[44px]"
+            onClick={() => { setFormOpen(true); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: '', price: '' }); setError(''); setSuccess(''); }}
+            className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white text-gray-900 shadow-md hover:shadow-lg active:shadow-xl transition-all touch-manipulation border-2 border-transparent"
+            style={{
+              background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box',
+              border: '2px solid transparent'
+            }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14m7-7H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
           </button>
         </div>
       </div>
@@ -130,133 +135,179 @@ export default function BusinessServicesPage() {
         </div>
       )}
 
-      {/* Hizmet Ekleme/Düzenleme Modal */}
+      {/* Hizmet Ekleme/Düzenleme Modal - Modern Mobile Design */}
       {formOpen && (
-        <div className="modal-container">
-          <div className="modal-overlay-bg" onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }} />
-          <div className="modal-wrapper">
-            <div className="modal-header">
-              <div className="modal-header-content">
-                <div className="modal-header-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14m7-7H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden animate-slide-up flex flex-col">
+            {/* Modal Header - Gradient */}
+            <div className="sticky top-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">{editing ? 'Hizmet Düzenle' : 'Yeni Hizmet'}</h2>
+                    <p className="text-sm text-white/90">{editing ? 'Hizmet bilgilerini güncelleyin' : 'Yeni hizmet ekleyin'}</p>
+                  </div>
                 </div>
-                <div className="modal-header-text">
-                  <h2 className="modal-header-title">{editing ? 'Hizmet Düzenle' : 'Yeni Hizmet'}</h2>
-                  <p className="modal-header-subtitle">{editing ? 'Hizmet bilgilerini güncelleyin' : 'Yeni hizmet ekleyin'}</p>
-                </div>
+                <button 
+                  onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: '', price: '' }); setError(''); setSuccess(''); }}
+                  className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
               </div>
-              <button 
-                className="modal-close-btn"
-                onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
             </div>
-            <div className="modal-content">
-              <form onSubmit={handleSubmit} className="modal-content-scroll">
-                {/* Hizmet Adı Input - Login Style */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">Hizmet Adı</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              <form id="service-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
+                {/* Hizmet Adı Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm">
+                      🎯
                     </div>
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      className="modal-input"
-                      placeholder="Hizmet adı"
-                      autoComplete="off"
-                      required
-                    />
+                    <h3 className="text-lg font-semibold text-gray-900">Hizmet Bilgileri</h3>
                   </div>
-                </div>
-
-                {/* Süre ve Fiyat Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Süre Input */}
+                  
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 block">Süre (dakika)</label>
+                    <label className="text-sm font-medium text-gray-700 block">Hizmet Adı <span className="text-rose-500">*</span></label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </div>
                       <input
-                        type="number"
-                        value={form.duration_minutes}
-                        onChange={e => setForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))}
-                        className="modal-input"
-                        placeholder="30"
-                        min="1"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Fiyat Input */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700 block">Fiyat (₺)</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 1v22m5-18H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </div>
-                      <input
-                        type="number"
-                        value={form.price}
-                        onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))}
-                        className="modal-input"
-                        placeholder="0"
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        value={form.name}
+                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                        placeholder="Hizmet adı"
+                        autoComplete="off"
                         required
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Açıklama Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">Açıklama (opsiyonel)</label>
-                  <div className="relative">
-                    <div className="absolute top-4 left-4 pointer-events-none">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {/* Süre ve Fiyat Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-sm">
+                      ⏱️
                     </div>
-                    <textarea
-                      value={form.description}
-                      onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                      className="modal-textarea"
-                      placeholder="Hizmet açıklaması (opsiyonel)"
-                      autoComplete="off"
-                      rows={3}
-                    />
+                    <h3 className="text-lg font-semibold text-gray-900">Süre ve Fiyat</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Süre Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">Süre (dakika) <span className="text-rose-500">*</span></label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        <input
+                          type="number"
+                          value={form.duration_minutes}
+                          onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))}
+                          className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                          placeholder="Süre giriniz"
+                          min="1"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fiyat Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">Fiyat (₺) <span className="text-rose-500">*</span></label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 1v22m5-18H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        <input
+                          type="number"
+                          value={form.price}
+                          onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                          className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                          placeholder="Fiyat giriniz"
+                          min="0"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Modal Footer */}
-                <div className="modal-footer">
-                  <button
-                    type="submit"
-                    className="modal-btn modal-btn-primary modal-btn-flex"
-                    disabled={createService.isPending || updateService.isPending}
-                  >
-                    {createService.isPending || updateService.isPending ? (
-                      <div className="modal-spinner" />
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    )}
-                    <span>{editing ? 'Güncelle' : 'Ekle'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="modal-btn modal-btn-secondary modal-btn-flex" 
-                    onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: 30, price: 0 }); setError(''); setSuccess(''); }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span>İptal</span>
-                  </button>
+                {/* Açıklama Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm">
+                      📝
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Açıklama</h3>
+                    <span className="text-gray-500 text-sm">(Opsiyonel)</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <div className="absolute top-4 left-4 pointer-events-none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      <textarea
+                        value={form.description}
+                        onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                        className="w-full px-4 py-3 pl-12 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                        placeholder="Hizmet açıklaması (opsiyonel)"
+                        autoComplete="off"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
                 </div>
               </form>
+            </div>
+
+            {/* Modal Footer - Fixed */}
+            <div className="bg-white border-t border-gray-100 p-4 sm:p-6">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setFormOpen(false); setEditing(false); setForm({ id: '', name: '', description: '', duration_minutes: '', price: '' }); setError(''); setSuccess(''); }}
+                  className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  form="service-form"
+                  disabled={createService.isPending || updateService.isPending}
+                  className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {createService.isPending || updateService.isPending ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                        <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
+                      </svg>
+                      {editing ? 'Güncelleniyor...' : 'Ekleniyor...'}
+                    </>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                      </svg>
+                      {editing ? 'Güncelle' : 'Ekle'}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -286,50 +337,74 @@ export default function BusinessServicesPage() {
               </div>
             </div>
           ) : (
-            services.map((service: any) => (
-              <div 
-                key={service.id} 
-                className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border-2"
-                style={{
-                  borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
-                  border: '2px solid transparent',
-                  background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
-                }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{service.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        {service.duration_minutes} dk
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-400"><path d="M12 1v22m5-18H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        ₺{service.price}
-                      </span>
+            services.map((service: any, index: number) => {
+              // Renkli gradient'ler için array
+              const gradients = [
+                'from-rose-500 to-pink-500',
+                'from-blue-500 to-indigo-500', 
+                'from-green-500 to-emerald-500',
+                'from-purple-500 to-violet-500',
+                'from-orange-500 to-amber-500',
+                'from-cyan-500 to-blue-500'
+              ];
+              const currentGradient = gradients[index % gradients.length];
+              
+              return (
+                <div 
+                  key={service.id} 
+                  className="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 border-2 hover:scale-[1.02]"
+                  style={{
+                    borderImage: 'linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) 1',
+                    border: '2px solid transparent',
+                    background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #ef4444, #3b82f6, #ffffff) border-box'
+                  }}
+                >
+                  {/* Hizmet Header - Renkli */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${currentGradient} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-800 transition-colors">{service.name}</h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-500"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <span className="font-medium">{service.duration_minutes} dk</span>
+                            </span>
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-500"><path d="M12 1v22m5-18H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <span className="font-bold text-green-600">₺{service.price}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {service.description && (
+                        <div className="mt-3 p-3 rounded-xl bg-gray-50/50 border border-gray-100">
+                          <p className="text-sm text-gray-700 leading-relaxed">{service.description}</p>
+                        </div>
+                      )}
                     </div>
-                    {service.description && (
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">{service.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 ml-3">
+                  {/* Aksiyon Butonları - Küçük Kare Butonlar */}
+                  <div className="flex items-center gap-2 ml-2 sm:ml-3">
                     <button
                       onClick={() => handleEdit(service)}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 active:bg-blue-200 transition-colors touch-manipulation min-h-[44px]"
+                      className="group flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 active:from-blue-700 active:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 touch-manipulation"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="group-hover:scale-110 transition-transform sm:w-3 sm:h-3"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                     <button
                       onClick={() => handleDelete(service.id)}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 transition-colors touch-manipulation min-h-[44px]"
+                      className="group flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600 active:from-red-700 active:to-rose-700 shadow-md hover:shadow-lg transition-all duration-200 touch-manipulation"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="group-hover:scale-110 transition-transform sm:w-3 sm:h-3"><path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

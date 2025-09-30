@@ -22,6 +22,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
   const [showManualAppointmentModal, setShowManualAppointmentModal] = useState(false);
   const [selectedSlotData, setSelectedSlotData] = useState<{date: string, time: string} | null>(null);
   const [localSelectedEmployeeId, setLocalSelectedEmployeeId] = useState<string | null>(selectedEmployeeId || null);
+  
+  // Mini card için state'ler
+  const [showMiniCard, setShowMiniCard] = useState(false);
+  const [miniCardData, setMiniCardData] = useState<{
+    appointment: any;
+    slotTime: string;
+    date: string;
+    position: { x: number; y: number };
+  } | null>(null);
 
   // Socket.IO hook'u
   const { isConnected, socket } = useSocket();
@@ -194,6 +203,51 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     }
   };
 
+  // Randevu başlangıç saatini kontrol et (sadece başlangıç slotunu göstermek için)
+  const isAppointmentStartSlot = (slotTime: string, date: string) => {
+    const slotStart = new Date(`${date}T${slotTime}:00`);
+    
+    for (const apt of appointments) {
+      // Sadece aktif randevular (pending, confirmed, completed)
+      if (!(apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'completed')) continue;
+
+      // Tarih eşleşmesi
+      const aptStart = new Date(apt.appointment_datetime);
+      const aptDateStr = aptStart.toLocaleDateString('en-CA');
+      if (aptDateStr !== date) continue;
+
+      // Sadece başlangıç saatini kontrol et (15dk tolerans)
+      const timeDiff = Math.abs(slotStart.getTime() - aptStart.getTime());
+      if (timeDiff < 15 * 60000) { // 15 dakika tolerans
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Randevu süresi içinde olan slot'ları kontrol et (gizlenecek slot'lar)
+  const isAppointmentDurationSlot = (slotTime: string, date: string) => {
+    const slotStart = new Date(`${date}T${slotTime}:00`);
+    
+    for (const apt of appointments) {
+      // Sadece aktif randevular (pending, confirmed, completed)
+      if (!(apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'completed')) continue;
+
+      // Tarih eşleşmesi
+      const aptStart = new Date(apt.appointment_datetime);
+      const aptDateStr = aptStart.toLocaleDateString('en-CA');
+      if (aptDateStr !== date) continue;
+
+      // Zaman aralığı kontrolü (start < slot < end) - başlangıç hariç
+      const aptEnd = new Date(aptStart.getTime() + (apt.duration || 60) * 60000);
+      
+      if (aptStart < slotStart && slotStart < aptEnd) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Geçmiş saatlerde randevu var mı kontrol et
   const getPastAppointment = (slotTime: string, date: string) => {
     const slotStart = new Date(`${date}T${slotTime}:00`);
@@ -237,8 +291,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     }
   };
 
-  // Dolu slot'a tıklama işlemi
-  const handleBusySlotClick = (slotTime: string, date: string) => {
+  // Dolu slot'a tıklama işlemi - Mini card göster
+  const handleBusySlotClick = (slotTime: string, date: string, event: React.MouseEvent) => {
     // Seçilen slot'un Date nesnesini oluştur
     const slotStart = new Date(`${date}T${slotTime}:00`);
 
@@ -299,20 +353,43 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     const targetAppointment = bestMatch;
 
     if (targetAppointment) {
-      const appointmentCard = document.getElementById(`appointment-${targetAppointment.id}`);
-      if (appointmentCard) {
-        appointmentCard.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
+      // Slot'un pozisyonunu al
+      const rect = (event.target as HTMLElement).getBoundingClientRect();
+      const position = {
+        x: rect.left + rect.width / 2, // Slot'un ortası
+        y: rect.top - 10 // Slot'un üstünde 10px
+      };
 
-        setHighlightedAppointmentId(targetAppointment.id);
-
-        setTimeout(() => {
-          setHighlightedAppointmentId(null);
-        }, 1500);
-      }
+      // Mini card'ı göster
+      setMiniCardData({
+        appointment: targetAppointment,
+        slotTime,
+        date,
+        position
+      });
+      setShowMiniCard(true);
     }
+  };
+
+  // Mini card'dan randevuya git
+  const handleGoToAppointment = (appointment: any) => {
+    const appointmentCard = document.getElementById(`appointment-${appointment.id}`);
+    if (appointmentCard) {
+      appointmentCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+
+      setHighlightedAppointmentId(appointment.id);
+
+      setTimeout(() => {
+        setHighlightedAppointmentId(null);
+      }, 1500);
+    }
+
+    // Mini card'ı kapat
+    setShowMiniCard(false);
+    setMiniCardData(null);
   };
 
   // Boş slot'a tıklama işlemi
@@ -572,7 +649,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
           {/* Slot Detayları */}
           <div className="grid grid-cols-4 gap-1 mb-3">
-            {weeklySlots.find(d => d.date === selectedDate)?.slots.map((slot: any, index: number) => (
+            {weeklySlots.find(d => d.date === selectedDate)?.slots
+              .filter((slot: any) => {
+                // Randevu süresi içindeki slot'ları gizle (başlangıç hariç)
+                if (isAppointmentDurationSlot(slot.time, selectedDate)) {
+                  return false;
+                }
+                return true;
+              })
+              .map((slot: any, index: number) => (
               <div
                 key={index}
                 className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
@@ -592,7 +677,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                   slot.isPast 
                     ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? () => handlePastAppointmentClick(slot.time, selectedDate) : undefined)
                     : slot.status === 'busy'
-                    ? () => handleBusySlotClick(slot.time, selectedDate)
+                    ? (e: React.MouseEvent) => handleBusySlotClick(slot.time, selectedDate, e)
                     : slot.status === 'half-busy' || slot.status === 'available'
                     ? () => handleAvailableSlotClick(slot.time, selectedDate)
                     : undefined
@@ -709,7 +794,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
 
           {/* Slot Detayları */}
           <div className="grid grid-cols-4 gap-1 mb-3">
-            {customDateSlots.slots.map((slot: any, index: number) => (
+            {customDateSlots.slots
+              .filter((slot: any) => {
+                // Randevu süresi içindeki slot'ları gizle (başlangıç hariç)
+                if (isAppointmentDurationSlot(slot.time, customDate)) {
+                  return false;
+                }
+                return true;
+              })
+              .map((slot: any, index: number) => (
               <div
                 key={index}
                 className={`p-2 rounded-lg text-center text-xs font-medium transition-all ${
@@ -729,7 +822,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                   slot.isPast 
                     ? (getPastAppointment(slot.time, customDate) ? () => handlePastAppointmentClick(slot.time, customDate) : undefined)
                     : slot.status === 'busy'
-                    ? () => handleBusySlotClick(slot.time, customDate)
+                    ? (e: React.MouseEvent) => handleBusySlotClick(slot.time, customDate, e)
                     : slot.status === 'half-busy' || slot.status === 'available'
                     ? () => handleAvailableSlotClick(slot.time, customDate)
                     : undefined
@@ -837,6 +930,186 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         onCreateAppointment={createManualAppointment.mutate}
         isLoading={createManualAppointment.isPending}
       />
+    )}
+
+    {/* Mini Card Modal - Mobile First */}
+    {showMiniCard && miniCardData && (
+      <div 
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+        onClick={() => {
+          setShowMiniCard(false);
+          setMiniCardData(null);
+        }}
+      >
+        <div 
+          className="absolute bg-white rounded-t-3xl shadow-2xl border border-gray-200 mx-auto animate-slide-up"
+          style={{
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%) scale(0.5)',
+            width: '600px',
+            height: 'auto',
+            maxHeight: '90vh',
+            transformOrigin: 'center center'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Mobile Header - Gradient */}
+          <div className="bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white p-6 rounded-t-3xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-xl font-bold">
+                    {miniCardData.slotTime}
+                  </div>
+                  <div className="text-sm text-white/80">
+                    {new Date(miniCardData.date).toLocaleDateString('tr-TR', { 
+                      day: 'numeric', 
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowMiniCard(false);
+                  setMiniCardData(null);
+                }}
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors touch-manipulation"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Content */}
+          <div className="p-6 space-y-6">
+            {/* Randevu Bilgileri - Mobile Optimized */}
+            <div className="space-y-4">
+              {/* Müşteri Bilgisi */}
+              <div className="bg-blue-50 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold text-blue-800">Müşteri</span>
+                </div>
+                <div className="text-lg font-bold text-gray-900">
+                  {miniCardData.appointment.customer_name} {miniCardData.appointment.customer_surname}
+                </div>
+              </div>
+
+              {/* Hizmet Bilgisi */}
+              {(() => {
+                // Farklı veri yapılarını kontrol et - service_names öncelikli
+                let serviceNames = [];
+                
+                if (miniCardData.appointment.service_names && Array.isArray(miniCardData.appointment.service_names)) {
+                  serviceNames = miniCardData.appointment.service_names;
+                } else if (miniCardData.appointment.services && Array.isArray(miniCardData.appointment.services)) {
+                  serviceNames = miniCardData.appointment.services.map((s: any) => s.name || s);
+                } else if (miniCardData.appointment.appointment_services && Array.isArray(miniCardData.appointment.appointment_services)) {
+                  serviceNames = miniCardData.appointment.appointment_services.map((s: any) => s.name || s);
+                }
+                
+                return serviceNames.length > 0 ? (
+                  <div className="bg-green-50 rounded-2xl p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                          <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <span className="text-sm font-semibold text-green-800">Hizmetler</span>
+                    </div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {serviceNames.join(', ')}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Süre ve Durum - Yan Yana */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Süre */}
+                <div className="bg-purple-50 rounded-2xl p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-semibold text-purple-800">Süre</span>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">
+                    {miniCardData.appointment.duration || 60} dk
+                  </div>
+                </div>
+
+                {/* Durum */}
+                <div className="bg-orange-50 rounded-2xl p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-semibold text-orange-800">Durum</span>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900 capitalize">
+                    {miniCardData.appointment.status === 'pending' ? 'Beklemede' :
+                     miniCardData.appointment.status === 'confirmed' ? 'Onaylandı' :
+                     miniCardData.appointment.status === 'completed' ? 'Tamamlandı' :
+                     miniCardData.appointment.status}
+                  </div>
+                </div>
+              </div>
+
+              {/* Randevu Notu */}
+              {miniCardData.appointment.notes && miniCardData.appointment.notes.trim() && (
+                <div className="bg-gray-50 rounded-2xl p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-gray-500 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-800">Not</span>
+                  </div>
+                  <div className="text-base text-gray-900">
+                    {miniCardData.appointment.notes}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Action Button */}
+            <div>
+              {/* Randevuya Git Butonu - Primary */}
+              <button
+                onClick={() => handleGoToAppointment(miniCardData.appointment)}
+                className="w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center gap-3 touch-manipulation active:scale-95"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M13 7l5 5-5 5M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Randevuya Git
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     )}
     </>
   );
@@ -1037,188 +1310,289 @@ function ManualAppointmentModal({
   if (!isOpen || !slotData) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden animate-slide-up flex flex-col">
         {/* Modal Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white p-4 rounded-t-2xl">
+        <div className="sticky top-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold">Manuel Randevu Oluştur</h2>
-              <p className="text-sm text-white/90">
-                {new Date(slotData.date).toLocaleDateString('tr-TR', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })} - {slotData.time}
-              </p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold mb-1">Manuel Randevu Oluştur</h2>
+              <div className="flex items-center gap-2 text-sm text-white/90">
+                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                <span className="truncate">
+                  {new Date(slotData.date).toLocaleDateString('tr-TR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} - {slotData.time}
+                </span>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+              className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center shrink-0 ml-3"
             >
-              ✕
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           </div>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Müşteri Bilgileri */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-              👤 Müşteri Bilgileri
-            </h3>
-            
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Ad Soyad * <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.customerFullName}
-                onChange={(e) => setFormData(prev => ({ ...prev, customerFullName: e.target.value }))}
-                className={`w-full px-3 py-2 rounded-lg border text-sm ${
-                  errors.customerFullName ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
-                } focus:outline-none focus:ring-2 focus:ring-rose-200`}
-                placeholder="Örn: Ahmet Yılmaz"
-              />
-              {errors.customerFullName && (
-                <p className="text-xs text-rose-600 mt-1">{errors.customerFullName}</p>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6 space-y-6">
+            {/* Müşteri Bilgileri */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm">
+                  👤
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Müşteri Bilgileri</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ad Soyad <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.customerFullName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customerFullName: e.target.value }))}
+                    className={`w-full px-4 py-3 rounded-xl border text-base text-gray-900 ${
+                      errors.customerFullName ? 'border-rose-300 bg-rose-50' : 'border-gray-200 bg-gray-50'
+                    } focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all`}
+                    placeholder="Örn: Ahmet Yılmaz"
+                  />
+                  {errors.customerFullName && (
+                    <p className="text-sm text-rose-600 mt-2 flex items-center gap-1">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                        <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                      {errors.customerFullName}
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Telefon (Opsiyonel)
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="tel"
+                      value={formData.customerPhone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                      placeholder="0555 123 45 67"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleContactPicker}
+                      className="px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Rehberden kişi seç (Chrome/Edge + HTTPS gerekli)"
+                    >
+                      📞
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Rehber erişimi Chrome/Edge tarayıcılarında ve HTTPS üzerinde çalışır
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Çalışan Seçimi */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-sm">
+                  👨‍💼
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Çalışan Seçimi</h3>
+                <span className="text-rose-500 text-sm">*</span>
+              </div>
+              
+              <div>
+                <select
+                  value={formData.selectedEmployee}
+                  onChange={(e) => handleEmployeeChange(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border text-base text-gray-900 ${
+                    errors.selectedEmployee ? 'border-rose-300 bg-rose-50' : 'border-gray-200 bg-gray-50'
+                  } focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all`}
+                >
+                  <option value="">Çalışan seçin</option>
+                  {availableEmployees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {availableEmployees.length === 0 && (
+                  <div className="mt-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-sm font-medium">Bu saatte müsait çalışan bulunmuyor</span>
+                    </div>
+                    <p className="text-sm text-amber-700 mt-1">Lütfen farklı bir saat seçin.</p>
+                  </div>
+                )}
+                {errors.selectedEmployee && (
+                  <p className="text-sm text-rose-600 mt-2 flex items-center gap-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                      <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    {errors.selectedEmployee}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Hizmet Seçimi */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm">
+                  🎯
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Hizmet Seçimi</h3>
+                <span className="text-rose-500 text-sm">*</span>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {availableServices.map((service) => (
+                  <button
+                    key={service.id}
+                    type="button"
+                    onClick={() => toggleService(service.id)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                      formData.selectedServices.includes(service.id)
+                        ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-rose-100 text-rose-900 shadow-sm'
+                        : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="font-semibold text-base">{service.name}</div>
+                      {formData.selectedServices.includes(service.id) && (
+                        <div className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">{service.duration_minutes} dk</span>
+                      <span className="font-bold text-gray-900">₺{service.price}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              
+              {availableServices.length === 0 && formData.selectedEmployee && (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-sm font-medium">Hizmet bulunamadı</span>
+                  </div>
+                  <p className="text-sm text-amber-700 mt-1">Seçili çalışanın verebileceği hizmet bulunmuyor. Lütfen farklı bir çalışan seçin veya önce çalışana hizmet ataması yapın.</p>
+                </div>
+              )}
+              {!formData.selectedEmployee && (
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-sm font-medium">Çalışan seçin</span>
+                  </div>
+                  <p className="text-sm text-blue-700 mt-1">Önce bir çalışan seçin, sonra o çalışanın verebileceği hizmetler görünecek.</p>
+                </div>
+              )}
+              {errors.selectedServices && (
+                <p className="text-sm text-rose-600 flex items-center gap-1">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  {errors.selectedServices}
+                </p>
               )}
             </div>
-            
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Telefon (Opsiyonel)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="tel"
-                  value={formData.customerPhone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
-                  placeholder="0555 123 45 67"
-                />
-                <button
-                  type="button"
-                  onClick={handleContactPicker}
-                  className="px-3 py-2 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Rehberden kişi seç (Chrome/Edge + HTTPS gerekli)"
-                >
-                  📞
-                </button>
+
+            {/* Notlar */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-sm">
+                  📝
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Notlar</h3>
+                <span className="text-gray-500 text-sm">(Opsiyonel)</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Rehber erişimi Chrome/Edge tarayıcılarında ve HTTPS üzerinde çalışır
-              </p>
+              
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                rows={4}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                placeholder="Randevu hakkında notlar..."
+              />
             </div>
-          </div>
 
-          {/* Çalışan Seçimi */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-              👨‍💼 Çalışan Seçimi <span className="text-rose-500">*</span>
-            </h3>
-            
-            <select
-              value={formData.selectedEmployee}
-              onChange={(e) => handleEmployeeChange(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border text-sm ${
-                errors.selectedEmployee ? 'border-rose-300 bg-rose-50' : 'border-gray-300 bg-white'
-              } focus:outline-none focus:ring-2 focus:ring-rose-200`}
-            >
-              <option value="">Çalışan seçin</option>
-              {availableEmployees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name}
-                </option>
-              ))}
-            </select>
-            
-            {availableEmployees.length === 0 && (
-              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                ⚠️ Bu saatte müsait çalışan bulunmuyor. Lütfen farklı bir saat seçin.
-              </p>
-            )}
-            {errors.selectedEmployee && (
-              <p className="text-xs text-rose-600">{errors.selectedEmployee}</p>
-            )}
           </div>
+        </div>
 
-          {/* Hizmet Seçimi */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-              🎯 Hizmet Seçimi <span className="text-rose-500">*</span>
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {availableServices.map((service) => (
-                <button
-                  key={service.id}
-                  type="button"
-                  onClick={() => toggleService(service.id)}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
-                    formData.selectedServices.includes(service.id)
-                      ? 'border-rose-500 bg-rose-50 text-rose-800'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-medium text-sm">{service.name}</div>
-                  <div className="text-xs text-gray-500">{service.duration_minutes} dk</div>
-                  <div className="text-xs font-semibold text-gray-600">₺{service.price}</div>
-                </button>
-              ))}
+        {/* Form Actions - Fixed at bottom */}
+        <form id="manual-appointment-form" onSubmit={handleSubmit}>
+          <div className="bg-white border-t border-gray-100 p-4 sm:p-6">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                İptal
+              </button>
+              
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                      <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
+                    </svg>
+                    Oluşturuluyor...
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                    </svg>
+                    Randevu Oluştur
+                  </>
+                )}
+              </button>
             </div>
-            
-            {availableServices.length === 0 && formData.selectedEmployee && (
-              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                ⚠️ Seçili çalışanın verebileceği hizmet bulunmuyor. Lütfen farklı bir çalışan seçin veya önce çalışana hizmet ataması yapın.
-              </p>
-            )}
-            {!formData.selectedEmployee && (
-              <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
-                💡 Önce bir çalışan seçin, sonra o çalışanın verebileceği hizmetler görünecek.
-              </p>
-            )}
-            {errors.selectedServices && (
-              <p className="text-xs text-rose-600">{errors.selectedServices}</p>
-            )}
-          </div>
-
-          {/* Notlar */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-              📝 Notlar (Opsiyonel)
-            </h3>
-            
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
-              placeholder="Randevu hakkında notlar..."
-            />
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              İptal
-            </button>
-            
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white font-medium shadow hover:shadow-md transition-all disabled:opacity-50"
-            >
-              {isLoading ? 'Oluşturuluyor...' : 'Randevu Oluştur'}
-            </button>
           </div>
         </form>
       </div>
