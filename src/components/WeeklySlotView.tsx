@@ -1147,49 +1147,6 @@ function ManualAppointmentModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Rehberden kişi seçimi için Web API
-  const handleContactPicker = async () => {
-    try {
-      // HTTPS kontrolü
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        alert('Rehber erişimi için HTTPS gerekli. Lütfen telefon numarasını manuel olarak girin.');
-        return;
-      }
-
-      // Contact Picker API desteği kontrolü
-      if ('contacts' in navigator && 'select' in (navigator as any).contacts) {
-        const contacts = await (navigator as any).contacts.select(['name', 'tel']);
-        if (contacts && contacts.length > 0) {
-          const contact = contacts[0];
-          const name = contact.name?.[0] || '';
-          const phone = contact.tel?.[0] || '';
-          
-          setFormData(prev => ({
-            ...prev,
-            customerFullName: name,
-            customerPhone: phone
-          }));
-        }
-      } else {
-        // Tarayıcı desteği yok
-        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-        const isEdge = /Edg/.test(navigator.userAgent);
-        
-        if (!isChrome && !isEdge) {
-          alert('Rehber erişimi sadece Chrome ve Edge tarayıcılarında desteklenir. Telefon numarasını manuel olarak girin.');
-        } else {
-          alert('Rehber API desteklenmiyor. Telefon numarasını manuel olarak girin.');
-        }
-      }
-    } catch (error: any) {
-      console.log('Contact picker error:', error);
-      if (error.name === 'NotAllowedError') {
-        alert('Rehber erişimi reddedildi. Lütfen izin verin veya telefon numarasını manuel olarak girin.');
-      } else {
-        alert('Rehber erişimi sırasında hata oluştu. Telefon numarasını manuel olarak girin.');
-      }
-    }
-  };
 
   // O gün o saatte müsait olan çalışanları filtrele
   const availableEmployees = useMemo(() => {
@@ -1384,30 +1341,13 @@ function ManualAppointmentModal({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Telefon (Opsiyonel)
                   </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="tel"
-                      value={formData.customerPhone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                      placeholder="0555 123 45 67"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleContactPicker}
-                      className="px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                      title="Rehberden kişi seç (Chrome/Edge + HTTPS gerekli)"
-                    >
-                      📞
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Rehber erişimi Chrome/Edge tarayıcılarında ve HTTPS üzerinde çalışır
-                  </p>
+                  <input
+                    type="tel"
+                    value={formData.customerPhone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-base text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                    placeholder="0555 123 45 67"
+                  />
                 </div>
               </div>
             </div>
