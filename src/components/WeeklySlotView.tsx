@@ -248,12 +248,12 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     return false;
   };
 
-  // Geçmiş saatlerde randevu var mı kontrol et
+  // Geçmiş saatlerde randevu var mı kontrol et (sadece aktif randevular)
   const getPastAppointment = (slotTime: string, date: string) => {
     const slotStart = new Date(`${date}T${slotTime}:00`);
     
     for (const apt of appointments) {
-      // Sadece aktif randevular (pending, confirmed, completed)
+      // Sadece aktif randevular (pending, confirmed, completed) - cancelled hariç
       if (!(apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'completed')) continue;
 
       // Tarih eşleşmesi
@@ -271,23 +271,25 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     return null;
   };
 
-  // Geçmiş randevuya tıklama işlemi
-  const handlePastAppointmentClick = (slotTime: string, date: string) => {
+  // Geçmiş randevuya tıklama işlemi - Mini card göster
+  const handlePastAppointmentClick = (slotTime: string, date: string, event: React.MouseEvent) => {
     const pastAppointment = getPastAppointment(slotTime, date);
     if (pastAppointment) {
-      const appointmentCard = document.getElementById(`appointment-${pastAppointment.id}`);
-      if (appointmentCard) {
-        appointmentCard.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
+      // Mini card pozisyonunu hesapla
+      const rect = (event.target as HTMLElement).getBoundingClientRect();
+      const position = {
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      };
 
-        setHighlightedAppointmentId(pastAppointment.id);
-
-        setTimeout(() => {
-          setHighlightedAppointmentId(null);
-        }, 1500);
-      }
+      // Mini card'ı göster
+      setMiniCardData({
+        appointment: pastAppointment,
+        slotTime,
+        date,
+        position
+      });
+      setShowMiniCard(true);
     }
   };
 
@@ -407,13 +409,16 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     }, 3000);
   };
 
-  // Seçili gün için randevu detaylarını al
+  // Seçili gün için randevu detaylarını al (iptal edilenler hariç)
   const selectedDayAppointments = useMemo(() => {
     if (!selectedDate || !appointments) return [];
     
     return appointments.filter((apt: any) => {
       const aptDate = new Date(apt.appointment_datetime).toLocaleDateString('en-CA');
       const matchesDate = aptDate === selectedDate;
+      
+      // İptal edilen randevuları hariç tut
+      const isNotCancelled = apt.status !== 'cancelled';
       
       // Çalışan filtresi
       let matchesEmployee = true;
@@ -431,18 +436,21 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         }
       }
       
-      return matchesDate && matchesEmployee;
+      return matchesDate && matchesEmployee && isNotCancelled;
     });
   }, [selectedDate, appointments, localSelectedEmployeeId]);
 
-  // Özel seçilen gün için randevu detaylarını al
+  // Özel seçilen gün için randevu detaylarını al (iptal edilenler hariç)
   const customDateAppointments = useMemo(() => {
     if (!customDate || !appointments) return [];
     
     return appointments.filter((apt: any) => {
       const aptDate = new Date(apt.appointment_datetime).toLocaleDateString('en-CA');
       const matchesDate = aptDate === customDate;
-      const matchesStatus = apt.status === 'pending' || apt.status === 'confirmed';
+      const matchesStatus = apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'completed';
+      
+      // İptal edilen randevuları hariç tut
+      const isNotCancelled = apt.status !== 'cancelled';
       
       // Çalışan filtresi
       let matchesEmployee = true;
@@ -452,7 +460,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         ) || false;
       }
       
-      return matchesDate && matchesStatus && matchesEmployee;
+      return matchesDate && matchesStatus && matchesEmployee && isNotCancelled;
     });
   }, [customDate, appointments, localSelectedEmployeeId]);
 
@@ -675,7 +683,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 }`}
                 onClick={
                   slot.isPast 
-                    ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? () => handlePastAppointmentClick(slot.time, selectedDate) : undefined)
+                    ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? (e: React.MouseEvent) => handlePastAppointmentClick(slot.time, selectedDate, e) : undefined)
                     : slot.status === 'busy'
                     ? (e: React.MouseEvent) => handleBusySlotClick(slot.time, selectedDate, e)
                     : slot.status === 'half-busy' || slot.status === 'available'
@@ -703,7 +711,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                     : slot.status === 'half-busy'
                     ? '🟡 Yarı Dolu'
                     : slot.status === 'unavailable'
-                    ? '⚪ Müsait Değil'
+                    ? 'x'
                     : '✅ Müsait'
                   }
                 </div>
@@ -820,7 +828,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                 }`}
                 onClick={
                   slot.isPast 
-                    ? (getPastAppointment(slot.time, customDate) ? () => handlePastAppointmentClick(slot.time, customDate) : undefined)
+                    ? (getPastAppointment(slot.time, customDate) ? (e: React.MouseEvent) => handlePastAppointmentClick(slot.time, customDate, e) : undefined)
                     : slot.status === 'busy'
                     ? (e: React.MouseEvent) => handleBusySlotClick(slot.time, customDate, e)
                     : slot.status === 'half-busy' || slot.status === 'available'
@@ -1007,7 +1015,15 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                   <span className="text-sm font-semibold text-blue-800">Müşteri</span>
                 </div>
                 <div className="text-lg font-bold text-gray-900">
-                  {miniCardData.appointment.customer_name} {miniCardData.appointment.customer_surname}
+                  {(() => {
+                    // Guest kullanıcı kontrolü
+                    if (miniCardData.appointment.user_name && miniCardData.appointment.user_name.startsWith('Guest:')) {
+                      // "Guest: İsim Soyisim" formatından sadece isim soyisim kısmını al
+                      return miniCardData.appointment.user_name.replace('Guest: ', '');
+                    }
+                    // Normal kullanıcılar için customer_name ve customer_surname kullan
+                    return `${miniCardData.appointment.customer_name || ''} ${miniCardData.appointment.customer_surname || ''}`.trim() || 'Müşteri';
+                  })()}
                 </div>
               </div>
 

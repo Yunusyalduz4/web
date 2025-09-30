@@ -9,6 +9,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import BottomNav from '../../../../../components/BottomNav';
 import QRCode from 'qrcode';
 // Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
 // import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
@@ -135,7 +136,82 @@ export default function BusinessDetailPage() {
   const [shareUrl, setShareUrl] = useState<string>('');
   
   // Login modal state'i
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [guestBookingModalOpen, setGuestBookingModalOpen] = useState(false);
+  const [guestFormData, setGuestFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: ''
+  });
+  const [guestFormErrors, setGuestFormErrors] = useState<Record<string, string>>({});
+
+  // Form validasyonu
+  const validateGuestForm = () => {
+    const errors: Record<string, string> = {};
+    
+    // İsim kontrolü
+    if (!guestFormData.firstName.trim()) {
+      errors.firstName = 'İsim gereklidir';
+    } else if (guestFormData.firstName.trim().length < 2) {
+      errors.firstName = 'İsim en az 2 karakter olmalıdır';
+    }
+    
+    // Soyisim kontrolü
+    if (!guestFormData.lastName.trim()) {
+      errors.lastName = 'Soyisim gereklidir';
+    } else if (guestFormData.lastName.trim().length < 2) {
+      errors.lastName = 'Soyisim en az 2 karakter olmalıdır';
+    }
+    
+    // Telefon kontrolü
+    const phoneRegex = /^(\+90|0)?[5][0-9]{9}$/;
+    const cleanPhone = guestFormData.phone.replace(/\s/g, '');
+    if (!guestFormData.phone.trim()) {
+      errors.phone = 'Telefon numarası gereklidir';
+    } else if (!phoneRegex.test(cleanPhone)) {
+      errors.phone = 'Geçerli bir telefon numarası giriniz (0555 123 45 67)';
+    }
+    
+    // E-posta kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!guestFormData.email.trim()) {
+      errors.email = 'E-posta adresi gereklidir';
+    } else if (!emailRegex.test(guestFormData.email)) {
+      errors.email = 'Geçerli bir e-posta adresi giriniz';
+    }
+    
+    setGuestFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Üyeliksiz randevu submit
+  const handleGuestBookingSubmit = async () => {
+    if (!validateGuestForm()) {
+      return;
+    }
+    
+    try {
+      // Form verilerini localStorage'a kaydet (geçici olarak)
+      const guestData = {
+        firstName: guestFormData.firstName.trim(),
+        lastName: guestFormData.lastName.trim(),
+        phone: guestFormData.phone.replace(/\s/g, ''),
+        email: guestFormData.email.trim(),
+        isGuest: true
+      };
+      
+      localStorage.setItem('guestBookingData', JSON.stringify(guestData));
+      
+      // Modal'ı kapat ve randevu sayfasına yönlendir
+      setGuestBookingModalOpen(false);
+      setBookingLoading(true);
+      await router.push(`/dashboard/user/businesses/${businessId}/book`);
+    } catch (error) {
+      console.error('Üyeliksiz randevu hatası:', error);
+    } finally {
+      setTimeout(() => setBookingLoading(false), 600);
+    }
+  };
   
   // Hikaye state'leri
   // Hikaye state'leri - GEÇİCİ OLARAK KAPALI
@@ -1171,8 +1247,8 @@ export default function BusinessDetailPage() {
 
                 // Session'ın gerçekten geçerli olup olmadığını kontrol et
                 if (status === 'unauthenticated' || !session || !session.user?.id) {
-                  console.log('Oturum açık değil, login modalı açılıyor...');
-                  setLoginModalOpen(true);
+                  console.log('Oturum açık değil, üyeliksiz randevu formu açılıyor...');
+                  setGuestBookingModalOpen(true);
                   return;
                 }
                 
@@ -1181,13 +1257,13 @@ export default function BusinessDetailPage() {
                   const response = await fetch('/api/trpc/user.getProfile?batch=1&input=%7B%220%22%3A%7B%22userId%22%3A%22' + session.user.id + '%22%7D%7D');
                   
                   if (!response.ok) {
-                    console.log('Session geçersiz (403), login modalı açılıyor...');
-                    setLoginModalOpen(true);
+                    console.log('Session geçersiz (403), üyeliksiz randevu formu açılıyor...');
+                    setGuestBookingModalOpen(true);
                     return;
                   }
                 } catch (error) {
-                  console.log('Session kontrolü başarısız, login modalı açılıyor...');
-                  setLoginModalOpen(true);
+                  console.log('Session kontrolü başarısız, üyeliksiz randevu formu açılıyor...');
+                  setGuestBookingModalOpen(true);
                   return;
                 }
                 
@@ -1523,17 +1599,17 @@ export default function BusinessDetailPage() {
       </div>
     )}
 
-    {/* Login Modal */}
-    {loginModalOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setLoginModalOpen(false)} />
+    {/* Guest Booking Modal */}
+    {guestBookingModalOpen && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-indigo-500/20 backdrop-blur-sm" onClick={() => setGuestBookingModalOpen(false)} />
         <div className="relative w-full max-w-md bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl flex flex-col border border-white/40 overflow-hidden">
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200/50">
-            <h3 className="font-semibold text-gray-900 text-lg">Giriş Gerekli</h3>
+            <h3 className="font-semibold text-gray-900 text-lg">Randevu Bilgileri</h3>
             <button 
               className="p-2 rounded-xl hover:bg-gray-100 transition-colors" 
-              onClick={() => setLoginModalOpen(false)}
+              onClick={() => setGuestBookingModalOpen(false)}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-500">
                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1542,43 +1618,114 @@ export default function BusinessDetailPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 text-center">
+          <div className="px-6 py-6">
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-rose-500 to-fuchsia-500 rounded-full flex items-center justify-center">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
                 <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             
-            <h4 className="text-xl font-semibold text-gray-900 mb-2">Randevu Alabilmek İçin</h4>
-            <p className="text-gray-600 mb-6">
-              Randevu oluşturabilmek için lütfen giriş yapınız. Hesabınız yoksa kayıt olabilirsiniz.
+            <h4 className="text-xl font-semibold text-gray-900 mb-2 text-center">Randevu Oluştur</h4>
+            <p className="text-gray-600 mb-6 text-center">
+              Randevu oluşturmak için lütfen bilgilerinizi giriniz.
             </p>
 
+            {/* Form */}
+            <div className="space-y-4">
+              {/* İsim */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">İsim *</label>
+                    <input
+                      type="text"
+                      value={guestFormData.firstName}
+                      onChange={(e) => setGuestFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-black ${
+                        guestFormErrors.firstName ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Adınız"
+                    />
+                {guestFormErrors.firstName && (
+                  <p className="text-red-500 text-xs mt-1">{guestFormErrors.firstName}</p>
+                )}
+              </div>
+
+              {/* Soyisim */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Soyisim *</label>
+                    <input
+                      type="text"
+                      value={guestFormData.lastName}
+                      onChange={(e) => setGuestFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-black ${
+                        guestFormErrors.lastName ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Soyadınız"
+                    />
+                {guestFormErrors.lastName && (
+                  <p className="text-red-500 text-xs mt-1">{guestFormErrors.lastName}</p>
+                )}
+              </div>
+
+              {/* Telefon */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
+                    <input
+                      type="tel"
+                      value={guestFormData.phone}
+                      onChange={(e) => setGuestFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-black ${
+                        guestFormErrors.phone ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="0555 123 45 67"
+                    />
+                {guestFormErrors.phone && (
+                  <p className="text-red-500 text-xs mt-1">{guestFormErrors.phone}</p>
+                )}
+              </div>
+
+              {/* E-posta */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">E-posta *</label>
+                    <input
+                      type="email"
+                      value={guestFormData.email}
+                      onChange={(e) => setGuestFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-black ${
+                        guestFormErrors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="ornek@email.com"
+                    />
+                {guestFormErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">{guestFormErrors.email}</p>
+                )}
+              </div>
+            </div>
+
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setLoginModalOpen(false)}
+                onClick={() => setGuestBookingModalOpen(false)}
                 className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 touch-manipulation min-h-[44px]"
               >
                 İptal
               </button>
               <button
-                onClick={() => {
-                  setLoginModalOpen(false);
-                  router.push('/login');
-                }}
+                onClick={handleGuestBookingSubmit}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white rounded-xl font-semibold hover:from-rose-700 hover:to-fuchsia-700 active:from-rose-800 active:to-fuchsia-800 transition-all duration-200 touch-manipulation min-h-[44px] flex items-center justify-center gap-2"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Giriş Yap
+                Devam Et
               </button>
             </div>
           </div>
         </div>
       </div>
     )}
+    
+    {/* BottomNav - Her durumda göster */}
+    <BottomNav />
     </>
   );
 } 

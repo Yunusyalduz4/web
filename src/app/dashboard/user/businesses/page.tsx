@@ -11,7 +11,7 @@ import NotificationsButton from '../../../../components/NotificationsButton';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function UserBusinesses() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const userId = session?.user.id;
   
@@ -40,38 +40,62 @@ export default function UserBusinesses() {
     setIsClient(true);
   }, []);
 
-  // Data fetching
-  const { data: userLocation } = trpc.user.getUserLocation.useQuery(userId ? { userId } : skipToken);
+  // Data fetching - Tüm kullanıcılar için (oturum açık/üyeliksiz)
+  const { data: userLocation } = trpc.user.getUserLocation.useQuery(
+    status === 'authenticated' && userId ? { userId } : skipToken
+  );
   const updateUserLocation = trpc.user.updateUserLocation.useMutation();
 
-  // Get user location
+  // Local state for guest user location
+  const [guestLocation, setGuestLocation] = useState<{latitude: number, longitude: number} | null>(null);
+
+  // Get user location - Oturum açık kullanıcılar için database'den, üyeliksiz kullanıcılar için local state'den
   useEffect(() => {
-    if (isClient && !userLocation?.latitude && !userLocation?.longitude) {
-      navigator.geolocation?.getCurrentPosition(
-        async (position) => {
-          try {
-            await updateUserLocation.mutateAsync({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              address: '' // We can get this later with reverse geocoding
-            });
-          } catch (error) {
-            console.error('Error updating user location:', error);
+    if (isClient) {
+      if (status === 'authenticated' && !userLocation?.latitude && !userLocation?.longitude) {
+        // Oturum açık kullanıcı için database'e kaydet
+        navigator.geolocation?.getCurrentPosition(
+          async (position) => {
+            try {
+              await updateUserLocation.mutateAsync({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                address: ''
+              });
+            } catch (error) {
+              console.error('Error updating user location:', error);
+            }
+          },
+          (error) => {
+            console.log('Location access denied or error:', error);
           }
-        },
-        (error) => {
-          // Location access denied or error
-        }
-      );
+        );
+      } else if (status === 'unauthenticated' && !guestLocation) {
+        // Üyeliksiz kullanıcı için local state'e kaydet
+        navigator.geolocation?.getCurrentPosition(
+          (position) => {
+            setGuestLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+          },
+          (error) => {
+            console.log('Location access denied or error:', error);
+          }
+        );
+      }
     }
-  }, [isClient, userLocation, updateUserLocation]);
+  }, [status, isClient, userLocation, updateUserLocation, guestLocation]);
+  
+  // Current location (oturum açık kullanıcı için database'den, üyeliksiz için local state'den)
+  const currentLocation = status === 'authenticated' ? userLocation : guestLocation;
   
   const { data: businesses, isLoading, error } = trpc.business.getBusinesses.useQuery({
-    userLatitude: userLocation?.latitude && userLocation.latitude !== null ? userLocation.latitude : undefined,
-    userLongitude: userLocation?.longitude && userLocation.longitude !== null ? userLocation.longitude : undefined,
+    userLatitude: currentLocation?.latitude && currentLocation.latitude !== null ? currentLocation.latitude : undefined,
+    userLongitude: currentLocation?.longitude && currentLocation.longitude !== null ? currentLocation.longitude : undefined,
     maxDistanceKm: maxDistanceKm || undefined
   }, {
-    enabled: !!userId,
+    enabled: true, // Her zaman aktif (oturum açık/üyeliksiz fark etmez)
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
@@ -171,9 +195,9 @@ export default function UserBusinesses() {
 
   // Dynamic map center
   const mapCenter = useMemo(() => {
-    // If user location is available, use it
-    if (userLocation?.latitude && userLocation?.longitude) {
-      return { lat: userLocation.latitude, lng: userLocation.longitude };
+    // If current location is available, use it
+    if (currentLocation?.latitude && currentLocation?.longitude) {
+      return { lat: currentLocation.latitude, lng: currentLocation.longitude };
     }
     
     // If we have businesses, calculate center from them
@@ -188,11 +212,12 @@ export default function UserBusinesses() {
     
     // Default to Istanbul
     return { lat: 41.0082, lng: 28.9784 };
-  }, [userLocation, businessesWithDistance]);
+  }, [currentLocation, businessesWithDistance]);
 
   const handleMarkerClick = (markerId: string) => {
     router.push(`/dashboard/user/businesses/${markerId}`);
   };
+
 
   return (
     <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -543,7 +568,7 @@ export default function UserBusinesses() {
             <div className="w-full h-full pt-16">
               <Map
                 center={mapCenter}
-                zoom={userLocation?.latitude && userLocation?.longitude ? 12 : 10}
+                zoom={currentLocation?.latitude && currentLocation?.longitude ? 12 : 10}
                 markers={mapMarkers.map(m => ({ ...m, color: '#ef476f' }))}
                 onMarkerClick={handleMarkerClick}
                 showUserLocation={true}

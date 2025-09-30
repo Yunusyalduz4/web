@@ -394,7 +394,8 @@ export const appointmentRouter = t.router({
     }),
 
   // Yeni: Birden çok çalışan için gün boyu meşgul slotları döndür (15dk çözünürlük)
-  getBusySlotsForEmployees: t.procedure.use(isUser)
+  // Guest kullanıcılar için de erişilebilir
+  getBusySlotsForEmployees: t.procedure
     .input(z.object({
       employeeIds: z.array(z.string().uuid()).min(1),
       date: z.string(), // YYYY-MM-DD (Türkiye saati olarak kabul edilecek)
@@ -406,9 +407,10 @@ export const appointmentRouter = t.router({
       const utcEndOfDay = new Date(input.date + 'T23:59:59');
       
       const res = await pool.query(
-        `SELECT a.id, a.appointment_datetime, SUM(aps.duration_minutes) AS total_duration
+        `SELECT a.id, a.appointment_datetime, SUM(s.duration_minutes) AS total_duration
          FROM appointments a
          JOIN appointment_services aps ON a.id = aps.appointment_id
+         JOIN services s ON aps.service_id = s.id
          WHERE a.status IN ('pending','confirmed')
            AND aps.employee_id = ANY($1::uuid[])
            AND a.appointment_datetime >= $2 AND a.appointment_datetime <= $3
@@ -437,6 +439,176 @@ export const appointmentRouter = t.router({
     }),
 
   // getWeeklySlots endpoint'i kaldırıldı - yeni sistem gelecek
+
+  // Üyeliksiz kullanıcılar için randevu oluşturma
+  bookAsGuest: t.procedure
+    .input(z.object({
+      businessId: z.string().uuid(),
+      customerName: z.string().min(2),
+      customerSurname: z.string().min(2),
+      customerPhone: z.string().min(10),
+      customerEmail: z.string().email(),
+      appointmentDate: z.string(), // YYYY-MM-DD formatında
+      appointmentTime: z.string(), // HH:mm formatında
+      serviceIds: z.array(z.string().uuid()), // Birden fazla hizmet
+      employeeId: z.string().uuid(),
+      notes: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        console.log('bookAsGuest called with input:', input);
+        
+        let appointmentDatetime: Date;
+      
+      try {
+        // Tarih ve saat birleştir
+        appointmentDatetime = new Date(`${input.appointmentDate}T${input.appointmentTime}:00`);
+        
+        // Geçmiş zamana randevu alınamaz
+        const nowUTC = new Date();
+        if (appointmentDatetime.getTime() <= nowUTC.getTime()) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Geçmiş saat için randevu alınamaz' });
+        }
+      } catch (error) {
+        throw new TRPCError({ 
+          code: 'BAD_REQUEST', 
+          message: `Tarih formatı hatası: ${input.appointmentDate} ${input.appointmentTime}` 
+        });
+      }
+
+      // İşletme onay durumunu kontrol et
+      const businessCheck = await pool.query(
+        `SELECT is_approved FROM businesses WHERE id = $1`,
+        [input.businessId]
+      );
+      
+      if (businessCheck.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'İşletme bulunamadı' });
+      }
+      
+      if (!businessCheck.rows[0].is_approved) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu işletme henüz admin onayından geçmemiş. Randevu alamazsınız.' });
+      }
+
+      // Hizmet bilgilerini al
+      const servicesRes = await pool.query(
+        `SELECT id, duration_minutes, price FROM services WHERE id = ANY($1) AND business_id = $2`,
+        [input.serviceIds, input.businessId]
+      );
+      if (servicesRes.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Hizmet bulunamadı' });
+      }
+
+      // Çalışan bilgilerini al
+      const employeeRes = await pool.query(
+        `SELECT id, name FROM employees WHERE id = $1 AND business_id = $2`,
+        [input.employeeId, input.businessId]
+      );
+      if (employeeRes.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bulunamadı' });
+      }
+
+      // Toplam süre hesapla
+      const totalDuration = servicesRes.rows.reduce((sum, service) => sum + service.duration_minutes, 0);
+      
+      // Randevu bitiş zamanı
+      const endTime = new Date(appointmentDatetime.getTime() + totalDuration * 60000);
+
+      // Çakışma kontrolü - appointments tablosunda duration_minutes yok, bu yüzden basit kontrol
+      const conflictCheck = await pool.query(`
+        SELECT COUNT(*) as conflict_count
+        FROM appointments a
+        JOIN appointment_services ap ON a.id = ap.appointment_id
+        WHERE a.business_id = $1 
+        AND ap.employee_id = $2
+        AND a.status IN ('pending', 'confirmed')
+        AND a.appointment_datetime < $3 AND a.appointment_datetime > $4
+      `, [input.businessId, input.employeeId, endTime, appointmentDatetime]);
+
+      if (parseInt(conflictCheck.rows[0].conflict_count) > 0) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Seçilen saatte çakışan randevu var' });
+      }
+
+      // Üyeliksiz kullanıcı için geçici user oluştur - UUID formatında
+      const guestUserId = crypto.randomUUID();
+      
+      // Geçici kullanıcı oluştur - e-posta adresini unique yapmak için timestamp ekle
+      const uniqueEmail = `guest_${Date.now()}_${input.customerEmail}`;
+      await pool.query(`
+        INSERT INTO users (id, name, email, phone, role, password_hash, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, 'user', 'guest_user_no_password', NOW(), NOW())
+      `, [guestUserId, `Guest: ${input.customerName} ${input.customerSurname}`, uniqueEmail, input.customerPhone]);
+
+      // Randevu oluştur
+      const appointmentRes = await pool.query(`
+        INSERT INTO appointments (
+          id, user_id, business_id, appointment_datetime, 
+          status, notes, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, 'pending', $5, NOW(), NOW())
+        RETURNING id
+      `, [
+        crypto.randomUUID(),
+        guestUserId,
+        input.businessId,
+        appointmentDatetime,
+        input.notes || null
+      ]);
+
+      const appointmentId = appointmentRes.rows[0].id;
+
+      // Hizmetleri randevuya ekle
+      for (const serviceId of input.serviceIds) {
+        // Hizmet fiyatını ve süresini al
+        const service = servicesRes.rows.find(s => s.id === serviceId);
+        const servicePrice = service?.price || 0;
+        const serviceDuration = service?.duration_minutes || 0;
+        
+        await pool.query(`
+          INSERT INTO appointment_services (appointment_id, service_id, employee_id, price, duration_minutes)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [appointmentId, serviceId, input.employeeId, servicePrice, serviceDuration]);
+      }
+
+      // İşletmeye bildirim gönder
+      try {
+        await sendNotificationToBusiness(input.businessId, {
+          title: 'Yeni Randevu Talebi',
+          body: `${input.customerName} ${input.customerSurname} adlı müşteri randevu talebinde bulundu.`,
+          data: { appointmentId, type: 'new_appointment' }
+        });
+      } catch (notificationError) {
+        console.error('Bildirim gönderme hatası:', notificationError);
+      }
+
+      // WebSocket ile real-time güncelleme
+      try {
+        const io = getSocketServer();
+        if (io) {
+          io.to(`business_${input.businessId}`).emit('appointment_created', {
+            appointmentId,
+            businessId: input.businessId,
+            customerName: `${input.customerName} ${input.customerSurname}`,
+            appointmentDatetime: appointmentDatetime.toISOString(),
+            services: servicesRes.rows.map(s => s.id)
+          });
+        }
+      } catch (socketError) {
+        console.error('WebSocket güncelleme hatası:', socketError);
+      }
+
+        return {
+          success: true,
+          appointmentId,
+          message: 'Randevu başarıyla oluşturuldu'
+        };
+      } catch (error) {
+        console.error('Error in bookAsGuest:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Randevu oluşturma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`,
+        });
+      }
+    }),
 
   // Yeni: Manuel randevu oluşturma endpoint'i - Güncellenmiş
   createManualAppointment: t.procedure.use(isEmployeeOrBusiness)

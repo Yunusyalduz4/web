@@ -881,6 +881,25 @@ export default function BusinessAppointmentsPage() {
                 </div>
               )}
             </div>
+
+            {/* Guest Kullanıcı Uyarısı - Footer */}
+            {a.user_name && a.user_name.startsWith('Guest:') && (
+              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-orange-600">
+                      <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-orange-800 mb-1">Onaysız Müşteri</div>
+                    <div className="text-xs text-orange-700 leading-relaxed">
+                      Bu randevu üyeliksiz kullanıcı tarafından alındı. Güvenlik için arayıp teyit alın.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
         {(!paginatedActiveAppointments || paginatedActiveAppointments.length === 0) && !isLoading && (

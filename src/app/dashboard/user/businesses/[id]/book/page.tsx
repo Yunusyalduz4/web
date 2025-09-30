@@ -18,6 +18,10 @@ export default function BookAppointmentPage() {
   const businessId = params?.id as string;
   const { data: session } = useSession();
   const userId = session?.user.id;
+  
+  // Üyeliksiz kullanıcı kontrolü
+  const [guestData, setGuestData] = useState<any>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   // Step-by-step state management
   const [currentStep, setCurrentStep] = useState<BookingStep>('employee');
@@ -30,6 +34,7 @@ export default function BookAppointmentPage() {
     { enabled: !!selectedEmployee?.id && !!businessId }
   );
   const bookMutation = trpc.appointment.book.useMutation();
+  const bookAsGuestMutation = trpc.appointment.bookAsGuest.useMutation();
   const [selectedServices, setSelectedServices] = useState<any[]>([]);
   const [serviceEmployeeAssignments, setServiceEmployeeAssignments] = useState<{[serviceId: string]: any}>({});
   const [selectedDate, setSelectedDate] = useState('');
@@ -38,6 +43,21 @@ export default function BookAppointmentPage() {
   const [success, setSuccess] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [customDate, setCustomDate] = useState('');
+
+  // Üyeliksiz kullanıcı verilerini yükle
+  useEffect(() => {
+    if (!userId) {
+      const storedGuestData = localStorage.getItem('guestBookingData');
+      if (storedGuestData) {
+        const parsed = JSON.parse(storedGuestData);
+        setGuestData(parsed);
+        setIsGuest(true);
+      } else {
+        // Eğer üyeliksiz veri yoksa ana sayfaya yönlendir
+        router.push(`/dashboard/user/businesses/${businessId}`);
+      }
+    }
+  }, [userId, businessId, router]);
 
   // Multi-service queries
   const { data: multiServiceData } = trpc.business.getEmployeesForMultipleServices.useQuery(
@@ -314,7 +334,7 @@ export default function BookAppointmentPage() {
 
   // Randevu oluşturma
   const handleCreateAppointment = async () => {
-    if (!userId || !selectedEmployee || selectedServices.length === 0 || !selectedDate || !selectedTime) {
+    if ((!userId && !isGuest) || !selectedEmployee || selectedServices.length === 0 || !selectedDate || !selectedTime) {
       setError('Tüm alanları doldurun.');
       return;
     }
@@ -333,15 +353,41 @@ export default function BookAppointmentPage() {
     const appointmentDatetime = `${selectedDate}T${selectedTime}:00`;
     
     try {
-      await bookMutation.mutateAsync({
-        userId,
-        businessId,
-        appointmentDatetime,
-        services: servicesToBook
-      });
-      
-      setSuccess('Randevu başarıyla oluşturuldu!');
-      setTimeout(() => router.push(`/dashboard/user`), 1500);
+      if (isGuest && guestData) {
+        // Üyeliksiz kullanıcı için randevu oluştur
+        const result = await bookAsGuestMutation.mutateAsync({
+          businessId,
+          customerName: guestData.firstName,
+          customerSurname: guestData.lastName,
+          customerPhone: guestData.phone,
+          customerEmail: guestData.email,
+          appointmentDate: selectedDate,
+          appointmentTime: selectedTime,
+          serviceIds: selectedServices.map(s => s.id),
+          employeeId: selectedEmployee.id,
+          notes: null
+        });
+        
+        setSuccess('Randevu başarıyla oluşturuldu!');
+        
+        // Üyeliksiz kullanıcı için randevu kartını göster
+        setTimeout(() => {
+          setCurrentStep('confirmation');
+          // localStorage'dan guest verilerini temizle
+          localStorage.removeItem('guestBookingData');
+        }, 1500);
+      } else {
+        // Üyelikli kullanıcı için normal randevu oluştur
+        await bookMutation.mutateAsync({
+          userId: userId!,
+          businessId,
+          appointmentDatetime,
+          services: servicesToBook
+        });
+        
+        setSuccess('Randevu başarıyla oluşturuldu!');
+        setTimeout(() => router.push(`/dashboard/user`), 1500);
+      }
     } catch (err: any) {
       setError(err.message || 'Randevu oluşturulamadı');
     }
@@ -763,13 +809,13 @@ export default function BookAppointmentPage() {
         {/* Progress Bar */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Adım {getStepNumber(currentStep)}/3</span>
+            <span className="text-sm font-medium text-gray-700">Adım {getStepNumber(currentStep)}/4</span>
             <span className="text-sm text-gray-600">{getStepTitle(currentStep)}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-red-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(getStepNumber(currentStep) / 3) * 100}%` }}
+              style={{ width: `${(getStepNumber(currentStep) / 4) * 100}%` }}
             ></div>
           </div>
         </div>
@@ -803,6 +849,17 @@ export default function BookAppointmentPage() {
         {currentStep === 'employee' && <EmployeeSelectionStep />}
         {currentStep === 'service' && <ServiceSelectionStep />}
         {currentStep === 'availability' && <AvailabilitySelectionStep />}
+        {currentStep === 'confirmation' && (
+          <ConfirmationStep 
+            guestData={guestData}
+            isGuest={isGuest}
+            selectedEmployee={selectedEmployee}
+            selectedServices={selectedServices}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            businessId={businessId}
+          />
+        )}
       </div>
 
       {/* Özel Tarih Seçme Modal */}
@@ -923,5 +980,231 @@ export default function BookAppointmentPage() {
         }
       `}</style>
     </main>
+  );
+}
+
+// Confirmation Step Component
+function ConfirmationStep({ 
+  guestData, 
+  isGuest, 
+  selectedEmployee, 
+  selectedServices, 
+  selectedDate, 
+  selectedTime, 
+  businessId 
+}: {
+  guestData: any;
+  isGuest: boolean;
+  selectedEmployee: any;
+  selectedServices: any[];
+  selectedDate: string;
+  selectedTime: string;
+  businessId: string;
+}) {
+  const router = useRouter();
+  const { data: business } = trpc.business.getBusinessById.useQuery({ businessId }, { enabled: !!businessId });
+
+  if (!isGuest || !guestData) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-6xl mb-4">❌</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Hata</h2>
+        <p className="text-gray-600 mb-4">Randevu bilgileri bulunamadı</p>
+        <button
+          onClick={() => router.push(`/dashboard/user/businesses/${businessId}`)}
+          className="px-6 py-3 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+        >
+          Ana Sayfaya Dön
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Başarı Mesajı */}
+      <div className="text-center">
+        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-white">
+            <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Randevu Başarıyla Oluşturuldu!</h2>
+        <p className="text-gray-600">Randevu bilgileriniz aşağıda görüntülenmektedir.</p>
+      </div>
+
+      {/* Ekran Görüntüsü Uyarısı */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-amber-900 mb-2">📱 Önemli Uyarı!</h3>
+            <p className="text-amber-800 mb-3">
+              <strong>Bu sayfanın ekran görüntüsünü alın!</strong> Randevu bilgileriniz sadece bu sayfada görüntülenmektedir. 
+              Bilgilerinizi kaybetmemek için mutlaka ekran görüntüsü alın.
+            </p>
+            <div className="flex items-center gap-2 text-sm text-amber-700">
+              <span>💡</span>
+              <span>Telefonunuzda: Güç + Ses Azaltma tuşlarına basın</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Randevu Kartı */}
+      <div className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-2xl p-6 shadow-xl">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-rose-500 to-fuchsia-500 rounded-full flex items-center justify-center">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
+              <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Randevu Detayları</h3>
+          <div className="w-20 h-1 bg-gradient-to-r from-rose-500 to-fuchsia-500 rounded-full mx-auto"></div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Müşteri Bilgileri */}
+          <div className="bg-white rounded-xl p-4 border border-gray-100">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-rose-500">
+                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Müşteri Bilgileri
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-gray-600">Ad Soyad:</span>
+                <div className="font-medium text-gray-900">{guestData.firstName} {guestData.lastName}</div>
+              </div>
+              <div>
+                <span className="text-gray-600">Telefon:</span>
+                <div className="font-medium text-gray-900">{guestData.phone}</div>
+              </div>
+              <div className="sm:col-span-2">
+                <span className="text-gray-600">E-posta:</span>
+                <div className="font-medium text-gray-900">{guestData.email}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* İşletme Bilgileri */}
+          {business && (
+            <div className="bg-white rounded-xl p-4 border border-gray-100">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+                  <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                İşletme Bilgileri
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-600">İşletme:</span>
+                  <div className="font-medium text-gray-900">{business.name}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Adres:</span>
+                  <div className="font-medium text-gray-900">{business.address}</div>
+                </div>
+                {business.phone && (
+                  <div>
+                    <span className="text-gray-600">Telefon:</span>
+                    <div className="font-medium text-gray-900">{business.phone}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Randevu Bilgileri */}
+          <div className="bg-white rounded-xl p-4 border border-gray-100">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-green-500">
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Randevu Bilgileri
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-gray-600">Tarih:</span>
+                <div className="font-medium text-gray-900">
+                  {selectedDate ? new Date(selectedDate).toLocaleDateString('tr-TR', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  }) : 'Belirtilmemiş'}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-600">Saat:</span>
+                <div className="font-medium text-gray-900">
+                  {selectedTime || 'Belirtilmemiş'}
+                </div>
+              </div>
+              {selectedEmployee && (
+                <div>
+                  <span className="text-gray-600">Çalışan:</span>
+                  <div className="font-medium text-gray-900">{selectedEmployee.name}</div>
+                </div>
+              )}
+              {selectedServices.length > 0 && (
+                <div>
+                  <span className="text-gray-600">Hizmetler:</span>
+                  <div className="font-medium text-gray-900">
+                    {selectedServices.map(service => service.name).join(', ')}
+                  </div>
+                </div>
+              )}
+              <div>
+                <span className="text-gray-600">Durum:</span>
+                <div className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  Onay Bekliyor
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Alt Bilgi */}
+        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+          <div className="text-center">
+            <p className="text-sm text-blue-800 mb-2">
+              <strong>Randevu onayı için işletme ile iletişime geçin.</strong>
+            </p>
+            <p className="text-xs text-blue-600">
+              İşletme randevunuzu onayladığında size bilgi verilecektir.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Alt Butonlar */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => router.push(`/dashboard/user/businesses/${businessId}`)}
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-rose-600 to-fuchsia-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Ana Sayfaya Dön
+        </button>
+        <button
+          onClick={() => window.print()}
+          className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-600">
+            <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Yazdır
+        </button>
+      </div>
+    </div>
   );
 }
