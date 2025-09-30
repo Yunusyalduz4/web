@@ -590,3 +590,15 @@ input[type="radio"]:focus {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* Mini Card Scale In Animation */
+@keyframes scaleInFade {
+  from {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+}

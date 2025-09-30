@@ -942,15 +942,17 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         }}
       >
         <div 
-          className="absolute bg-white rounded-t-3xl shadow-2xl border border-gray-200 mx-auto animate-slide-up"
+          className="absolute bg-white rounded-t-3xl shadow-2xl border border-gray-200 mx-auto"
           style={{
             left: '50%',
             top: '50%',
-            transform: 'translate(-50%, -50%) scale(0.5)',
+            transform: 'translate(-50%, -50%) scale(0.3)',
             width: '600px',
             height: 'auto',
             maxHeight: '90vh',
-            transformOrigin: 'center center'
+            transformOrigin: 'center center',
+            opacity: 0,
+            animation: 'scaleInFade 0.3s ease-out forwards'
           }}
           onClick={(e) => e.stopPropagation()}
         >
