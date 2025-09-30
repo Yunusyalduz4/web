@@ -7,6 +7,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // VPS için production optimizasyonları
+  output: 'standalone',
+  trailingSlash: true,
  
   // Environment değişkenlerini debug et
   env: {
