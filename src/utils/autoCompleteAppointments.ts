@@ -1,31 +1,33 @@
 import { pool } from '../server/db';
 
 /**
- * 24 saat sonra otomatik tamamlandı olarak işaretlenecek randevuları kontrol et
+ * Günlük olarak geçmiş randevuları otomatik tamamlandı olarak işaretle
+ * Her gün 23:59'da pending ve confirmed statuslu randevuları completed yapar
  */
 export async function checkAndCompleteAppointments(): Promise<void> {
   try {
-    // Şu anki zamandan 24 saat önceki zamanı hesapla
-    const twentyFourHoursAgo = new Date();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    // Bugünün sonuna kadar olan tüm geçmiş randevuları al
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Bugünün 23:59:59'u
 
-    // 24 saat önce geçmiş confirmed randevuları bul
+    // Bugüne kadar geçmiş pending ve confirmed randevuları bul
     const expiredAppointments = await pool.query(`
       SELECT 
         a.id,
         a.user_id,
         a.business_id,
         a.appointment_datetime,
+        a.status as old_status,
         b.name as business_name,
         u.name as user_name,
         u.email as user_email
       FROM appointments a
       JOIN businesses b ON a.business_id = b.id
       LEFT JOIN users u ON a.user_id = u.id
-      WHERE a.status = 'confirmed' 
-        AND a.appointment_datetime < $1
-        AND a.appointment_datetime > NOW() - INTERVAL '7 days' -- Son 7 gün içindeki randevular
-    `, [twentyFourHoursAgo.toISOString()]);
+      WHERE a.status IN ('pending', 'confirmed') 
+        AND a.appointment_datetime <= $1
+        AND a.appointment_datetime > NOW() - INTERVAL '30 days' -- Son 30 gün içindeki randevular
+    `, [today.toISOString()]);
 
     if (expiredAppointments.rows.length === 0) {
       console.log('🔄 [Auto-Complete] Tamamlanacak randevu bulunamadı');
@@ -44,24 +46,10 @@ export async function checkAndCompleteAppointments(): Promise<void> {
           WHERE id = $1
         `, [appointment.id]);
 
-        console.log(`✅ [Auto-Complete] Randevu tamamlandı: ${appointment.id} - ${appointment.business_name}`);
+        console.log(`✅ [Auto-Complete] Randevu tamamlandı: ${appointment.id} (${appointment.old_status} → completed) - ${appointment.business_name}`);
 
-        // Push notification gönder (opsiyonel)
-        try {
-          const { sendAppointmentStatusUpdateNotification } = await import('./pushNotification');
-          await sendAppointmentStatusUpdateNotification(
-            appointment.id,
-            appointment.business_id,
-            appointment.user_id,
-            'confirmed',
-            'completed',
-            appointment.appointment_datetime,
-            appointment.business_name
-          );
-        } catch (notificationError) {
-          // Push notification hatası randevu güncellemeyi etkilemesin
-          console.log('⚠️ [Auto-Complete] Push notification gönderilemedi:', notificationError);
-        }
+        // Sistem tarafından otomatik tamamlandığında bildirim gönderme
+        // Sadece manuel güncellemelerde bildirim gönderilir
 
       } catch (error) {
         console.error(`❌ [Auto-Complete] Randevu güncellenemedi: ${appointment.id}`, error);
@@ -79,7 +67,7 @@ export async function checkAndCompleteAppointments(): Promise<void> {
  * Manuel olarak otomatik tamamlandı kontrolü çalıştır (test için)
  */
 export async function runManualAutoComplete(): Promise<void> {
-  console.log('🔄 [Manual Auto-Complete] Manuel otomatik tamamlandı kontrolü başlatılıyor...');
+  console.log('🔄 [Manual Auto-Complete] Manuel günlük randevu tamamlama kontrolü başlatılıyor...');
   await checkAndCompleteAppointments();
   console.log('✅ [Manual Auto-Complete] Manuel kontrol tamamlandı');
 }

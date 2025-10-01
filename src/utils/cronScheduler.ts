@@ -53,14 +53,16 @@ export function initializeCronJobs(): void {
   
   cronJobs.push(cleanupJob);
 
-  // Her saat başı otomatik tamamlandı kontrolü yap
-  // 24 saat geçmiş confirmed randevuları completed olarak işaretle
-  const autoCompleteJob = cron.schedule('0 * * * *', async () => {
+  // Her gün 23:59'da otomatik tamamlandı kontrolü yap
+  // Geçmiş pending ve confirmed randevuları completed olarak işaretle
+  const autoCompleteJob = cron.schedule('59 23 * * *', async () => {
     try {
+      console.log('🕐 [Cron] Günlük randevu tamamlama kontrolü başlatılıyor...');
       await checkAndCompleteAppointments();
+      console.log('✅ [Cron] Günlük randevu tamamlama kontrolü tamamlandı');
     } catch (error) {
       // Otomatik tamamlandı kontrolü hatası
-      console.error('❌ [Cron] Otomatik tamamlandı kontrolü başarısız:', error);
+      console.error('❌ [Cron] Günlük otomatik tamamlandı kontrolü başarısız:', error);
     }
   }, {
     timezone: 'Europe/Istanbul' // Türkiye saati
@@ -105,13 +107,15 @@ export async function runManualReminderCheck(): Promise<void> {
 }
 
 /**
- * Manuel olarak otomatik tamamlandı kontrolü çalıştır (test için)
+ * Manuel olarak günlük randevu tamamlama kontrolü çalıştır (test için)
  */
 export async function runManualAutoCompleteCheck(): Promise<void> {
   try {
+    console.log('🔄 [Manual] Manuel günlük randevu tamamlama kontrolü başlatılıyor...');
     await checkAndCompleteAppointments();
+    console.log('✅ [Manual] Manuel günlük randevu tamamlama kontrolü tamamlandı');
   } catch (error) {
     // Manuel otomatik tamamlandı kontrolü hatası
-    console.error('❌ [Manual] Otomatik tamamlandı kontrolü başarısız:', error);
+    console.error('❌ [Manual] Manuel günlük randevu tamamlama kontrolü başarısız:', error);
   }
 }
