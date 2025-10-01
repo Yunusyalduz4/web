@@ -89,7 +89,7 @@ export default function BusinessDashboard() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             dataUrl: base64Data,
-            filename: `story_${Date.now()}.${file.type.startsWith('video/') ? 'mp4' : 'jpg'}`
+            filename: `story_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${file.type.startsWith('video/') ? 'mp4' : 'jpg'}`
           }),
         });
 

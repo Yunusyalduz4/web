@@ -178,18 +178,24 @@ export default function ReviewModal({
     setError('');
 
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
+      const uploadPromises = Array.from(files).map(async (file, index) => {
         // Resize image if too large
         const resizedFile = await resizeImage(file, 800, 600);
         
         // Convert to base64
         const base64 = await fileToBase64(resizedFile);
         
+        // Kamera sorunu için benzersiz dosya adı oluştur
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const fileExtension = file.type.split('/')[1] || 'jpg';
+        const uniqueFilename = `review_${timestamp}_${index}_${randomSuffix}.${fileExtension}`;
+        
         // Upload to server
         const response = await fetch('/api/upload_base64', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl: base64, filename: file.name })
+          body: JSON.stringify({ dataUrl: base64, filename: uniqueFilename })
         });
         
         if (!response.ok) {

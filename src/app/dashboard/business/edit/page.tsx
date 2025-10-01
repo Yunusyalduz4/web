@@ -243,10 +243,16 @@ export default function BusinessEditPage() {
         dataUrl = await uploadFileSimple(file);
       }
 
+      // Kamera sorunu için benzersiz dosya adı oluştur
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const fileExtension = file.type.split('/')[1] || 'jpg';
+      const uniqueFilename = `business_${timestamp}_${randomSuffix}.${fileExtension}`;
+
       const resp = await fetch('/api/upload_base64', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl, filename: file.name }),
+        body: JSON.stringify({ dataUrl, filename: uniqueFilename }),
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || 'Upload failed');
@@ -263,7 +269,7 @@ export default function BusinessEditPage() {
         const resp2 = await fetch('/api/upload_base64', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl, filename: file.name })
+          body: JSON.stringify({ dataUrl, filename: uniqueFilename })
         });
         const json2 = await resp2.json();
         if (resp2.ok && json2.url && typeof json2.url === 'string' && json2.url.startsWith('http')) {
@@ -306,10 +312,16 @@ export default function BusinessEditPage() {
         dataUrl = await uploadFileSimple(file);
       }
 
+      // Kamera sorunu için benzersiz dosya adı oluştur
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const fileExtension = file.type.split('/')[1] || 'jpg';
+      const uniqueFilename = `business_profile_${timestamp}_${randomSuffix}.${fileExtension}`;
+
       const resp = await fetch('/api/upload_base64', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl, filename: file.name }),
+        body: JSON.stringify({ dataUrl, filename: uniqueFilename }),
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || 'Upload failed');
@@ -324,7 +336,7 @@ export default function BusinessEditPage() {
         const resp2 = await fetch('/api/upload_base64', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl, filename: file.name })
+          body: JSON.stringify({ dataUrl, filename: uniqueFilename })
         });
         const json2 = await resp2.json();
         if (resp2.ok && json2.url && typeof json2.url === 'string' && json2.url.startsWith('http')) {

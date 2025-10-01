@@ -118,7 +118,7 @@ export default function StoryCreator({
         },
         body: JSON.stringify({
           dataUrl: form.mediaUrl,
-          filename: `story_${Date.now()}.${form.mediaType === 'image' ? 'jpg' : 'mp4'}`
+          filename: `story_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${form.mediaType === 'image' ? 'jpg' : 'mp4'}`
         }),
       });
 
