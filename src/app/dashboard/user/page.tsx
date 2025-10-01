@@ -18,9 +18,47 @@ const statusColors: Record<string, string> = {
 };
 
 export default function UserDashboard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const userId = session?.user.id;
+  
+  // Ziyaretçi kullanıcı kontrolü
+  const isGuest = status === 'unauthenticated' || !session || !userId;
+  
+  if (isGuest) {
+    return (
+      <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-6">
+            <div className="w-20 h-20 mx-auto bg-gradient-to-r from-rose-500 to-fuchsia-500 rounded-full flex items-center justify-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-gray-900">Ziyaretçi Olarak Giriş Yaptınız</h1>
+              <p className="text-gray-600">Bilgilere erişmek için üyelik oluşturun</p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/register')}
+                className="w-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white px-6 py-3 rounded-xl font-medium hover:from-rose-600 hover:to-fuchsia-600 transition-all"
+              >
+                Üyelik Oluştur
+              </button>
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full bg-white text-gray-700 px-6 py-3 rounded-xl font-medium border border-gray-200 hover:bg-gray-50 transition-all"
+              >
+                Giriş Yap
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
   const { data: profile } = trpc.user.getProfile.useQuery(userId ? { userId } : skipToken);
   const { data: appointments, isLoading } = trpc.user.appointmentHistory.useQuery(userId ? { userId } : skipToken);
   const { data: userReviews } = trpc.review.getByUser.useQuery(userId ? { userId } : skipToken);

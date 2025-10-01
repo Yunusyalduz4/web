@@ -1,4 +1,5 @@
 "use client";
+import { useSession } from "next-auth/react";
 import { trpc } from '../../../../utils/trpcClient';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,7 +8,46 @@ import { useRealTimeBusiness } from '../../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../../hooks/useWebSocketEvents';
 
 export default function FavoritesPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
+  
+  // Ziyaretçi kullanıcı kontrolü
+  const isGuest = status === 'unauthenticated' || !session || !session?.user?.id;
+  
+  if (isGuest) {
+    return (
+      <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-6">
+            <div className="w-20 h-20 mx-auto bg-gradient-to-r from-rose-500 to-fuchsia-500 rounded-full flex items-center justify-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M12.1 21.35l-1.1-1.01C5.14 15.24 2 12.36 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.59 4.81 14.26 4 16 4 18.5 4 20.5 6 20.5 8.5c0 3.86-3.14 6.74-8.9 11.84l-.5.46z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-gray-900">Ziyaretçi Olarak Giriş Yaptınız</h1>
+              <p className="text-gray-600">Bilgilere erişmek için üyelik oluşturun</p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/register')}
+                className="w-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white px-6 py-3 rounded-xl font-medium hover:from-rose-600 hover:to-fuchsia-600 transition-all"
+              >
+                Üyelik Oluştur
+              </button>
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full bg-white text-gray-700 px-6 py-3 rounded-xl font-medium border border-gray-200 hover:bg-gray-50 transition-all"
+              >
+                Giriş Yap
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+  
   const { data: favorites, isLoading } = trpc.favorites.list.useQuery();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'favorites'>('recent');

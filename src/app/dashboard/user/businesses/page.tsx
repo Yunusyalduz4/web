@@ -15,6 +15,9 @@ export default function UserBusinesses() {
   const router = useRouter();
   const userId = session?.user.id;
   
+  // Ziyaretçi kullanıcı kontrolü
+  const isGuest = status === 'unauthenticated' || !session || !userId;
+  
   // WebSocket entegrasyonu
   const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
   
@@ -40,19 +43,20 @@ export default function UserBusinesses() {
     setIsClient(true);
   }, []);
 
-  // Data fetching - Tüm kullanıcılar için (oturum açık/üyeliksiz)
+  // Data fetching - Tüm oturum açmış kullanıcılar için
   const { data: userLocation } = trpc.user.getUserLocation.useQuery(
-    status === 'authenticated' && userId ? { userId } : skipToken
+    status === 'authenticated' && userId && isClient ? { userId } : skipToken
   );
   const updateUserLocation = trpc.user.updateUserLocation.useMutation();
 
   // Local state for guest user location
   const [guestLocation, setGuestLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [locationReady, setLocationReady] = useState(false);
 
   // Get user location - Oturum açık kullanıcılar için database'den, üyeliksiz kullanıcılar için local state'den
   useEffect(() => {
     if (isClient) {
-      if (status === 'authenticated' && !userLocation?.latitude && !userLocation?.longitude) {
+      if (!isGuest && !userLocation?.latitude && !userLocation?.longitude) {
         // Oturum açık kullanıcı için database'e kaydet
         navigator.geolocation?.getCurrentPosition(
           async (position) => {
@@ -62,40 +66,49 @@ export default function UserBusinesses() {
                 longitude: position.coords.longitude,
                 address: ''
               });
+              setLocationReady(true);
             } catch (error) {
               console.error('Error updating user location:', error);
+              setLocationReady(true); // Hata olsa bile devam et
             }
           },
           (error) => {
             console.log('Location access denied or error:', error);
+            setLocationReady(true); // Konum erişimi reddedilse bile devam et
           }
         );
-      } else if (status === 'unauthenticated' && !guestLocation) {
-        // Üyeliksiz kullanıcı için local state'e kaydet
+      } else if (isGuest && !guestLocation) {
+        // Ziyaretçi kullanıcı için local state'e kaydet
         navigator.geolocation?.getCurrentPosition(
           (position) => {
             setGuestLocation({
               latitude: position.coords.latitude,
               longitude: position.coords.longitude
             });
+            setLocationReady(true);
           },
           (error) => {
             console.log('Location access denied or error:', error);
+            setLocationReady(true); // Konum erişimi reddedilse bile devam et
           }
         );
+      } else if (!isGuest && userLocation?.latitude && userLocation?.longitude) {
+        // Oturum açık kullanıcı için konum bilgisi zaten var
+        setLocationReady(true);
       }
     }
-  }, [status, isClient, userLocation, updateUserLocation, guestLocation]);
+  }, [isClient, isGuest, userLocation, updateUserLocation, guestLocation]);
   
-  // Current location (oturum açık kullanıcı için database'den, üyeliksiz için local state'den)
-  const currentLocation = status === 'authenticated' ? userLocation : guestLocation;
+  // Current location (oturum açık kullanıcı için database'den, ziyaretçi için local state'den)
+  const currentLocation = !isGuest ? userLocation : guestLocation;
+  
   
   const { data: businesses, isLoading, error } = trpc.business.getBusinesses.useQuery({
     userLatitude: currentLocation?.latitude && currentLocation.latitude !== null ? currentLocation.latitude : undefined,
     userLongitude: currentLocation?.longitude && currentLocation.longitude !== null ? currentLocation.longitude : undefined,
     maxDistanceKm: maxDistanceKm || undefined
   }, {
-    enabled: true, // Her zaman aktif (oturum açık/üyeliksiz fark etmez)
+    enabled: isClient && locationReady, // Sadece client-side'da ve konum hazır olduğunda çalış
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });

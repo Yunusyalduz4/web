@@ -419,6 +419,8 @@ export const appointmentRouter = t.router({
       );
       
       const busy: Record<string, boolean> = {};
+      
+      // Randevulardan gelen meşgul slot'lar
       for (const row of res.rows) {
         const utcStart = new Date(row.appointment_datetime);
         const dur = Number(row.total_duration) || input.durationMinutes;
@@ -435,6 +437,30 @@ export const appointmentRouter = t.router({
           busy[slotKey] = true;
         }
       }
+
+      // Meşgule alınan slot'ları da ekle
+      const busySlotsRes = await pool.query(
+        `SELECT start_datetime, end_datetime FROM busy_slots 
+         WHERE employee_id = ANY($1::uuid[])
+         AND DATE(start_datetime) = $2`,
+        [input.employeeIds, input.date]
+      );
+
+      for (const busySlot of busySlotsRes.rows) {
+        const busyStart = new Date(busySlot.start_datetime);
+        const busyEnd = new Date(busySlot.end_datetime);
+        
+        // 15dk'lık slot'lara böl
+        for (let t = new Date(busyStart); t < busyEnd; t = new Date(t.getTime() + 15 * 60000)) {
+          const hh = String(t.getHours()).padStart(2, '0');
+          const mm = String(t.getMinutes()).padStart(2, '0');
+          const slotKey = `${hh}:${mm}`;
+          
+          // Slot meşgul olarak işaretle
+          busy[slotKey] = true;
+        }
+      }
+      
       return busy;
     }),
 

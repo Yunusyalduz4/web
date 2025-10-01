@@ -74,8 +74,6 @@ export const businessRouter = t.router({
     }).optional())
     .query(async ({ input }) => {
       try {
-        console.log('getBusinesses called with input:', input);
-        
         let distanceCalculation = '';
         let whereClause = 'WHERE b.is_approved = true';
         const params: any[] = [];
@@ -130,11 +128,7 @@ export const businessRouter = t.router({
           ${input?.userLatitude && input?.userLongitude ? 'ORDER BY distance ASC' : ''}
         `;
         
-        console.log('Executing query:', query);
-        console.log('With params:', params);
-
         const result = await pool.query(query, params);
-        console.log('Query result:', result.rows.length, 'rows');
         return result.rows;
       } catch (error) {
         console.error('Error in getBusinesses:', error);

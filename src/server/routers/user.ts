@@ -14,7 +14,7 @@ export const userRouter = t.router({
       return result.rows[0];
     }),
 
-  getUserLocation: t.procedure.use(isUser)
+  getUserLocation: t.procedure.use(isAuthed)
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ input }) => {
       const result = await pool.query(
@@ -52,7 +52,7 @@ export const userRouter = t.router({
     }),
 
   // Kullanıcılar için profil güncelleme (hem normal kullanıcılar hem çalışanlar)
-  updateProfile: t.procedure.use(isAuthed)
+  updateUserProfile: t.procedure.use(isAuthed)
     .input(z.object({
       name: z.string().min(2),
       email: z.string().email(),
@@ -271,7 +271,7 @@ export const userRouter = t.router({
     }),
 
   // Profil güncelleme (çalışanlar için)
-  updateProfile: t.procedure.use(isEmployee)
+  updateEmployeeProfile: t.procedure.use(isEmployee)
     .input(z.object({
       name: z.string().min(2),
       email: z.string().email(),

@@ -76,6 +76,11 @@ export const authRouter = t.router({
     .input(registerSchema)
     .mutation(async ({ input }) => {
       try {
+        // Role güvenlik kontrolü - admin rolüne izin verme
+        if (input.role === 'admin') {
+          throw new Error('Admin rolü ile kayıt oluşturulamaz');
+        }
+        
         // Şifre hashle
         const password_hash = await bcrypt.hash(input.password, 10);
         

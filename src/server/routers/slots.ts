@@ -101,7 +101,7 @@ export const slotsRouter = t.router({
         const dayOfWeek = currentDate.getDay();
         
         // Her saat için müsait çalışan sayısını ve randevu sayısını hesapla
-        const slotCapacity: Record<string, { available: number, busy: number }> = {};
+        const slotCapacity: Record<string, { available: number, busy: number, blocked: number }> = {};
         
         // Önce müsait olan saatleri bul ve sadece onlar için slot capacity oluştur
         const availableHours = new Set<number>();
@@ -128,7 +128,7 @@ export const slotsRouter = t.router({
         for (const h of availableHours) {
           for (let m = 0; m < 60; m += 15) {
             const slotTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-            slotCapacity[slotTime] = { available: 0, busy: 0 };
+            slotCapacity[slotTime] = { available: 0, busy: 0, blocked: 0 };
           }
         }
         
@@ -171,6 +171,34 @@ export const slotsRouter = t.router({
             // Sadece 08:00-20:00 arası slot'ları kaydet
             if (time.getHours() >= 0 && time.getHours() < 24 && slotCapacity[slotKey]) {
               slotCapacity[slotKey].busy++;
+            }
+          }
+        }
+
+        // Meşgule alınan slot'ları hesapla
+        const busySlotsRes = await pool.query(
+          `SELECT start_datetime, end_datetime FROM busy_slots 
+           WHERE business_id = $1 
+           AND employee_id = ANY($2::uuid[])
+           AND DATE(start_datetime) = $3`,
+          [input.businessId, employeeIds, dateStr]
+        );
+
+        console.log(`Busy slots check for date ${dateStr}:`, busySlotsRes.rows.length, 'records found');
+
+        for (const busySlot of busySlotsRes.rows) {
+          const busyStart = new Date(busySlot.start_datetime);
+          const busyEnd = new Date(busySlot.end_datetime);
+          
+          // Her 15dk'lık slot için kontrol et
+          for (let time = new Date(busyStart); time < busyEnd; time = new Date(time.getTime() + 15 * 60000)) {
+            const hh = String(time.getHours()).padStart(2, '0');
+            const mm = String(time.getMinutes()).padStart(2, '0');
+            const slotKey = `${hh}:${mm}`;
+            
+            // Sadece 08:00-20:00 arası slot'ları kaydet
+            if (time.getHours() >= 0 && time.getHours() < 24 && slotCapacity[slotKey]) {
+              slotCapacity[slotKey].blocked++;
             }
           }
         }
@@ -225,21 +253,27 @@ export const slotsRouter = t.router({
             } else {
               const capacity = slotCapacity[slotTime];
               if (capacity && capacity.available > 0) {
-                // Doluluk oranını hesapla
-                const occupancyRate = capacity.busy / capacity.available;
-                
-                if (occupancyRate >= 1.0) {
-                  // Tam dolu
-                  status = 'busy';
+                // Önce meşgule alınmış mı kontrol et
+                if (capacity.blocked > 0) {
+                  status = 'blocked'; // Meşgule alınmış
                   isBusy = true;
-                } else if (occupancyRate >= 0.5) {
-                  // Yarı dolu
-                  status = 'half-busy';
-                  isBusy = false;
                 } else {
-                  // Müsait
-                  status = 'available';
-                  isBusy = false;
+                  // Doluluk oranını hesapla (sadece randevular için)
+                  const occupancyRate = capacity.busy / capacity.available;
+                  
+                  if (occupancyRate >= 1.0) {
+                    // Tam dolu (randevu var)
+                    status = 'busy';
+                    isBusy = true;
+                  } else if (occupancyRate >= 0.5) {
+                    // Yarı dolu
+                    status = 'half-busy';
+                    isBusy = false;
+                  } else {
+                    // Müsait
+                    status = 'available';
+                    isBusy = false;
+                  }
                 }
               } else {
                 // Müsaitlik bilgisi yok
@@ -253,7 +287,7 @@ export const slotsRouter = t.router({
               isBusy: isBusy,
               isPast: isPast,
               status: status,
-              capacity: slotCapacity[slotTime] || { available: 0, busy: 0 }
+              capacity: slotCapacity[slotTime] || { available: 0, busy: 0, blocked: 0 }
             });
           }
         }
@@ -355,11 +389,43 @@ export const slotsRouter = t.router({
       
       // Meşgul slot'ları hesapla
       const busySlots: Record<string, boolean> = {};
+      
+      // Randevulardan gelen meşgul slot'lar
       for (const apt of result.rows) {
         const aptStart = new Date(apt.appointment_datetime);
         const aptEnd = new Date(aptStart.getTime() + Number(apt.total_duration) * 60000);
         
         for (let time = new Date(aptStart); time < aptEnd; time = new Date(time.getTime() + 15 * 60000)) {
+          const hh = String(time.getHours()).padStart(2, '0');
+          const mm = String(time.getMinutes()).padStart(2, '0');
+          const slotKey = `${hh}:${mm}`;
+          
+          if (time.getHours() >= 8 && time.getHours() < 20) {
+            busySlots[slotKey] = true;
+          }
+        }
+      }
+
+      // Meşgule alınan slot'ları hesapla
+      let busySlotsQuery = `SELECT start_datetime, end_datetime FROM busy_slots 
+         WHERE business_id = $1 
+         AND DATE(start_datetime) = $2`;
+      
+      let busySlotsParams = [input.businessId, input.date];
+      
+      // Eğer belirli bir çalışan seçilmişse sadece onun meşgul slot'larını al
+      if (input.selectedEmployeeId) {
+        busySlotsQuery += ` AND employee_id = $3`;
+        busySlotsParams.push(input.selectedEmployeeId);
+      }
+      
+      const busySlotsRes = await pool.query(busySlotsQuery, busySlotsParams);
+      
+      for (const busySlot of busySlotsRes.rows) {
+        const busyStart = new Date(busySlot.start_datetime);
+        const busyEnd = new Date(busySlot.end_datetime);
+        
+        for (let time = new Date(busyStart); time < busyEnd; time = new Date(time.getTime() + 15 * 60000)) {
           const hh = String(time.getHours()).padStart(2, '0');
           const mm = String(time.getMinutes()).padStart(2, '0');
           const slotKey = `${hh}:${mm}`;

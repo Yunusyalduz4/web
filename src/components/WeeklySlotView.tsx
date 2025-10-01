@@ -23,6 +23,11 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
   const [selectedSlotData, setSelectedSlotData] = useState<{date: string, time: string} | null>(null);
   const [localSelectedEmployeeId, setLocalSelectedEmployeeId] = useState<string | null>(selectedEmployeeId || null);
   
+  // Meşgule alma modal state'leri
+  const [showBusySlotModal, setShowBusySlotModal] = useState(false);
+  const [selectedBusySlotData, setSelectedBusySlotData] = useState<{date: string, time: string, selectedSlots?: Array<{date: string, time: string}>, mode?: 'busy' | 'available'} | null>(null);
+  
+  
   // Mini card için state'ler
   const [showMiniCard, setShowMiniCard] = useState(false);
   const [miniCardData, setMiniCardData] = useState<{
@@ -294,7 +299,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
   };
 
   // Dolu slot'a tıklama işlemi - Mini card göster
-  const handleBusySlotClick = (slotTime: string, date: string, event: React.MouseEvent) => {
+  const handleBusySlotClickForAppointment = (slotTime: string, date: string, event: React.MouseEvent) => {
     // Seçilen slot'un Date nesnesini oluştur
     const slotStart = new Date(`${date}T${slotTime}:00`);
 
@@ -400,6 +405,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     setShowManualAppointmentModal(true);
   };
 
+
   // Randevu kartına tıklama işlemi
   const handleAppointmentClick = (appointmentId: string) => {
     setHighlightedAppointmentId(appointmentId);
@@ -503,15 +509,48 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-bold text-gray-900">7 Günlük Slot Görünümü</div>
         <div className="flex items-center gap-2">
+            {/* Meşgule Alma Butonu */}
+            <button
+              onClick={() => {
+                setSelectedBusySlotData({
+                  date: selectedDate || '',
+                  time: '',
+                  mode: 'busy'
+                });
+                setShowBusySlotModal(true);
+              }}
+              className="px-1.5 py-0.5 rounded-md text-xs font-medium bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-sm hover:from-red-600 hover:to-red-700 hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-0.5"
+            >
+              <span className="text-xs"></span>
+              Meşgule Al
+            </button>
+
+            {/* Müsait Yapma Butonu */}
+            <button
+              onClick={() => {
+                setSelectedBusySlotData({
+                  date: selectedDate || '',
+                  time: '',
+                  mode: 'available'
+                });
+                setShowBusySlotModal(true);
+              }}
+              className="px-1.5 py-0.5 rounded-md text-xs font-medium bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-sm hover:from-green-600 hover:to-green-700 hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-0.5"
+            >
+              <span className="text-xs"></span>
+              Müsait Yap
+            </button>
+          
           <button 
             onClick={() => setShowCustomDate(!showCustomDate)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-0.5 ${
               showCustomDate 
-                ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600 text-white shadow-md' 
-                : 'bg-white/80 text-gray-700 border border-white/50 hover:bg-white/90'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm hover:from-blue-600 hover:to-blue-700 hover:shadow-md hover:scale-105' 
+                : 'bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 shadow-sm hover:from-gray-600 hover:to-gray-700 hover:shadow-md hover:scale-105'
             }`}
           >
-            📅 Özel Tarih
+            <span className="text-xs"></span>
+            Özel Tarih
           </button>
         </div>
       </div>
@@ -675,6 +714,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                         : 'bg-orange-100 text-orange-600 border border-orange-200')
                     : slot.status === 'busy'
                     ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 hover:scale-105 cursor-pointer'
+                    : slot.status === 'blocked'
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 hover:scale-105 cursor-pointer'
                     : slot.status === 'half-busy'
                     ? 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 hover:scale-105 cursor-pointer'
                     : slot.status === 'unavailable'
@@ -685,7 +726,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                   slot.isPast 
                     ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? (e: React.MouseEvent) => handlePastAppointmentClick(slot.time, selectedDate, e) : undefined)
                     : slot.status === 'busy'
-                    ? (e: React.MouseEvent) => handleBusySlotClick(slot.time, selectedDate, e)
+                    ? (e: React.MouseEvent) => handleBusySlotClickForAppointment(slot.time, selectedDate, e)
                     : slot.status === 'half-busy' || slot.status === 'available'
                     ? () => handleAvailableSlotClick(slot.time, selectedDate)
                     : undefined
@@ -708,6 +749,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                     ? (selectedDate && getPastAppointment(slot.time, selectedDate) ? 'Tamamlandı' : '⏰ Geçmiş')
                     : slot.status === 'busy' 
                     ? '🔴 Dolu' 
+                    : slot.status === 'blocked'
+                    ? '🟣 Meşgul'
                     : slot.status === 'half-busy'
                     ? '🟡 Yarı Dolu'
                     : slot.status === 'unavailable'
@@ -718,6 +761,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
               </div>
             ))}
           </div>
+
 
           {/* O Günkü Randevular */}
           {selectedDayAppointments.length > 0 && (
@@ -820,6 +864,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                         : 'bg-orange-100 text-orange-600 border border-orange-200')
                     : slot.status === 'busy'
                     ? 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 hover:scale-105 cursor-pointer'
+                    : slot.status === 'blocked'
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 hover:scale-105 cursor-pointer'
                     : slot.status === 'half-busy'
                     ? 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200 hover:scale-105 cursor-pointer'
                     : slot.status === 'unavailable'
@@ -830,7 +876,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                   slot.isPast 
                     ? (getPastAppointment(slot.time, customDate) ? (e: React.MouseEvent) => handlePastAppointmentClick(slot.time, customDate, e) : undefined)
                     : slot.status === 'busy'
-                    ? (e: React.MouseEvent) => handleBusySlotClick(slot.time, customDate, e)
+                    ? (e: React.MouseEvent) => handleBusySlotClickForAppointment(slot.time, customDate, e)
                     : slot.status === 'half-busy' || slot.status === 'available'
                     ? () => handleAvailableSlotClick(slot.time, customDate)
                     : undefined
@@ -853,6 +899,8 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
                     ? (customDate && getPastAppointment(slot.time, customDate) ? '📅 Tamamlandı' : '⏰ Geçmiş')
                     : slot.status === 'busy' 
                     ? '🔴 Dolu' 
+                    : slot.status === 'blocked'
+                    ? '🟣 Meşgul'
                     : slot.status === 'half-busy'
                     ? '🟡 Yarı Dolu'
                     : slot.status === 'unavailable'
@@ -937,6 +985,33 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
         employees={filteredEmployees || []}
         onCreateAppointment={createManualAppointment.mutate}
         isLoading={createManualAppointment.isPending}
+      />
+    )}
+
+    {/* Meşgule Alma Modal'ı */}
+    {showBusySlotModal && (
+      <BusySlotModal
+        isOpen={showBusySlotModal}
+        onClose={() => {
+          setShowBusySlotModal(false);
+          setSelectedBusySlotData(null);
+        }}
+        slotData={selectedBusySlotData}
+        businessId={businessId}
+        selectedEmployeeId={localSelectedEmployeeId}
+        onSlotBlocked={() => {
+          // Slot'ları yenile
+          refetchWeeklySlots();
+          if (customDate) {
+            refetchCustomDate();
+          }
+          // Parent component'e appointments'ı yenilemesi için event gönder
+          window.dispatchEvent(new CustomEvent('refreshAppointments', { detail: { businessId } }));
+        }}
+        weeklySlots={weeklySlots}
+        customDateSlots={customDateSlots}
+        refetchWeeklySlots={refetchWeeklySlots}
+        refetchCustomDate={refetchCustomDate}
       />
     )}
 
@@ -1547,6 +1622,518 @@ function ManualAppointmentModal({
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
                     </svg>
                     Randevu Oluştur
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Slot İşleme Modal Component'i
+function BusySlotModal({ 
+  isOpen, 
+  onClose, 
+  slotData, 
+  businessId, 
+  selectedEmployeeId,
+  onSlotBlocked,
+  weeklySlots,
+  customDateSlots,
+  refetchWeeklySlots,
+  refetchCustomDate
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  slotData: {date: string, time: string, selectedSlots?: Array<{date: string, time: string}>, mode?: 'busy' | 'available'} | null;
+  businessId: string;
+  selectedEmployeeId: string | null;
+  onSlotBlocked: () => void;
+  weeklySlots?: any;
+  customDateSlots?: any;
+  refetchWeeklySlots: () => Promise<any>;
+  refetchCustomDate: () => Promise<any>;
+}) {
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
+  const [selectedDate, setSelectedDate] = useState<string>('');
+
+  // Gün seçici için 7 günlük liste oluştur
+  const generateDateOptions = () => {
+    const dates = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      const isToday = i === 0;
+      const isTomorrow = i === 1;
+      
+      let dayName = '';
+      if (isToday) dayName = 'Bugün';
+      else if (isTomorrow) dayName = 'Yarın';
+      else dayName = date.toLocaleDateString('tr-TR', { weekday: 'long' });
+      
+      dates.push({
+        value: date.toISOString().split('T')[0],
+        label: dayName,
+        date: date.toLocaleDateString('tr-TR', { 
+          day: '2-digit', 
+          month: '2-digit' 
+        }),
+        fullDate: date.toLocaleDateString('tr-TR', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      });
+    }
+    
+    return dates;
+  };
+
+  const dateOptions = generateDateOptions();
+
+  // TRPC mutations
+  const createBusySlot = trpc.busySlots.createBusySlot.useMutation({
+    onSuccess: () => {
+      onSlotBlocked();
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Slot işleme hatası:', error);
+      alert('Slot işleme başarısız: ' + error.message);
+    }
+  });
+
+  const getBusySlots = trpc.busySlots.getBusySlots.useQuery({
+    businessId,
+    startDate: '2025-10-01', // Sabit tarih kullan
+    endDate: '2025-10-01',
+    employeeId: selectedEmployeeId || undefined
+  }, {
+    enabled: true // Her zaman çalışsın
+  });
+
+  const deleteBusySlot = trpc.busySlots.deleteBusySlot.useMutation({
+    onSuccess: () => {
+      onSlotBlocked();
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Slot işleme hatası:', error);
+      alert('Slot işleme başarısız: ' + error.message);
+    }
+  });
+
+  // Loading state'i mutation'dan al
+  const isLoading = createBusySlot.isPending || deleteBusySlot.isPending;
+
+  // Form validation
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (selectedSlots.size === 0) {
+      newErrors.slots = 'En az bir slot seçmelisiniz';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Slot seçimi
+  const handleSlotSelection = (slotTime: string, date: string) => {
+    const slotKey = `${date}-${slotTime}`;
+    const newSelectedSlots = new Set(selectedSlots);
+    
+    if (newSelectedSlots.has(slotKey)) {
+      newSelectedSlots.delete(slotKey);
+    } else {
+      newSelectedSlots.add(slotKey);
+    }
+    
+    setSelectedSlots(newSelectedSlots);
+  };
+
+  // Form submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm() || !slotData) {
+      return;
+    }
+
+    const slotsToProcess = Array.from(selectedSlots).map(slotKey => {
+      // slotKey format: "2025-10-01-17:45"
+      const parts = slotKey.split('-');
+      const date = `${parts[0]}-${parts[1]}-${parts[2]}`; // "2025-10-01"
+      const time = parts[3]; // "17:45"
+      return { date, time };
+    });
+    const mode = slotData.mode || 'busy';
+
+
+    try {
+      if (mode === 'busy') {
+        // Meşgule alma işlemi
+        for (const slot of slotsToProcess) {
+            await createBusySlot.mutateAsync({
+              businessId,
+              employeeId: selectedEmployeeId || undefined,
+              date: slot.date,
+              startTime: slot.time,
+              duration: 15, // 15 dakika - sadece seçilen slot
+              reason: 'Manuel meşgule alma',
+              isAllDay: false
+            });
+        }
+        console.log('Meşgule alma işlemi tamamlandı');
+        
+        // Slot'ları yenile
+        await refetchWeeklySlots();
+        // Custom date sadece custom date seçiliyse yenile
+        if (customDateSlots) {
+          await refetchCustomDate();
+        }
+        
+        // Modal'ı kapat
+        onClose();
+      } else {
+        // Müsait yapma işlemi - busy slot'ları sil
+        for (const slot of slotsToProcess) {
+          // Önce o tarih ve saatteki busy slot'ları bul
+          const busySlotsResult = await getBusySlots.refetch();
+          const busySlots = busySlotsResult.data || [];
+          
+          console.log('Found busy slots for deletion:', busySlots);
+          busySlots.forEach((bs: any, index: number) => {
+            console.log(`Busy slot ${index}:`, {
+              id: bs.id,
+              start_datetime: bs.startDateTime,
+              end_datetime: bs.endDateTime,
+              reason: bs.reason,
+              start_type: typeof bs.startDateTime,
+              end_type: typeof bs.endDateTime
+            });
+          });
+          
+          // Seçilen saatteki busy slot'ları bul ve sil
+          const slotsToDelete = busySlots.filter((busySlot: any) => {
+            const busyStart = new Date(busySlot.startDateTime);
+            const busyEnd = new Date(busySlot.endDateTime);
+            const slotTime = new Date(`${slot.date}T${slot.time}:00`);
+            
+            console.log('Debug slot matching:');
+            console.log('- Selected slot time:', slot.time);
+            console.log('- Busy slot start:', busyStart);
+            console.log('- Busy slot end:', busyEnd);
+            console.log('- Slot time:', slotTime);
+            console.log('- Is in range:', slotTime >= busyStart && slotTime < busyEnd);
+            
+            // Slot zamanı busy slot aralığında mı?
+            return slotTime >= busyStart && slotTime < busyEnd;
+          });
+          
+          console.log('Slots to delete:', slotsToDelete);
+          
+          // Bulunan busy slot'ları sil
+          for (const busySlot of slotsToDelete) {
+            await deleteBusySlot.mutateAsync({
+              busySlotId: busySlot.id,
+              businessId: businessId
+            });
+          }
+        }
+        
+        
+        // Slot'ları yenile
+        await refetchWeeklySlots();
+        // Custom date sadece custom date seçiliyse yenile
+        if (customDateSlots) {
+          await refetchCustomDate();
+        }
+        
+        // Modal'ı kapat
+        onClose();
+      }
+    } catch (error) {
+      console.error('Form submit error:', error);
+      // Error handling is done in the mutation's onError
+    }
+  };
+
+  if (!isOpen || !slotData) return null;
+
+  const mode = slotData.mode || 'busy';
+  
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden animate-slide-up flex flex-col">
+        {/* Modal Header */}
+        <div className={`sticky top-0 text-white p-4 sm:p-6 ${
+          mode === 'busy' 
+            ? 'bg-gradient-to-r from-red-500 via-rose-500 to-pink-500' 
+            : 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold mb-1">
+                {mode === 'busy' ? 'Slot\'ları Meşgule Al' : 'Slot\'ları Müsait Yap'}
+              </h2>
+              <div className="flex items-center gap-2 text-sm text-white/90">
+                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                <span className="truncate">
+                  {selectedSlots.size} slot seçildi
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center shrink-0 ml-3"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Body */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6 space-y-6">
+            {/* Gün Seçici */}
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-purple-800">Tarih Seçin</span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {dateOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSelectedDate(option.value)}
+                    className={`p-3 rounded-xl text-center transition-all duration-200 ${
+                      selectedDate === option.value
+                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105'
+                        : 'bg-white text-gray-700 border border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">{option.label}</div>
+                  </button>
+                ))}
+              </div>
+              
+              {selectedDate && (
+                <div className="mt-3 p-2 bg-white/60 rounded-lg">
+                  <div className="text-xs text-purple-700 font-medium">
+                    Seçilen: {dateOptions.find(d => d.value === selectedDate)?.fullDate}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Slot Listesi */}
+            {selectedDate && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold text-blue-800">
+                    {mode === 'busy' ? 'Müsait Slot\'ları Seç' : 'Meşgul Slot\'ları Seç'}
+                  </span>
+                </div>
+                <div className="text-sm text-blue-700 mb-3">
+                  {selectedSlots.size} slot seçildi
+                </div>
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                {/* Seçilen tarihe göre slot'ları göster */}
+                {(() => {
+                  if (!selectedDate || !weeklySlots || !Array.isArray(weeklySlots)) {
+                    console.log('No data available');
+                    return false;
+                  }
+                  
+                  // Seçilen tarihe uygun günü bul
+                  const selectedDayData = weeklySlots.find((day: any) => day.date === selectedDate);
+                  console.log('Selected day data:', selectedDayData);
+                  
+                  return selectedDayData && selectedDayData.slots;
+                })() ? (
+                  (() => {
+                    const selectedDayData = weeklySlots.find((day: any) => day.date === selectedDate);
+                    return selectedDayData.slots.map((slot: any, slotIndex: number) => {
+                      const slotKey = `${selectedDate}-${slot.time}`;
+                      const isSelected = selectedSlots.has(slotKey);
+                      const isAvailable = slot.status === 'available' || slot.status === 'half-busy';
+                      const isBusy = slot.status === 'busy';
+                      const isBlocked = slot.status === 'blocked';
+                      
+                      // Mode'a göre filtrele
+                      if (mode === 'busy' && !isAvailable) return null;
+                      if (mode === 'available' && !isBlocked) return null; // Sadece blocked (meşgul) slot'ları göster
+                      
+                      return (
+                        <div
+                          key={slotIndex}
+                          onClick={() => handleSlotSelection(slot.time, selectedDate)}
+                          className={`p-1.5 rounded-lg text-center text-xs font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-500 text-white border border-blue-600 shadow-lg scale-105'
+                              : mode === 'busy'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200'
+                              : isBlocked
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200'
+                              : 'bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200'
+                          }`}
+                        >
+                          <div className="text-xs font-medium">{slot.time}</div>
+                          <div className="text-xs mt-0.5">
+                            {slot.status === 'available' ? '✅' : 
+                             slot.status === 'half-busy' ? '⚠️' : 
+                             slot.status === 'busy' ? '🔴' : 
+                             slot.status === 'blocked' ? '🟣' : '⚪'}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                ) : (
+                  <div className="text-center text-gray-500 text-sm py-4 col-span-3">
+                    {mode === 'busy' ? 'Müsait slot bulunamadı' : 'Meşgul slot bulunamadı'}
+                  </div>
+                )}
+              </div>
+              {errors.slots && (
+                <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  {errors.slots}
+                </p>
+              )}
+              </div>
+            )}
+
+            {/* Tarih Seçilmediğinde Mesaj */}
+            {!selectedDate && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-amber-600">
+                    <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="text-sm font-semibold text-amber-800 mb-1">Tarih Seçin</div>
+                <div className="text-xs text-amber-700">
+                  Slot'ları görmek için önce bir tarih seçmelisiniz
+                </div>
+              </div>
+            )}
+
+            {/* Uyarı Mesajı */}
+            <div className={`border rounded-2xl p-4 ${
+              mode === 'busy' 
+                ? 'bg-amber-50 border-amber-200' 
+                : 'bg-green-50 border-green-200'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  mode === 'busy' ? 'bg-amber-500' : 'bg-green-500'
+                }`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className={`text-sm font-semibold mb-1 ${
+                    mode === 'busy' ? 'text-amber-800' : 'text-green-800'
+                  }`}>
+                    {mode === 'busy' ? 'Dikkat!' : 'Bilgi'}
+                  </div>
+                  <div className={`text-sm ${
+                    mode === 'busy' ? 'text-amber-700' : 'text-green-700'
+                  }`}>
+                    {mode === 'busy' 
+                      ? 'Bu slot\'ları meşgule aldığınızda, müşteriler bu saatlerde randevu alamayacak. Sadece gerekli durumlarda kullanın.'
+                      : 'Bu slot\'ları müsait yaptığınızda, müşteriler bu saatlerde randevu alabilecek.'
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+
+            {/* Özet Bilgi */}
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gray-500 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-gray-800">Özet</span>
+              </div>
+              <div className="space-y-2 text-sm text-gray-700">
+                <div><strong>İşlem:</strong> {mode === 'busy' ? 'Meşgule Alma' : 'Müsait Yapma'}</div>
+                <div><strong>Slot Sayısı:</strong> {selectedSlots.size}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Actions - Fixed at bottom */}
+        <form id="slot-form" onSubmit={handleSubmit}>
+          <div className="bg-white border-t border-gray-100 p-4 sm:p-6">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                İptal
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`flex-1 px-6 py-3 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                  mode === 'busy' 
+                    ? 'bg-gradient-to-r from-red-500 via-rose-500 to-pink-500' 
+                    : 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500'
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                      <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
+                    </svg>
+                    {mode === 'busy' ? 'Meşgule Alınıyor...' : 'Müsait Yapılıyor...'}
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    {mode === 'busy' ? 'Meşgule Al' : 'Müsait Yap'}
                   </>
                 )}
               </button>

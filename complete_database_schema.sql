@@ -774,3 +774,36 @@ CREATE INDEX idx_story_daily_stats_business_date ON story_daily_stats(business_i
 -- 8. Support ticket system
 -- 9. Email token system for verification/reset
 -- 10. Comprehensive audit logging
+-- 11. Busy slots system for blocking time slots
+
+-- ================================================
+-- BUSY SLOTS TABLE
+-- ================================================
+
+-- Busy slots table - For blocking time slots when employees are unavailable
+CREATE TABLE busy_slots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    start_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+    reason TEXT NOT NULL,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Indexes for busy_slots table
+CREATE INDEX idx_busy_slots_business_id ON busy_slots(business_id);
+CREATE INDEX idx_busy_slots_employee_id ON busy_slots(employee_id);
+CREATE INDEX idx_busy_slots_datetime_range ON busy_slots(start_datetime, end_datetime);
+CREATE INDEX idx_busy_slots_created_by ON busy_slots(created_by);
+
+-- Comments for busy_slots table
+COMMENT ON TABLE busy_slots IS 'Stores blocked time slots when employees are unavailable (breaks, personal time, etc.)';
+COMMENT ON COLUMN busy_slots.business_id IS 'Reference to the business';
+COMMENT ON COLUMN busy_slots.employee_id IS 'Reference to the employee whose slot is blocked';
+COMMENT ON COLUMN busy_slots.start_datetime IS 'Start time of the blocked slot';
+COMMENT ON COLUMN busy_slots.end_datetime IS 'End time of the blocked slot';
+COMMENT ON COLUMN busy_slots.reason IS 'Reason for blocking the slot (break, personal time, etc.)';
+COMMENT ON COLUMN busy_slots.created_by IS 'User who created the busy slot';
