@@ -69,34 +69,8 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
     type: 'info'
   });
 
-  // Mevcut erteleme isteklerini getir
-  const { data: existingRequests, refetch: refetchExistingRequests } = trpc.reschedule.getPendingRescheduleRequests.useQuery(
-    undefined,
-    { enabled: isOpen }
-  );
-  
-  // Erteleme isteğini iptal et
-  const cancelRescheduleMutation = trpc.reschedule.cancelRescheduleRequest.useMutation({
-    onSuccess: () => {
-      setToast({
-        open: true,
-        message: '✅ Erteleme isteğiniz iptal edildi!',
-        type: 'success'
-      });
-      refetchExistingRequests();
-      setTimeout(() => {
-        onClose();
-        onRescheduleSubmitted?.();
-      }, 1500);
-    },
-    onError: (error) => {
-      setToast({
-        open: true,
-        message: `❌ İptal işlemi başarısız: ${error.message}`,
-        type: 'error'
-      });
-    }
-  });
+  // Direkt erteleme mutation'ı (erteleme isteği sistemi kaldırıldı)
+  const directRescheduleMutation = trpc.appointment.rescheduleAppointment.useMutation();
 
   // Çalışan ID'sini al - services array'inden
   const getEmployeeId = () => {
@@ -234,48 +208,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
     }
   }, [appointment?.appointment_datetime]);
 
-  const createRescheduleMutation = trpc.reschedule.createRescheduleRequest.useMutation({
-    onSuccess: (data) => {
-      setToast({
-        open: true,
-        message: '✅ Erteleme isteğiniz başarıyla gönderildi!',
-        type: 'success'
-      });
-      setTimeout(() => {
-        onClose();
-        setRequestReason('');
-        onRescheduleSubmitted?.();
-      }, 1500);
-    },
-    onError: (error) => {
-      // Özel hata mesajları için kullanıcı dostu uyarılar
-      if (error.message.includes('zaten bekleyen bir erteleme isteği var')) {
-        setToast({
-          open: true,
-          message: '⚠️ Bu randevu için zaten bekleyen bir erteleme isteğiniz bulunmaktadır. Lütfen mevcut isteğinizin onaylanmasını bekleyin.',
-          type: 'warning'
-        });
-      } else if (error.message.includes('Randevu bulunamadı')) {
-        setToast({
-          open: true,
-          message: '❌ Randevu bulunamadı. Lütfen sayfayı yenileyin ve tekrar deneyin.',
-          type: 'error'
-        });
-      } else if (error.message.includes('Bu randevu erteleyemezsiniz')) {
-        setToast({
-          open: true,
-          message: '❌ Bu randevu erteleyemezsiniz. Lütfen işletme ile iletişime geçin.',
-          type: 'error'
-        });
-      } else {
-        setToast({
-          open: true,
-          message: `❌ Erteleme isteği gönderilirken bir hata oluştu: ${error.message}`,
-          type: 'error'
-        });
-      }
-    }
-  });
+  // Erteleme isteği sistemi kaldırıldı - direkt erteleme kullanılıyor
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -288,27 +221,36 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
       // Tarih ve saati birleştir ve ISO formatına çevir
       const isoDateTime = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
       
-      const mutationData = {
+      // Direkt erteleme
+      await directRescheduleMutation.mutateAsync({
         appointmentId: appointment.id.toString(),
         newAppointmentDatetime: isoDateTime,
-        requestReason: requestReason || undefined,
-      };
-      
-      await createRescheduleMutation.mutateAsync(mutationData);
-    } catch (error) {
-      // Silent error handling
+        newEmployeeId: getEmployeeId() || undefined
+      });
+
+      setToast({
+        open: true,
+        message: '✅ Randevunuz başarıyla ertelendi!',
+        type: 'success'
+      });
+
+      setTimeout(() => {
+        onClose();
+        setRequestReason('');
+        onRescheduleSubmitted?.();
+      }, 1500);
+    } catch (error: any) {
+      setToast({
+        open: true,
+        message: `❌ Erteleme işlemi başarısız: ${error.message}`,
+        type: 'error'
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCancelRequest = async () => {
-    if (!existingRequest?.id) return;
-    
-    if (confirm('Erteleme isteğinizi iptal etmek istediğinizden emin misiniz?')) {
-      await cancelRescheduleMutation.mutateAsync({ requestId: existingRequest.id });
-    }
-  };
+  // Erteleme isteği sistemi kaldırıldı - iptal fonksiyonu gerekli değil
 
   if (!isOpen || !appointment) return null;
 

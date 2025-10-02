@@ -19,6 +19,8 @@ interface AppointmentCardProps {
     business_name?: string;
     employee_id?: string;
     employee_name?: string;
+    is_manual?: boolean;
+    user_name?: string; // Guest kontrolü için
     services?: Array<{
       service_id: string;
       service_name: string;
@@ -40,14 +42,14 @@ export default function AppointmentCard({ appointment, userRole, onUpdate }: App
   // Bekleyen erteleme isteklerini getir
   const { data: pendingRequests } = trpc.reschedule.getPendingRescheduleRequests.useQuery();
 
+  // Tüm randevular için direkt erteleme (erteleme isteği sistemi kaldırıldı)
   const canReschedule = 
     appointment.status === 'confirmed' || 
     appointment.status === 'pending' ||
     (appointment.reschedule_status === 'rejected');
 
-  const canApprove = userRole !== 'user' && 
-    appointment.reschedule_status === 'pending' &&
-    pendingRequests?.some(req => req.appointment_id === appointment.id);
+  // Onay sistemi tamamen kaldırıldı - herkes direkt erteleme yapabilir
+  const canApprove = false;
 
   const handleReschedule = () => {
     setShowRescheduleModal(true);
@@ -174,7 +176,7 @@ export default function AppointmentCard({ appointment, userRole, onUpdate }: App
         </div>
       </div>
 
-      {/* Role-based modals */}
+      {/* Tüm randevular için direkt erteleme modal'ı */}
       {userRole === 'user' ? (
         <UserRescheduleModal
           isOpen={showRescheduleModal}

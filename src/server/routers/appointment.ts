@@ -776,6 +776,119 @@ export const appointmentRouter = t.router({
       return appointmentResult.rows[0];
     }),
 
+  // Yeni: Direkt randevu erteleme endpoint'i (manuel randevular için)
+  rescheduleAppointment: t.procedure.use(isEmployeeOrBusiness)
+    .input(z.object({
+      appointmentId: z.string().uuid(),
+      newAppointmentDatetime: z.string().datetime(),
+      newEmployeeId: z.string().uuid().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Randevuyu kontrol et
+      const appointmentCheck = await pool.query(
+        `SELECT a.id, a.business_id, a.is_manual, a.appointment_datetime, aps.employee_id
+         FROM appointments a
+         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE a.id = $1`,
+        [input.appointmentId]
+      );
+      
+      if (appointmentCheck.rows.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Randevu bulunamadı' });
+      }
+
+      const appointment = appointmentCheck.rows[0];
+      
+      // Employee ise sadece kendi business'ındaki randevuları erteleyebilir
+      if (ctx.user.role === 'employee' && ctx.user.businessId !== appointment.business_id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Sadece kendi işletmenizin randevularını erteleyebilirsiniz' });
+      }
+
+      // Manuel veya guest randevu kontrolü (opsiyonel - sadece bu tür randevular için kullanılması önerilir)
+      const isGuestAppointment = appointment.user_name?.startsWith('Guest:') || false;
+      if (appointment.is_manual === false && !isGuestAppointment) {
+        console.warn('Bu endpoint manuel veya guest olmayan randevular için kullanılıyor. Normal erteleme isteği sistemi kullanılmalı.');
+      }
+
+      const newDate = new Date(input.newAppointmentDatetime);
+      const currentEmployeeId = appointment.employee_id;
+      const targetEmployeeId = input.newEmployeeId || currentEmployeeId;
+
+      // Müsaitlik kontrolü
+      const dayOfWeek = newDate.getDay();
+      const availabilityRes = await pool.query(
+        `SELECT start_time, end_time FROM employee_availability 
+         WHERE employee_id = $1 AND day_of_week = $2`,
+        [targetEmployeeId, dayOfWeek]
+      );
+
+      if (availabilityRes.rows.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Çalışan bu gün müsait değil' });
+      }
+
+      // Randevu süresini hesapla
+      const durationRes = await pool.query(
+        `SELECT COALESCE(SUM(aps.duration_minutes), 0) AS total_duration
+         FROM appointment_services aps
+         WHERE aps.appointment_id = $1`,
+        [input.appointmentId]
+      );
+      const totalDuration = Number(durationRes.rows[0]?.total_duration || 0);
+
+      // Çakışma kontrolü
+      const appointmentStartTimeStr = newDate.toTimeString().slice(0, 5);
+      const appointmentEnd = new Date(newDate.getTime() + totalDuration * 60000);
+      const appointmentEndTimeStr = appointmentEnd.toTimeString().slice(0, 5);
+
+      const conflictRes = await pool.query(
+        `SELECT a.id
+         FROM appointments a
+         JOIN appointment_services aps ON a.id = aps.appointment_id
+         WHERE a.status IN ('pending','confirmed') 
+         AND aps.employee_id = $1
+         AND a.id != $2
+         GROUP BY a.id, a.appointment_datetime
+         HAVING a.appointment_datetime < $4 AND (a.appointment_datetime + (SUM(aps.duration_minutes) || ' minutes')::interval) > $3`,
+        [targetEmployeeId, input.appointmentId, newDate.toISOString(), appointmentEnd.toISOString()]
+      );
+
+      if (conflictRes.rows.length > 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seçilen saatte başka bir randevu var' });
+      }
+
+      // Randevuyu güncelle
+      const updateResult = await pool.query(
+        `UPDATE appointments 
+         SET appointment_datetime = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [input.newAppointmentDatetime, input.appointmentId]
+      );
+
+      // Çalışan değiştiyse appointment_services'i güncelle
+      if (input.newEmployeeId && input.newEmployeeId !== currentEmployeeId) {
+        await pool.query(
+          `UPDATE appointment_services 
+           SET employee_id = $1, updated_at = NOW()
+           WHERE appointment_id = $2`,
+          [input.newEmployeeId, input.appointmentId]
+        );
+      }
+
+      // WebSocket bildirimi gönder
+      const socketServer = getSocketServer();
+      if (socketServer) {
+        socketServer.emitAppointmentStatusUpdated({
+          appointmentId: input.appointmentId,
+          businessId: appointment.business_id,
+          newStatus: 'rescheduled',
+          newDateTime: input.newAppointmentDatetime
+        });
+      }
+
+      return updateResult.rows[0];
+    }),
+
   // Yeni: Randevu durumunu güncelleme endpoint'i
   updateStatus: t.procedure.use(isEmployeeOrBusiness)
     .input(z.object({

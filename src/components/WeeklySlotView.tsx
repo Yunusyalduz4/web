@@ -37,6 +37,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     position: { x: number; y: number };
   } | null>(null);
 
+
   // Socket.IO hook'u
   const { isConnected, socket } = useSocket();
 
@@ -183,6 +184,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
     }
   });
 
+
   // Gün tıklama işlemi
   const handleDayClick = (dayData: any) => {
     if (selectedDate === dayData.date) {
@@ -297,6 +299,7 @@ export default function WeeklySlotView({ businessId, appointments, selectedEmplo
       setShowMiniCard(true);
     }
   };
+
 
   // Dolu slot'a tıklama işlemi - Mini card göster
   const handleBusySlotClickForAppointment = (slotTime: string, date: string, event: React.MouseEvent) => {
@@ -1714,11 +1717,11 @@ function BusySlotModal({
 
   const getBusySlots = trpc.busySlots.getBusySlots.useQuery({
     businessId,
-    startDate: '2025-10-01', // Sabit tarih kullan
-    endDate: '2025-10-01',
+    startDate: selectedDate || new Date().toISOString().split('T')[0],
+    endDate: selectedDate || new Date().toISOString().split('T')[0],
     employeeId: selectedEmployeeId || undefined
   }, {
-    enabled: true // Her zaman çalışsın
+    enabled: !!selectedDate // Sadece tarih seçildiğinde çalışsın
   });
 
   const deleteBusySlot = trpc.busySlots.deleteBusySlot.useMutation({
@@ -1836,8 +1839,12 @@ function BusySlotModal({
             console.log('- Slot time:', slotTime);
             console.log('- Is in range:', slotTime >= busyStart && slotTime < busyEnd);
             
-            // Slot zamanı busy slot aralığında mı?
-            return slotTime >= busyStart && slotTime < busyEnd;
+            // Slot zamanı busy slot aralığında mı? (15 dakika tolerans ile)
+            const timeDiff = Math.abs(slotTime.getTime() - busyStart.getTime());
+            const isExactMatch = timeDiff < 15 * 60000; // 15 dakika tolerans
+            const isInRange = slotTime >= busyStart && slotTime < busyEnd;
+            
+            return isExactMatch || isInRange;
           });
           
           console.log('Slots to delete:', slotsToDelete);
@@ -2142,5 +2149,6 @@ function BusySlotModal({
         </form>
       </div>
     </div>
+    
   );
 }

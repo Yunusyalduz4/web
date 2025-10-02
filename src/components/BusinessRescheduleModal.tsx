@@ -37,6 +37,8 @@ interface BusinessRescheduleModalProps {
     business_id: string | number;
     business_name?: string;
     employee_name?: string;
+    is_manual?: boolean;
+    user_name?: string; // Guest kontrolü için
     services?: Array<{
       service_id: string;
       service_name: string;
@@ -78,8 +80,8 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
   // Business için mevcut erteleme istekleri gerekli değil
   // Bu query sadece user rolü için tasarlanmış
 
-  // Erteleme isteği mutation'ı
-  const createRescheduleRequest = trpc.reschedule.createRescheduleRequest.useMutation();
+  // Tüm randevular için direkt erteleme (erteleme isteği sistemi kaldırıldı)
+  const directRescheduleMutation = trpc.appointment.rescheduleAppointment.useMutation();
 
   // Çalışan ID'sini al - Business için seçilen çalışanı kullan
   const getEmployeeId = () => {
@@ -256,16 +258,16 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
     try {
       const newAppointmentDatetime = new Date(`${selectedDate}T${selectedTime}`).toISOString();
       
-      await createRescheduleRequest.mutateAsync({
+      // Tüm randevular için direkt erteleme
+      await directRescheduleMutation.mutateAsync({
         appointmentId: appointment.id.toString(),
         newAppointmentDatetime,
-        newEmployeeId: selectedEmployeeId,
-        requestReason: requestReason || undefined
+        newEmployeeId: selectedEmployeeId
       });
 
       setToast({
         open: true,
-        message: 'Erteleme isteği başarıyla gönderildi',
+        message: 'Randevu başarıyla ertelendi',
         type: 'success'
       });
 
@@ -282,8 +284,8 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
       }, 1500);
 
     } catch (error: any) {
-      console.error('Erteleme isteği hatası:', error);
-      setError(error.message || 'Erteleme isteği gönderilirken bir hata oluştu');
+      console.error('Erteleme hatası:', error);
+      setError(error.message || 'Erteleme işlemi sırasında bir hata oluştu');
     } finally {
       setIsSubmitting(false);
     }
@@ -304,7 +306,9 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h2 className="text-xl font-bold text-white pr-8">🏢 İşletme Randevu Erteleme</h2>
+          <h2 className="text-xl font-bold text-white pr-8">
+            🏢 Randevu Ertelama
+          </h2>
         </div>
         
         <div className="p-6 max-h-[80vh] overflow-y-auto">
@@ -522,7 +526,9 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <label className="text-sm font-semibold text-gray-900">Erteleme Sebebi (Opsiyonel)</label>
+                <label className="text-sm font-semibold text-gray-900">
+                  Not (Opsiyonel)
+                </label>
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
                 <textarea
@@ -530,7 +536,7 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                   onChange={(e) => setRequestReason(e.target.value)}
                   className="w-full px-0 py-0 bg-transparent border-0 focus:ring-0 focus:outline-none text-sm resize-none placeholder-gray-500"
                   rows={3}
-                  placeholder="Erteleme sebebini belirtin..."
+                  placeholder="Not ekleyin..."
                 />
                 {requestReason && requestReason.trim().length > 0 && requestReason.trim().length < 10 && (
                   <div className="mt-2 text-xs text-amber-600">En az 10 karakter girin veya boş bırakın.</div>
@@ -575,7 +581,7 @@ export default function BusinessRescheduleModal({ isOpen, onClose, appointment, 
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
-                    Erteleme İsteği Gönder
+                    Randevuyu Ertelama
                   </div>
                 )}
               </button>
