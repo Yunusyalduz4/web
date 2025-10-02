@@ -48,6 +48,7 @@
     "socket.io-client": "^4.8.1",
     "sql-template-tag": "^5.2.1",
     "swiper": "^11.2.10",
+    "twilio": "^5.10.2",
     "web-push": "^3.6.7",
     "zod": "^4.0.14"
   },

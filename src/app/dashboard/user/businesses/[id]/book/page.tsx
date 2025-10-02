@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { skipToken } from '@tanstack/react-query';
+import { GuestOTPModal } from '../../../../../../components/GuestOTPModal';
 
 function getDayOfWeek(dateStr: string) {
   return new Date(dateStr).getDay();
@@ -33,6 +34,7 @@ export default function BookAppointmentPage() {
     { employeeId: selectedEmployee?.id, businessId }, 
     { enabled: !!selectedEmployee?.id && !!businessId }
   );
+  const { data: whatsappSettings } = trpc.business.getBusinessWhatsAppSettings.useQuery({ businessId }, { enabled: !!businessId });
   const bookMutation = trpc.appointment.book.useMutation();
   const bookAsGuestMutation = trpc.appointment.bookAsGuest.useMutation();
   const [selectedServices, setSelectedServices] = useState<any[]>([]);
@@ -43,6 +45,50 @@ export default function BookAppointmentPage() {
   const [success, setSuccess] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [customDate, setCustomDate] = useState('');
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+
+  // OTP doğrulama sonrası randevu oluşturma
+  const handleOTPVerified = async () => {
+    if (!isGuest || !guestData || !selectedEmployee || selectedServices.length === 0 || !selectedDate || !selectedTime) {
+      setError('Tüm alanları doldurun.');
+      return;
+    }
+
+    if (isSlotBusy(selectedTime)) {
+      setError('Seçilen saat dolu. Lütfen başka bir saat seçiniz.');
+      return;
+    }
+
+    const servicesToBook = selectedServices.map(service => ({
+      serviceId: service.id,
+      employeeId: selectedEmployee.id
+    }));
+
+    try {
+      const result = await bookAsGuestMutation.mutateAsync({
+        businessId,
+        customerName: guestData.firstName,
+        customerSurname: guestData.lastName,
+        customerPhone: guestData.phone,
+        customerEmail: guestData.email,
+        appointmentDate: selectedDate,
+        appointmentTime: selectedTime,
+        serviceIds: selectedServices.map(s => s.id),
+        employeeId: selectedEmployee.id,
+        notes: null
+      });
+      
+      setSuccess('Randevu başarıyla oluşturuldu!');
+      setOtpModalOpen(false);
+      
+      setTimeout(() => {
+        setCurrentStep('confirmation');
+        localStorage.removeItem('guestBookingData');
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Randevu oluşturulamadı');
+    }
+  };
 
   // Üyeliksiz kullanıcı verilerini yükle
   useEffect(() => {
@@ -354,7 +400,14 @@ export default function BookAppointmentPage() {
     
     try {
       if (isGuest && guestData) {
-        // Üyeliksiz kullanıcı için randevu oluştur
+        // Misafir kullanıcı için OTP kontrolü
+        if (whatsappSettings?.whatsapp_otp_enabled) {
+          // OTP gerekli - OTP modal'ını aç
+          setOtpModalOpen(true);
+          return;
+        }
+        
+        // OTP gerekli değil - direkt randevu oluştur
         const result = await bookAsGuestMutation.mutateAsync({
           businessId,
           customerName: guestData.firstName,
@@ -377,7 +430,7 @@ export default function BookAppointmentPage() {
           localStorage.removeItem('guestBookingData');
         }, 1500);
       } else {
-        // Üyelikli kullanıcı için normal randevu oluştur
+        // Üyelikli kullanıcı için normal randevu oluştur (OTP yok)
         await bookMutation.mutateAsync({
           userId: userId!,
           businessId,
@@ -979,6 +1032,18 @@ export default function BookAppointmentPage() {
           animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
         }
       `}</style>
+      
+      {/* OTP Modal */}
+      {otpModalOpen && isGuest && guestData && (
+        <GuestOTPModal
+          isOpen={otpModalOpen}
+          onClose={() => setOtpModalOpen(false)}
+          businessId={businessId}
+          phone={guestData.phone}
+          businessName={whatsappSettings?.name || ''}
+          onOTPVerified={handleOTPVerified}
+        />
+      )}
     </main>
   );
 }

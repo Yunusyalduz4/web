@@ -1,4 +1,5 @@
 import webpush from 'web-push';
+import { whatsappNotificationService } from '../services/whatsappNotificationService';
 
 // VAPID keys - production'da environment variables'dan alınmalı
 const vapidKeys = {
@@ -313,6 +314,64 @@ export async function sendAppointmentStatusUpdateNotification(
       );
     }
 
+    // WhatsApp bildirimi gönder (eğer onaylandıysa veya iptal edildiyse) - Hem üye hem misafir kullanıcılar için
+    if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+      try {
+        // whatsappNotificationService'i import et
+        const { whatsappNotificationService } = await import('../services/whatsappNotificationService');
+        
+        // Hizmet isimlerini al
+        const serviceRes = await pool.query(
+          `SELECT s.name FROM appointment_services aps 
+           JOIN services s ON aps.service_id = s.id 
+           WHERE aps.appointment_id = $1`,
+          [appointmentId]
+        );
+        const serviceNames = serviceRes.rows.map(row => row.name);
+
+        // Misafir kullanıcı için telefon numarasını al
+        let customerPhone = null;
+        if (!userId) {
+          // Misafir kullanıcı - randevu tablosundan telefon numarasını al
+          const appointmentRes = await pool.query(
+            `SELECT customer_phone FROM appointments WHERE id = $1`,
+            [appointmentId]
+          );
+          customerPhone = appointmentRes.rows[0]?.customer_phone;
+        }
+
+        // WhatsApp bildirimi gönder
+        if (userId || customerPhone) {
+          if (newStatus === 'confirmed') {
+            // Onay bildirimi
+            await whatsappNotificationService.sendAppointmentApprovalNotification(
+              appointmentId,
+              businessId,
+              userId || 'guest', // Misafir kullanıcı için 'guest' gönder
+              appointmentDateTime,
+              businessName,
+              customerName || 'Müşteri',
+              serviceNames
+            );
+          } else if (newStatus === 'cancelled') {
+            // İptal bildirimi
+            await whatsappNotificationService.sendAppointmentCancellationNotification(
+              appointmentId,
+              businessId,
+              userId || 'guest', // Misafir kullanıcı için 'guest' gönder
+              appointmentDateTime,
+              businessName,
+              customerName || 'Müşteri',
+              serviceNames
+            );
+          }
+        }
+      } catch (whatsappError) {
+        console.error('WhatsApp bildirimi gönderilirken hata:', whatsappError);
+        // WhatsApp hatası push notification'ı etkilemesin
+      }
+    }
+
     return { success: true };
   } catch (error) {
     return { success: false, error };
@@ -377,6 +436,23 @@ export async function sendNewAppointmentNotification(
           appointmentDateTime: formattedDate
         }
       );
+
+      // WhatsApp bildirimi gönder
+      try {
+        const { whatsappNotificationService } = await import('../services/whatsappNotificationService');
+        await whatsappNotificationService.sendNewAppointmentNotification(
+          appointmentId,
+          businessId,
+          userId,
+          appointmentDateTime,
+          businessName,
+          customerName,
+          serviceNames
+        );
+      } catch (whatsappError) {
+        console.error('WhatsApp bildirimi gönderilirken hata:', whatsappError);
+        // WhatsApp hatası push notification'ı etkilemesin
+      }
     }
 
     return { success: true };

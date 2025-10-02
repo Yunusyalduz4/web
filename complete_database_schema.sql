@@ -55,7 +55,11 @@ CREATE TABLE businesses (
     instagram_url TEXT,
     facebook_url TEXT,
     tiktok_url TEXT,
-    x_url TEXT
+    x_url TEXT,
+    -- WhatsApp Business API Settings
+    whatsapp_otp_enabled BOOLEAN DEFAULT false,
+    whatsapp_notifications_enabled BOOLEAN DEFAULT false,
+    whatsapp_phone VARCHAR(20)
 );
 
 -- Employees table - Employee information
@@ -401,6 +405,62 @@ CREATE TABLE employee_login_logs (
 );
 
 -- ================================================
+-- WHATSAPP OTP & NOTIFICATION SYSTEM TABLES
+-- ================================================
+
+-- Phone verifications table - For OTP codes
+CREATE TABLE phone_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    phone VARCHAR(20) NOT NULL,
+    verification_code VARCHAR(6) NOT NULL,
+    is_verified BOOLEAN DEFAULT false,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    verified_at TIMESTAMP WITH TIME ZONE,
+    attempts INTEGER DEFAULT 0,
+    max_attempts INTEGER DEFAULT 3,
+    user_type VARCHAR(20) DEFAULT 'guest_appointment',
+    business_id UUID REFERENCES businesses(id)
+);
+
+-- Verified phones table - For tracking verified phone numbers
+CREATE TABLE verified_phones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    phone VARCHAR(20) NOT NULL,
+    verified_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    business_id UUID REFERENCES businesses(id),
+    is_active BOOLEAN DEFAULT true,
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(phone, business_id)
+);
+
+-- Appointment reminders table - For scheduling reminder notifications
+CREATE TABLE appointment_reminders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+    reminder_type VARCHAR(20) NOT NULL DEFAULT '2_hours_before',
+    reminder_sent BOOLEAN DEFAULT false,
+    reminder_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    sent_at TIMESTAMP WITH TIME ZONE,
+    error_message TEXT
+);
+
+-- WhatsApp message logs table - For tracking sent messages
+CREATE TABLE whatsapp_message_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    phone VARCHAR(20) NOT NULL,
+    message_type VARCHAR(20) NOT NULL, -- 'otp', 'approval', 'reminder'
+    message_content TEXT NOT NULL,
+    business_id UUID REFERENCES businesses(id),
+    appointment_id UUID REFERENCES appointments(id),
+    sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    status VARCHAR(20) NOT NULL DEFAULT 'sent', -- 'sent', 'delivered', 'failed'
+    error_message TEXT,
+    twilio_message_id VARCHAR(100)
+);
+
+-- ================================================
 -- STORY SYSTEM TABLES
 -- ================================================
 
@@ -718,6 +778,37 @@ CREATE INDEX idx_story_daily_stats_story_date ON story_daily_stats(story_date DE
 CREATE INDEX idx_story_daily_stats_business_date ON story_daily_stats(business_id, story_date);
 
 -- ================================================
+-- WHATSAPP OTP & NOTIFICATION SYSTEM INDEXES
+-- ================================================
+
+-- Phone verifications indexes
+CREATE INDEX idx_phone_verifications_phone ON phone_verifications(phone);
+CREATE INDEX idx_phone_verifications_expires_at ON phone_verifications(expires_at);
+CREATE INDEX idx_phone_verifications_is_verified ON phone_verifications(is_verified);
+CREATE INDEX idx_phone_verifications_business_id ON phone_verifications(business_id);
+CREATE INDEX idx_phone_verifications_created_at ON phone_verifications(created_at);
+
+-- Verified phones indexes
+CREATE INDEX idx_verified_phones_phone ON verified_phones(phone);
+CREATE INDEX idx_verified_phones_business_id ON verified_phones(business_id);
+CREATE INDEX idx_verified_phones_is_active ON verified_phones(is_active);
+CREATE INDEX idx_verified_phones_verified_at ON verified_phones(verified_at);
+
+-- Appointment reminders indexes
+CREATE INDEX idx_appointment_reminders_appointment_id ON appointment_reminders(appointment_id);
+CREATE INDEX idx_appointment_reminders_reminder_time ON appointment_reminders(reminder_time);
+CREATE INDEX idx_appointment_reminders_reminder_sent ON appointment_reminders(reminder_sent);
+CREATE INDEX idx_appointment_reminders_reminder_type ON appointment_reminders(reminder_type);
+
+-- WhatsApp message logs indexes
+CREATE INDEX idx_whatsapp_message_logs_phone ON whatsapp_message_logs(phone);
+CREATE INDEX idx_whatsapp_message_logs_business_id ON whatsapp_message_logs(business_id);
+CREATE INDEX idx_whatsapp_message_logs_appointment_id ON whatsapp_message_logs(appointment_id);
+CREATE INDEX idx_whatsapp_message_logs_message_type ON whatsapp_message_logs(message_type);
+CREATE INDEX idx_whatsapp_message_logs_sent_at ON whatsapp_message_logs(sent_at);
+CREATE INDEX idx_whatsapp_message_logs_status ON whatsapp_message_logs(status);
+
+-- ================================================
 -- FOREIGN KEY CONSTRAINTS
 -- ================================================
 
@@ -755,9 +846,10 @@ CREATE INDEX idx_story_daily_stats_business_date ON story_daily_stats(business_i
 -- SCHEMA SUMMARY
 -- ================================================
 
--- Total Tables: 41
+-- Total Tables: 45
 -- Core Tables: users, businesses, employees, services, appointments
 -- Story System: 10 tables (stories, story_*, etc.)
+-- WhatsApp System: 4 tables (phone_verifications, verified_phones, appointment_reminders, whatsapp_message_logs)
 -- Analytics: business_analytics, audit_logs
 -- Notifications: notifications, push_subscriptions, user_push_subscriptions
 -- Support: support_tickets, email_tokens
@@ -775,6 +867,9 @@ CREATE INDEX idx_story_daily_stats_business_date ON story_daily_stats(business_i
 -- 9. Email token system for verification/reset
 -- 10. Comprehensive audit logging
 -- 11. Busy slots system for blocking time slots
+-- 12. WhatsApp OTP verification system for guest appointments
+-- 13. WhatsApp notification system for appointments
+-- 14. Business-specific WhatsApp settings management
 
 -- ================================================
 -- BUSY SLOTS TABLE

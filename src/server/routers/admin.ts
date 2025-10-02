@@ -119,6 +119,38 @@ export const adminRouter = t.router({
       );
       return res.rows[0];
     }),
+
+  // WhatsApp Settings Management
+  updateBusinessWhatsAppSettings: t.procedure.use(isAdmin)
+    .input(z.object({
+      businessId: z.string().uuid(),
+      whatsappOtpEnabled: z.boolean(),
+      whatsappNotificationsEnabled: z.boolean(),
+      whatsappPhone: z.string().optional().nullable(),
+    }))
+    .mutation(async ({ input }) => {
+      const res = await pool.query(
+        `UPDATE businesses SET 
+         whatsapp_otp_enabled=$1, 
+         whatsapp_notifications_enabled=$2, 
+         whatsapp_phone=$3, 
+         updated_at=NOW() 
+         WHERE id=$4 RETURNING *`,
+        [input.whatsappOtpEnabled, input.whatsappNotificationsEnabled, input.whatsappPhone ?? null, input.businessId]
+      );
+      return res.rows[0];
+    }),
+
+  getBusinessWhatsAppSettings: t.procedure.use(isAdmin)
+    .input(z.object({ businessId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const res = await pool.query(
+        `SELECT id, name, whatsapp_otp_enabled, whatsapp_notifications_enabled, whatsapp_phone 
+         FROM businesses WHERE id = $1`,
+        [input.businessId]
+      );
+      return res.rows[0] || null;
+    }),
   deleteBusiness: t.procedure.use(isAdmin)
     .input(z.object({ businessId: z.string().uuid() }))
     .mutation(async ({ input }) => {

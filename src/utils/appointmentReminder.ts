@@ -1,4 +1,5 @@
 import { sendNotificationToUser } from './pushNotification';
+import { whatsappNotificationService } from '../services/whatsappNotificationService';
 
 export interface AppointmentReminder {
   id: string;
@@ -92,6 +93,22 @@ export async function sendAppointmentReminder(appointment: AppointmentReminder):
         appointmentDateTime: formattedDate
       }
     );
+
+    // WhatsApp hatırlatma bildirimi gönder
+    try {
+      const { whatsappNotificationService } = await import('../services/whatsappNotificationService');
+      await whatsappNotificationService.sendAppointmentReminderNotification(
+        appointment.id,
+        appointment.businessId,
+        appointment.userId,
+        appointment.appointmentDatetime.toISOString(),
+        appointment.businessName,
+        appointment.serviceNames
+      );
+    } catch (whatsappError) {
+      console.error('WhatsApp hatırlatma bildirimi gönderilirken hata:', whatsappError);
+      // WhatsApp hatası push notification'ı etkilemesin
+    }
 
     if (notificationResult.success) {
       // Hatırlatma gönderildi olarak işaretle

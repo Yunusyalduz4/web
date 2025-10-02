@@ -147,12 +147,27 @@ export const businessRouter = t.router({
           created_at, updated_at, profile_image_url, gender_preference, 
           working_hours_enabled, is_verified, average_rating, total_reviews, 
           gender_service, is_approved, profile_image_approved,
-          instagram_url, facebook_url, tiktok_url, x_url
+          instagram_url, facebook_url, tiktok_url, x_url,
+          whatsapp_otp_enabled, whatsapp_notifications_enabled, whatsapp_phone
         FROM businesses 
         WHERE id = $1 AND is_approved = true`, 
         [input.businessId]
       );
       return result.rows[0];
+    }),
+
+  // WhatsApp ayarlarını getir (misafir kullanıcılar için)
+  getBusinessWhatsAppSettings: t.procedure
+    .input(z.object({ businessId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const result = await pool.query(
+        `SELECT 
+          id, name, whatsapp_otp_enabled, whatsapp_notifications_enabled, whatsapp_phone
+        FROM businesses 
+        WHERE id = $1 AND is_approved = true`, 
+        [input.businessId]
+      );
+      return result.rows[0] || null;
     }),
   updateBusiness: t.procedure.use(isBusiness)
     .input(businessUpdateSchema)
@@ -421,7 +436,7 @@ export const businessRouter = t.router({
       businessId: z.string().uuid(),
       profileImageUrl: z.string().url(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // İşletmenin bu kullanıcıya ait olduğunu kontrol et
       if (input.businessId !== ctx.user.businessId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Bu işletmeye erişim yetkiniz yok' });
@@ -729,7 +744,7 @@ export const businessRouter = t.router({
         LEFT JOIN reviews r ON a.id = r.appointment_id
         WHERE e.id = $1 AND e.business_id = $2
         GROUP BY e.id, b.name`,
-        [input.employeeId, ctx.employee.businessId]
+        [input.employeeId, ctx.user.businessId]
       );
 
       if (result.rows.length === 0) {

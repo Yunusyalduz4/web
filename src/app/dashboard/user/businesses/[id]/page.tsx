@@ -11,6 +11,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import BottomNav from '../../../../../components/BottomNav';
 import QRCode from 'qrcode';
+import { GuestOTPModal } from '../../../../../components/GuestOTPModal';
 // Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
 // import StoryCard, { StoryGrid } from '@/components/story/StoryCard';
 // import StoryViewer from '@/components/story/StoryViewer';
@@ -103,6 +104,7 @@ export default function BusinessDetailPage() {
   const { data: businessImages } = trpc.business.getBusinessImages.useQuery({ businessId }, { enabled: !!businessId });
   const { data: businessRating } = trpc.review.getBusinessRating.useQuery({ businessId }, { enabled: !!businessId });
   const { data: reviewsData } = trpc.review.getByBusiness.useQuery({ businessId, page: 1, limit: 5 }, { enabled: !!businessId });
+  const { data: whatsappSettings } = trpc.business.getBusinessWhatsAppSettings.useQuery({ businessId }, { enabled: !!businessId });
   // Hikaye API'si - GEÇİCİ OLARAK KAPALI
   // const { data: businessStories, refetch: refetchStories } = trpc.story.getByBusiness.useQuery({ businessId }, { enabled: !!businessId });
   const [reviewsOpen, setReviewsOpen] = useState(false);
@@ -129,6 +131,7 @@ export default function BusinessDetailPage() {
   const [selectedEmployeePhoto, setSelectedEmployeePhoto] = useState<string | null>(null);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
   const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
   
   // Paylaş modal state'leri
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -202,10 +205,35 @@ export default function BusinessDetailPage() {
       
       localStorage.setItem('guestBookingData', JSON.stringify(guestData));
       
-      // Modal'ı kapat ve randevu sayfasına yönlendir
-      setGuestBookingModalOpen(false);
-      setBookingLoading(true);
-      await router.push(`/dashboard/user/businesses/${businessId}/book`);
+      // İşletme WhatsApp OTP ayarını kontrol et
+      if (whatsappSettings?.whatsapp_otp_enabled) {
+        // Telefon numarasının daha önce doğrulanıp doğrulanmadığını kontrol et
+        try {
+          const checkResponse = await fetch(`/api/otp/check-verified?phone=${encodeURIComponent(guestData.phone)}&businessId=${businessId}`);
+          const checkData = await checkResponse.json();
+          
+          if (checkData.isVerified) {
+            // Telefon numarası zaten doğrulanmış - direkt randevu sayfasına yönlendir
+            setGuestBookingModalOpen(false);
+            setBookingLoading(true);
+            await router.push(`/dashboard/user/businesses/${businessId}/book`);
+          } else {
+            // Telefon numarası doğrulanmamış - OTP modal'ını aç
+            setGuestBookingModalOpen(false);
+            setOtpModalOpen(true);
+          }
+        } catch (error) {
+          console.error('Telefon doğrulama durumu kontrol hatası:', error);
+          // Hata durumunda OTP modal'ını aç
+          setGuestBookingModalOpen(false);
+          setOtpModalOpen(true);
+        }
+      } else {
+        // OTP gerekli değil - direkt randevu sayfasına yönlendir
+        setGuestBookingModalOpen(false);
+        setBookingLoading(true);
+        await router.push(`/dashboard/user/businesses/${businessId}/book`);
+      }
     } catch (error) {
       console.error('Üyeliksiz randevu hatası:', error);
     } finally {
@@ -1722,6 +1750,17 @@ export default function BusinessDetailPage() {
           </div>
         </div>
       </div>
+    )}
+
+    {/* OTP Modal */}
+    {otpModalOpen && (
+      <GuestOTPModal
+        isOpen={otpModalOpen}
+        onClose={() => setOtpModalOpen(false)}
+        businessId={businessId}
+        phone={guestFormData.phone.replace(/\s/g, '')}
+        businessName={business?.name || ''}
+      />
     )}
     
     {/* BottomNav - Her durumda göster */}

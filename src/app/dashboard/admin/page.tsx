@@ -5,6 +5,7 @@ import { trpc } from '../../../utils/trpcClient';
 import { useEffect, useMemo, useState } from 'react';
 import { useRealTimeAppointments, useRealTimeReviews, useRealTimeBusiness, useRealTimeNotifications } from '../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
+import { WhatsAppSettingsModal } from '../../../components/WhatsAppSettingsModal';
 
 // Admin panel kategorileri
 type AdminTab = 
@@ -458,6 +459,7 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
   const remove = trpc.admin.deleteBusiness.useMutation();
   const [editing, setEditing] = useState<any | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [whatsappSettings, setWhatsAppSettings] = useState<any | null>(null);
 
   return (
     <section className="space-y-3 sm:space-y-4">
@@ -530,6 +532,12 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
                   ✏️ Düzenle
                 </button>
                 <button 
+                  onClick={() => setWhatsAppSettings(b)}
+                  className="flex-1 px-2 sm:px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-[9px] sm:text-xs font-medium min-h-[44px]"
+                >
+                  📱 WhatsApp
+                </button>
+                <button 
                   onClick={async () => { 
                     if (confirm('Bu işletmeyi silmek istediğinizden emin misiniz?')) {
                       await remove.mutateAsync({ businessId: b.id }); 
@@ -564,6 +572,14 @@ function BusinessesPanel({ query, data, isLoading }: { query: string; data: any[
             setEditing(null); 
             utils.admin.listBusinesses.invalidate(); 
           }} 
+        />
+      )}
+
+      {/* WhatsApp Settings Modal */}
+      {whatsappSettings && (
+        <WhatsAppSettingsModal 
+          business={whatsappSettings} 
+          onClose={() => setWhatsAppSettings(null)} 
         />
       )}
     </section>
