@@ -21,6 +21,10 @@ cd /var/www/kuado || { echo "❌ Proje dizini bulunamadı!"; exit 1; }
 echo "📦 Dependencies yükleniyor..."
 npm install
 
+# Next.js 14'e geç (Next.js 15 bug fix)
+echo "🔄 Next.js 14'e geçiliyor..."
+npm install next@14.2.15 --legacy-peer-deps
+
 # Environment variables ayarla
 echo "⚙️ Environment variables ayarlanıyor..."
 cat > .env.local << EOF

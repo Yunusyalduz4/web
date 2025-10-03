@@ -12,6 +12,13 @@ export interface TwilioConfig {
   accountSid: string;
   authToken: string;
   whatsappNumber: string;
+  templates: {
+    otp: string;
+    approval: string;
+    reminder: string;
+    cancellation?: string;
+    newAppointment?: string;
+  };
 }
 
 export class TwilioWhatsAppService {
@@ -22,11 +29,22 @@ export class TwilioWhatsAppService {
     this.config = {
       accountSid: process.env.TWILIO_ACCOUNT_SID || '',
       authToken: process.env.TWILIO_AUTH_TOKEN || '',
-      whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886'
+      whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886',
+      templates: {
+        otp: process.env.TWILIO_OTP_TEMPLATE_ID || '',
+        approval: process.env.TWILIO_APPOINTMENT_APPROVAL_TEMPLATE_ID || '',
+        reminder: process.env.TWILIO_APPOINTMENT_REMINDER_TEMPLATE_ID || '',
+        cancellation: process.env.TWILIO_APPOINTMENT_CANCELLATION_TEMPLATE_ID || undefined,
+        newAppointment: process.env.TWILIO_NEW_APPOINTMENT_TEMPLATE_ID || undefined
+      }
     };
 
     if (!this.config.accountSid || !this.config.authToken) {
       throw new Error('Twilio credentials not configured');
+    }
+
+    if (!this.config.templates.otp || !this.config.templates.approval || !this.config.templates.reminder) {
+      throw new Error('Twilio template IDs not configured');
     }
 
     this.client = twilio(this.config.accountSid, this.config.authToken);
@@ -49,7 +67,53 @@ export class TwilioWhatsAppService {
   }
 
   /**
-   * WhatsApp mesajı gönder
+   * Template ile WhatsApp mesajı gönder
+   */
+  async sendTemplateMessage(
+    to: string,
+    templateId: string,
+    parameters: string[] = []
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+  }> {
+    try {
+      const formattedTo = this.formatPhoneNumber(to);
+      
+      console.log(`📱 Template WhatsApp mesajı gönderiliyor: ${formattedTo}`);
+      console.log(`🎯 Template ID: ${templateId}`);
+      console.log(`📋 Parametreler: ${parameters.join(', ')}`);
+
+      const message = await this.client.messages.create({
+        from: this.config.whatsappNumber,
+        to: formattedTo,
+        contentSid: templateId,
+        contentVariables: JSON.stringify(parameters.reduce((acc, param, index) => {
+          acc[index + 1] = param;
+          return acc;
+        }, {} as Record<string, string>))
+      });
+
+      console.log(`✅ Template WhatsApp mesajı gönderildi: ${message.sid}`);
+
+      return {
+        success: true,
+        messageId: message.sid
+      };
+
+    } catch (error: any) {
+      console.error('❌ Template WhatsApp mesaj hatası:', error);
+      
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * WhatsApp mesajı gönder (template'li veya manuel)
    */
   async sendMessage(messageData: WhatsAppMessage): Promise<{
     success: boolean;
@@ -108,33 +172,67 @@ export class TwilioWhatsAppService {
   }
 
   /**
-   * OTP mesajı gönder
+   * OTP mesajı gönder (Template'li)
    */
   async sendOTP(phone: string, otpCode: string, businessId?: string): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
   }> {
-    const message = `🔐 RANDEVUO Doğrulama Kodu
+    try {
+      // Template ile OTP gönder
+      const result = await this.sendTemplateMessage(
+        phone,
+        this.config.templates.otp,
+        [otpCode] // Template'deki {{1}} parametresi
+      );
 
-Merhaba! RANDEVUO randevu sisteminiz için doğrulama kodunuz:
+      if (result.success) {
+        // Mesaj logunu kaydet
+        await this.logMessage({
+          phone: phone,
+          messageType: 'otp',
+          messageContent: `OTP Code: ${otpCode}`,
+          businessId: businessId,
+          status: 'sent',
+          twilioMessageId: result.messageId
+        });
+      } else {
+        // Hata logunu kaydet
+        await this.logMessage({
+          phone: phone,
+          messageType: 'otp',
+          messageContent: `OTP Code: ${otpCode}`,
+          businessId: businessId,
+          status: 'failed',
+          errorMessage: result.error
+        });
+      }
 
-**${otpCode}**
+      return result;
 
-Bu kod 10 dakika geçerlidir. Lütfen kimseyle paylaşmayın.
+    } catch (error: any) {
+      console.error('❌ OTP mesaj hatası:', error);
+      
+      // Hata logunu kaydet
+      await this.logMessage({
+        phone: phone,
+        messageType: 'otp',
+        messageContent: `OTP Code: ${otpCode}`,
+        businessId: businessId,
+        status: 'failed',
+        errorMessage: error.message
+      });
 
-RANDEVUO Ekibi`;
-
-    return this.sendMessage({
-      to: phone,
-      message,
-      messageType: 'otp',
-      businessId
-    });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   /**
-   * Randevu onay mesajı gönder
+   * Randevu onay mesajı gönder (Template'li)
    */
   async sendAppointmentApproval(
     phone: string, 
@@ -152,31 +250,71 @@ RANDEVUO Ekibi`;
     messageId?: string;
     error?: string;
   }> {
-    const servicesText = appointmentData.services.join(', ');
-    const employeeText = appointmentData.employeeName ? `\n👤 Personel: ${appointmentData.employeeName}` : '';
-    
-    const message = `✅ Randevunuz Onaylandı!
+    try {
+      // Template parametrelerini hazırla
+      const servicesText = appointmentData.services.join(', ');
+      const parameters = [
+        appointmentData.businessName,
+        `${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+        servicesText
+      ];
 
-🏢 İşletme: ${appointmentData.businessName}
-📅 Tarih: ${appointmentData.appointmentDate}
-🕐 Saat: ${appointmentData.appointmentTime}${employeeText}
-💼 Hizmetler: ${servicesText}
+      // Template ile onay mesajı gönder
+      const result = await this.sendTemplateMessage(
+        phone,
+        this.config.templates.approval,
+        parameters
+      );
 
-Randevunuz başarıyla onaylanmıştır. Randevu saatinden 15 dakika önce işletmede bulunmanızı rica ederiz.
+      if (result.success) {
+        // Mesaj logunu kaydet
+        await this.logMessage({
+          phone: phone,
+          messageType: 'approval',
+          messageContent: `Approval: ${appointmentData.businessName} - ${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+          businessId: businessId,
+          appointmentId: appointmentId,
+          status: 'sent',
+          twilioMessageId: result.messageId
+        });
+      } else {
+        // Hata logunu kaydet
+        await this.logMessage({
+          phone: phone,
+          messageType: 'approval',
+          messageContent: `Approval: ${appointmentData.businessName} - ${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+          businessId: businessId,
+          appointmentId: appointmentId,
+          status: 'failed',
+          errorMessage: result.error
+        });
+      }
 
-RANDEVUO Ekibi`;
+      return result;
 
-    return this.sendMessage({
-      to: phone,
-      message,
-      messageType: 'approval',
-      businessId,
-      appointmentId
-    });
+    } catch (error: any) {
+      console.error('❌ Randevu onay mesaj hatası:', error);
+      
+      // Hata logunu kaydet
+      await this.logMessage({
+        phone: phone,
+        messageType: 'approval',
+        messageContent: `Approval: ${appointmentData.businessName} - ${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+        businessId: businessId,
+        appointmentId: appointmentId,
+        status: 'failed',
+        errorMessage: error.message
+      });
+
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   /**
-   * Randevu hatırlatma mesajı gönder
+   * Randevu hatırlatma mesajı gönder (Template'li)
    */
   async sendAppointmentReminder(
     phone: string,
@@ -194,29 +332,67 @@ RANDEVUO Ekibi`;
     messageId?: string;
     error?: string;
   }> {
-    const servicesText = appointmentData.services.join(', ');
-    const employeeText = appointmentData.employeeName ? `\n👤 Personel: ${appointmentData.employeeName}` : '';
-    
-    const message = `⏰ Randevu Hatırlatması
+    try {
+      // Template parametrelerini hazırla
+      const servicesText = appointmentData.services.join(', ');
+      const parameters = [
+        appointmentData.businessName,
+        `${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+        servicesText
+      ];
 
-Merhaba! Yarınki randevunuzu hatırlatmak istiyoruz:
+      // Template ile hatırlatma mesajı gönder
+      const result = await this.sendTemplateMessage(
+        phone,
+        this.config.templates.reminder,
+        parameters
+      );
 
-🏢 İşletme: ${appointmentData.businessName}
-📅 Tarih: ${appointmentData.appointmentDate}
-🕐 Saat: ${appointmentData.appointmentTime}${employeeText}
-💼 Hizmetler: ${servicesText}
+      if (result.success) {
+        // Mesaj logunu kaydet
+        await this.logMessage({
+          phone: phone,
+          messageType: 'reminder',
+          messageContent: `Reminder: ${appointmentData.businessName} - ${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+          businessId: businessId,
+          appointmentId: appointmentId,
+          status: 'sent',
+          twilioMessageId: result.messageId
+        });
+      } else {
+        // Hata logunu kaydet
+        await this.logMessage({
+          phone: phone,
+          messageType: 'reminder',
+          messageContent: `Reminder: ${appointmentData.businessName} - ${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+          businessId: businessId,
+          appointmentId: appointmentId,
+          status: 'failed',
+          errorMessage: result.error
+        });
+      }
 
-Randevu saatinden 15 dakika önce işletmede bulunmanızı rica ederiz.
+      return result;
 
-RANDEVUO Ekibi`;
+    } catch (error: any) {
+      console.error('❌ Randevu hatırlatma mesaj hatası:', error);
+      
+      // Hata logunu kaydet
+      await this.logMessage({
+        phone: phone,
+        messageType: 'reminder',
+        messageContent: `Reminder: ${appointmentData.businessName} - ${appointmentData.appointmentDate} ${appointmentData.appointmentTime}`,
+        businessId: businessId,
+        appointmentId: appointmentId,
+        status: 'failed',
+        errorMessage: error.message
+      });
 
-    return this.sendMessage({
-      to: phone,
-      message,
-      messageType: 'reminder',
-      businessId,
-      appointmentId
-    });
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   /**

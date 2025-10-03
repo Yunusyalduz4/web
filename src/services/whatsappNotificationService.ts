@@ -86,7 +86,87 @@ export class WhatsAppNotificationService {
   }
 
   /**
-   * WhatsApp mesajı gönder ve logla
+   * Template ile WhatsApp mesajı gönder ve logla
+   */
+  private async sendWhatsAppTemplateMessage(
+    phone: string,
+    messageType: 'approval' | 'reminder' | 'new_appointment' | 'cancellation',
+    businessId: string,
+    appointmentId?: string,
+    templateParameters?: string[]
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phone);
+      const twilioService = getTwilioWhatsAppService();
+      
+      // Template ID'yi belirle
+      let templateId: string;
+      switch (messageType) {
+        case 'approval':
+          templateId = process.env.TWILIO_APPOINTMENT_APPROVAL_TEMPLATE_ID || '';
+          break;
+        case 'reminder':
+          templateId = process.env.TWILIO_APPOINTMENT_REMINDER_TEMPLATE_ID || '';
+          break;
+        case 'cancellation':
+        case 'new_appointment':
+          // Bu template'ler henüz yok, manuel mesaj gönder
+          return { success: false, error: 'Template not available for this message type' };
+        default:
+          return { success: false, error: 'Unknown message type' };
+      }
+
+      if (!templateId) {
+        return { success: false, error: 'Template ID not configured' };
+      }
+
+      // Template ile mesaj gönder
+      const result = await twilioService.sendTemplateMessage(
+        formattedPhone,
+        templateId,
+        templateParameters || []
+      );
+      
+      // Mesajı logla
+      await pool.query(
+        `INSERT INTO whatsapp_message_logs (phone, message_type, message_content, business_id, appointment_id, status, twilio_message_id) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          formattedPhone,
+          messageType,
+          `Template: ${templateId}`,
+          businessId,
+          appointmentId || null,
+          result.success ? 'sent' : 'failed',
+          result.messageId || null
+        ]
+      );
+      
+      return result;
+    } catch (error) {
+      console.error('Template WhatsApp mesajı gönderilirken hata:', error);
+      
+      // Hata durumunu logla
+      await pool.query(
+        `INSERT INTO whatsapp_message_logs (phone, message_type, message_content, business_id, appointment_id, status, error_message) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          this.formatPhoneNumber(phone),
+          messageType,
+          'Template message failed',
+          businessId,
+          appointmentId || null,
+          'failed',
+          error instanceof Error ? error.message : 'Bilinmeyen hata'
+        ]
+      );
+      
+      return { success: false, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
+    }
+  }
+
+  /**
+   * WhatsApp mesajı gönder ve logla (manuel mesaj için)
    */
   private async sendWhatsAppMessage(
     phone: string,
@@ -191,20 +271,20 @@ export class WhatsAppNotificationService {
         ? `\n\nHizmetler: ${serviceNames.join(', ')}` 
         : '';
 
-      // WhatsApp mesajı oluştur
-      const message = `🎉 *Randevunuz Onaylandı!*\n\n` +
-        `📅 *Tarih:* ${formattedDate}\n` +
-        `🏢 *İşletme:* ${businessName}\n` +
-        `👤 *Müşteri:* ${customerName || 'Müşteri'}${serviceText}\n\n` +
-        `Randevunuz başarıyla onaylanmıştır. Belirtilen tarih ve saatte işletmeye gelebilirsiniz.`;
+      // Template parametrelerini hazırla
+      const templateParameters = [
+        businessName,
+        formattedDate,
+        serviceNames && serviceNames.length > 0 ? serviceNames.join(', ') : 'Genel Hizmet'
+      ];
 
-      // WhatsApp mesajı gönder
-      return await this.sendWhatsAppMessage(
+      // Template ile WhatsApp mesajı gönder
+      return await this.sendWhatsAppTemplateMessage(
         userPhone,
-        message,
         'approval',
         businessId,
-        appointmentId
+        appointmentId,
+        templateParameters
       );
     } catch (error) {
       console.error('Randevu onay bildirimi gönderilirken hata:', error);
@@ -322,19 +402,20 @@ export class WhatsAppNotificationService {
         ? `\n\nHizmetler: ${serviceNames.join(', ')}` 
         : '';
 
-      // WhatsApp mesajı oluştur
-      const message = `⏰ *Randevu Hatırlatması*\n\n` +
-        `📅 *Tarih:* ${formattedDate}\n` +
-        `🏢 *İşletme:* ${businessName}${serviceText}\n\n` +
-        `Randevunuza 2 saat kaldı! Lütfen belirtilen tarih ve saatte işletmeye gelebilirsiniz.`;
+      // Template parametrelerini hazırla
+      const templateParameters = [
+        businessName,
+        formattedDate,
+        serviceNames && serviceNames.length > 0 ? serviceNames.join(', ') : 'Genel Hizmet'
+      ];
 
-      // WhatsApp mesajı gönder
-      return await this.sendWhatsAppMessage(
+      // Template ile WhatsApp mesajı gönder
+      return await this.sendWhatsAppTemplateMessage(
         userPhone,
-        message,
         'reminder',
         businessId,
-        appointmentId
+        appointmentId,
+        templateParameters
       );
     } catch (error) {
       console.error('Randevu hatırlatma bildirimi gönderilirken hata:', error);
