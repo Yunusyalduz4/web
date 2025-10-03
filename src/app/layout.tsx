@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import Providers from '../components/Providers';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 import PWARegister from '../components/PWARegister';
+import '../utils/consoleFilter'; // Next.js 15 static file hatalarını filtrele
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

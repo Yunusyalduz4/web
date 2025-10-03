@@ -28,6 +28,58 @@ export default function UserProfilePage() {
   // Ziyaretçi kullanıcı kontrolü
   const isGuest = status === 'unauthenticated' || !session || !userId;
   
+  // Hook'ları her zaman çağır (conditional return'den önce)
+  const { data: profile, isLoading } = trpc.user.getProfile.useQuery(userId ? { userId } : skipToken);
+  const { data: userReviews, isLoading: reviewsLoading } = trpc.review.getByUser.useQuery(
+    userId ? { userId, page: 1, limit: 50 } : skipToken
+  );
+  const updatePhoneMutation = trpc.user.updatePhone.useMutation();
+  const updateProfileImageMutation = trpc.user.updateProfileImage.useMutation();
+  const deleteReviewMutation = trpc.review.deleteUserReview.useMutation();
+  
+  // State hook'ları
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [passwordUpdateOpen, setPasswordUpdateOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [photoSwiper, setPhotoSwiper] = useState<any>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setReviewCallbacks } = useRealTimeReviews(userId);
+  
+  // Push notification hook
+  const { isSupported, isSubscribed, isLoading: pushLoading, error: pushError, subscribe, unsubscribe } = useUserPushNotifications();
+  
+  // Profil yüklendiğinde inputlara aktar
+  React.useEffect(() => {
+    if (profile) {
+      setName(profile.name || '');
+      setEmail(profile.email || '');
+      setPhone(profile.phone || '');
+      setAddress(profile.address || '');
+      setProfileImageUrl(profile.profile_image_url || null);
+    }
+  }, [profile]);
+  
   if (isGuest) {
     return (
       <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -62,54 +114,6 @@ export default function UserProfilePage() {
       </main>
     );
   }
-  const { data: profile, isLoading } = trpc.user.getProfile.useQuery(userId ? { userId } : skipToken);
-  const { data: userReviews, isLoading: reviewsLoading } = trpc.review.getByUser.useQuery(
-    userId ? { userId, page: 1, limit: 50 } : skipToken
-  );
-  const updatePhoneMutation = trpc.user.updatePhone.useMutation();
-  const updateProfileImageMutation = trpc.user.updateProfileImage.useMutation();
-  const deleteReviewMutation = trpc.review.deleteUserReview.useMutation();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [reviewsOpen, setReviewsOpen] = useState(false);
-  const [passwordUpdateOpen, setPasswordUpdateOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
-  const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [photoSwiper, setPhotoSwiper] = useState<any>(null);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  
-  // WebSocket entegrasyonu
-  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
-  const { setCallbacks: setReviewCallbacks } = useRealTimeReviews(userId);
-  
-  // Push notification hook
-  const { isSupported, isSubscribed, isLoading: pushLoading, error: pushError, subscribe, unsubscribe } = useUserPushNotifications();
-
-  // Profil yüklendiğinde inputlara aktar
-  React.useEffect(() => {
-    if (profile) {
-      setName(profile.name || '');
-      setEmail(profile.email || '');
-      setPhone(profile.phone || '');
-      setAddress(profile.address || '');
-      setProfileImageUrl(profile.profile_image_url || null);
-    }
-  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -28,7 +28,7 @@ export function useRealTimeAppointments(userId?: string, businessId?: string) {
     if (businessId) {
       utils.business.getAppointments.invalidate({ businessId });
     }
-  }, [utils, userId, businessId]);
+  }, [utils.user.appointmentHistory, utils.business.getAppointments, userId, businessId]);
 
   useEffect(() => {
     const handleAppointmentCreated = (data: any) => {
@@ -100,7 +100,7 @@ export function useRealTimeReviews(userId?: string, businessId?: string) {
     if (businessId) {
       utils.review.getByBusiness.invalidate({ businessId });
     }
-  }, [utils, userId, businessId]);
+  }, [utils.review.getByUser, utils.review.getByBusiness, userId, businessId]);
 
   useEffect(() => {
     const handleReviewCreated = (data: any) => {
@@ -161,7 +161,7 @@ export function useRealTimeBusiness(businessId?: string) {
       utils.business.getServices.invalidate({ businessId });
       utils.business.getEmployees.invalidate({ businessId });
     }
-  }, [utils, businessId]);
+  }, [utils.business.getById, utils.business.getServices, utils.business.getEmployees, businessId]);
 
   useEffect(() => {
     const handleBusinessUpdated = (data: any) => {
@@ -232,7 +232,7 @@ export function useRealTimeNotifications(userId?: string, businessId?: string) {
     if (businessId) {
       utils.notifications.getByBusiness.invalidate({ businessId });
     }
-  }, [utils, userId, businessId]);
+  }, [utils.notifications.getByUser, utils.notifications.getByBusiness, userId, businessId]);
 
   useEffect(() => {
     const handleNotificationSent = (data: any) => {

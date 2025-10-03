@@ -14,6 +14,34 @@ export default function FavoritesPage() {
   // Ziyaretçi kullanıcı kontrolü
   const isGuest = status === 'unauthenticated' || !session || !session?.user?.id;
   
+  // Hook'ları her zaman çağır (conditional return'den önce)
+  const { data: favorites, isLoading } = trpc.favorites.list.useQuery();
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'favorites'>('recent');
+  const [searchOpen, setSearchOpen] = useState(false);
+  
+  // WebSocket entegrasyonu
+  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
+  const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness();
+  
+  // Memoized values
+  const list = useMemo(() => {
+    let l = (favorites || []).map((b: any) => ({
+      ...b,
+      _rating: parseFloat(b.overall_rating || 0)
+    }));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      l = l.filter((b: any) => (b.name || '').toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q));
+    }
+    l.sort((a: any, b: any) => {
+      if (sortBy === 'recent') return new Date(b.favorited_at).getTime() - new Date(a.favorited_at).getTime();
+      if (sortBy === 'rating') return (b._rating || 0) - (a._rating || 0);
+      return (b.favorites_count || 0) - (a.favorites_count || 0);
+    });
+    return l;
+  }, [favorites, search, sortBy]);
+  
   if (isGuest) {
     return (
       <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -47,36 +75,6 @@ export default function FavoritesPage() {
       </main>
     );
   }
-  
-  const { data: favorites, isLoading } = trpc.favorites.list.useQuery();
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'favorites'>('recent');
-  const [searchOpen, setSearchOpen] = useState(false);
-  
-
-  // WebSocket entegrasyonu
-  const { isConnected, isConnecting, error: socketError } = useWebSocketStatus();
-  const { setCallbacks: setBusinessCallbacks } = useRealTimeBusiness();
-
-
-
-
-  const list = useMemo(() => {
-    let l = (favorites || []).map((b: any) => ({
-      ...b,
-      _rating: parseFloat(b.overall_rating || 0)
-    }));
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      l = l.filter((b: any) => (b.name || '').toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q));
-    }
-    l.sort((a: any, b: any) => {
-      if (sortBy === 'recent') return new Date(b.favorited_at).getTime() - new Date(a.favorited_at).getTime();
-      if (sortBy === 'rating') return (b._rating || 0) - (a._rating || 0);
-      return (b.favorites_count || 0) - (a.favorites_count || 0);
-    });
-    return l;
-  }, [favorites, search, sortBy]);
 
   return (
     <main className="relative max-w-4xl mx-auto p-3 sm:p-4 pb-20 sm:pb-28 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">

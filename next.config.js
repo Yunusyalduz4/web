@@ -7,8 +7,25 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // VPS için production optimizasyonları
-  // output: 'standalone', // Development modunda kapatıldı
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
   trailingSlash: true,
+  
+  // Next.js 15 için experimental ayarlar
+  experimental: {
+    staticGenerationRetryCount: 0,
+    optimizePackageImports: ['@tanstack/react-query'],
+    // Next.js 15 static file serving fix
+    serverComponentsExternalPackages: [],
+    esmExternals: 'loose',
+  },
+  
+  // Next.js 15 için static file serving
+  assetPrefix: process.env.NODE_ENV === 'development' ? '' : '',
+  
+  // Development modunda static file serving'i devre dışı bırak
+  ...(process.env.NODE_ENV === 'development' && {
+    generateStaticParams: false,
+  }),
   
   // Development modunda cache sorunlarını çözmek için
   ...(process.env.NODE_ENV === 'development' && {
@@ -61,18 +78,39 @@ const nextConfig = {
       },
     ];
 
-    // Development modunda static dosyalar için cache'i devre dışı bırak
-    if (process.env.NODE_ENV === 'development') {
-      headers.push({
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      });
-    }
+    // Static dosyalar için headers
+    headers.push({
+      source: '/_next/static/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: process.env.NODE_ENV === 'development' 
+            ? 'no-cache, no-store, must-revalidate'
+            : 'public, max-age=31536000, immutable',
+        },
+      ],
+    });
+
+    // Next.js 15 için ek static file headers
+    headers.push({
+      source: '/_next/static/css/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        },
+      ],
+    });
+
+    headers.push({
+      source: '/_next/static/chunks/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        },
+      ],
+    });
 
     return headers;
   },
@@ -84,6 +122,38 @@ const nextConfig = {
         destination: '/api/static/:path*',
       },
     ];
+  },
+  
+  // Webpack konfigürasyonu
+  webpack: (config, { dev, isServer }) => {
+    // Next.js 15 için webpack optimizasyonları
+    if (dev) {
+      // Development modunda static file serving'i optimize et
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      };
+    }
+    
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          // Next.js 15 için chunk optimizasyonu
+          framework: {
+            chunks: 'all',
+            name: 'framework',
+            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+        },
+      };
+    }
+    
+    return config;
   },
 };
 
