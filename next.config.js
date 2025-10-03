@@ -14,10 +14,10 @@ const nextConfig = {
   experimental: {
     staticGenerationRetryCount: 0,
     optimizePackageImports: ['@tanstack/react-query'],
-    // Next.js 15 static file serving fix
-    serverComponentsExternalPackages: [],
-    esmExternals: 'loose',
   },
+  
+  // Next.js 15 için server external packages
+  serverExternalPackages: [],
   
   // Next.js 15 için static file serving
   assetPrefix: process.env.NODE_ENV === 'development' ? '' : '',
