@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { trpc } from '../utils/trpc';
+import { trpc } from '../utils/trpcClient';
 
 interface WhatsAppSettingsModalProps {
   business: any;
@@ -123,10 +123,10 @@ export function WhatsAppSettingsModal({ business, onClose }: WhatsAppSettingsMod
             </button>
             <button
               onClick={handleSave}
-              disabled={updateWhatsAppSettings.isLoading}
+              disabled={updateWhatsAppSettings.isPending}
               className="flex-1 py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
             >
-              {updateWhatsAppSettings.isLoading ? 'Kaydediliyor...' : 'Kaydet'}
+              {updateWhatsAppSettings.isPending ? 'Kaydediliyor...' : 'Kaydet'}
             </button>
           </div>
         </div>
