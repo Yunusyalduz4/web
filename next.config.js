@@ -7,8 +7,16 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // VPS için production optimizasyonları
-  output: 'standalone',
+  // output: 'standalone', // Development modunda kapatıldı
   trailingSlash: true,
+  
+  // Development modunda cache sorunlarını çözmek için
+  ...(process.env.NODE_ENV === 'development' && {
+    onDemandEntries: {
+      maxInactiveAge: 25 * 1000,
+      pagesBufferLength: 2,
+    },
+  }),
  
   // Environment değişkenlerini debug et
   env: {
@@ -18,7 +26,7 @@ const nextConfig = {
   },
   // PWA ve Push Notification için gerekli headers
   async headers() {
-    return [
+    const headers = [
       {
         source: '/sw.js',
         headers: [
@@ -52,6 +60,21 @@ const nextConfig = {
         ],
       },
     ];
+
+    // Development modunda static dosyalar için cache'i devre dışı bırak
+    if (process.env.NODE_ENV === 'development') {
+      headers.push({
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      });
+    }
+
+    return headers;
   },
   // Static file serving için rewrites
   async rewrites() {

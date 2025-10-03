@@ -71,6 +71,9 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
 
   // Direkt erteleme mutation'ı (erteleme isteği sistemi kaldırıldı)
   const directRescheduleMutation = trpc.appointment.rescheduleAppointment.useMutation();
+  
+  // İptal etme mutation'ı
+  const cancelRescheduleMutation = trpc.reschedule.cancelRescheduleRequest.useMutation();
 
   // Çalışan ID'sini al - services array'inden
   const getEmployeeId = () => {
@@ -187,7 +190,7 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
   };
 
   // Mevcut erteleme isteğini bul (prop'tan veya query'den)
-  const existingRequest = appointment?.existingRescheduleRequest || existingRequests?.find(req => req.appointment_id === appointment?.id);
+  const existingRequest = appointment?.existingRescheduleRequest;
 
   // Haftalık tarihleri hesapla
   const weekDates = useMemo(() => getWeekDates(currentWeekStart), [currentWeekStart]);
@@ -247,6 +250,34 @@ export default function UserRescheduleModal({ isOpen, onClose, appointment, onRe
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // İptal etme fonksiyonu
+  const handleCancelRequest = async () => {
+    if (!existingRequest?.id) return;
+    
+    try {
+      await cancelRescheduleMutation.mutateAsync({
+        requestId: existingRequest.id
+      });
+      
+      setToast({
+        open: true,
+        message: '✅ Erteleme isteği iptal edildi!',
+        type: 'success'
+      });
+      
+      setTimeout(() => {
+        onClose();
+        onRescheduleSubmitted?.();
+      }, 1500);
+    } catch (error: any) {
+      setToast({
+        open: true,
+        message: `❌ İptal işlemi başarısız: ${error.message}`,
+        type: 'error'
+      });
     }
   };
 
