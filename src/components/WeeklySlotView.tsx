@@ -1292,9 +1292,7 @@ function ManualAppointmentModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.customerFullName.trim()) {
-      newErrors.customerFullName = 'Müşteri adı soyadı zorunlu';
-    }
+    // İsim-soyisim artık opsiyonel, validation kaldırıldı
     if (formData.selectedServices.length === 0) {
       newErrors.selectedServices = 'En az bir hizmet seçin';
     }
@@ -1318,11 +1316,16 @@ function ManualAppointmentModal({
     // Rastgele müşteri ID oluştur
     const customerId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Ad soyadı ayır
+    // Ad soyadı ayır - opsiyonel
     const fullName = formData.customerFullName.trim();
-    const nameParts = fullName.split(' ');
-    const customerName = nameParts[0] || '';
-    const customerSurname = nameParts.slice(1).join(' ') || null;
+    let customerName = undefined;
+    let customerSurname = undefined;
+    
+    if (fullName) {
+      const nameParts = fullName.split(' ');
+      customerName = nameParts[0] || undefined;
+      customerSurname = nameParts.slice(1).join(' ') || undefined;
+    }
     
     // Randevu verisi hazırla
     const appointmentData = {

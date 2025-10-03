@@ -641,8 +641,8 @@ export const appointmentRouter = t.router({
     .input(z.object({
       businessId: z.string().uuid(),
       customerId: z.string(), // Manuel müşteri ID'si
-      customerName: z.string().min(2),
-      customerSurname: z.string().min(2),
+      customerName: z.string().min(2).optional(),
+      customerSurname: z.string().min(2).optional(),
       customerPhone: z.string().nullable().optional(),
       appointmentDate: z.string(), // YYYY-MM-DD formatında
       appointmentTime: z.string(), // HH:mm formatında
