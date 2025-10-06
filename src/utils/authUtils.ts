@@ -13,14 +13,23 @@ export const handleLogout = async () => {
     // Local storage'dan bilgileri temizle
     clearUserCredentials();
     
-    // NextAuth logout
+    // NextAuth logout - redirect'i manuel yapacağız
     await signOut({ 
-      redirect: true,
-      callbackUrl: '/login'
+      redirect: false
     });
+    
+    // Manuel redirect - domain sorununu önlemek için
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login/';
+    }
   } catch (error) {
     // Hata olsa bile local storage'ı temizle
     clearUserCredentials();
+    
+    // Hata durumunda da login'e yönlendir
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login/';
+    }
   }
 };
 

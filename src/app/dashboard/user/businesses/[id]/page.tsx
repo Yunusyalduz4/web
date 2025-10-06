@@ -9,7 +9,6 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import BottomNav from '../../../../../components/BottomNav';
 import QRCode from 'qrcode';
 import { GuestOTPModal } from '../../../../../components/GuestOTPModal';
 // Hikaye bileşenleri - GEÇİCİ OLARAK KAPALI
@@ -143,8 +142,7 @@ export default function BusinessDetailPage() {
   const [guestFormData, setGuestFormData] = useState({
     firstName: '',
     lastName: '',
-    phone: '',
-    email: ''
+    phone: ''
   });
   const [guestFormErrors, setGuestFormErrors] = useState<Record<string, string>>({});
 
@@ -175,13 +173,6 @@ export default function BusinessDetailPage() {
       errors.phone = 'Geçerli bir telefon numarası giriniz (0555 123 45 67)';
     }
     
-    // E-posta kontrolü
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!guestFormData.email.trim()) {
-      errors.email = 'E-posta adresi gereklidir';
-    } else if (!emailRegex.test(guestFormData.email)) {
-      errors.email = 'Geçerli bir e-posta adresi giriniz';
-    }
     
     setGuestFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -199,7 +190,6 @@ export default function BusinessDetailPage() {
         firstName: guestFormData.firstName.trim(),
         lastName: guestFormData.lastName.trim(),
         phone: guestFormData.phone.replace(/\s/g, ''),
-        email: guestFormData.email.trim(),
         isGuest: true
       };
       
@@ -1711,22 +1701,6 @@ export default function BusinessDetailPage() {
                 )}
               </div>
 
-              {/* E-posta */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">E-posta *</label>
-                    <input
-                      type="email"
-                      value={guestFormData.email}
-                      onChange={(e) => setGuestFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-black ${
-                        guestFormErrors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="ornek@email.com"
-                    />
-                {guestFormErrors.email && (
-                  <p className="text-red-500 text-xs mt-1">{guestFormErrors.email}</p>
-                )}
-              </div>
             </div>
 
             {/* Action Buttons */}
@@ -1763,8 +1737,7 @@ export default function BusinessDetailPage() {
       />
     )}
     
-    {/* BottomNav - Her durumda göster */}
-    <BottomNav />
+    {/* BottomNav layout'tan geliyor */}
     </>
   );
 } 

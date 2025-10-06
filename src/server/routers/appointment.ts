@@ -473,7 +473,6 @@ export const appointmentRouter = t.router({
       customerName: z.string().min(2),
       customerSurname: z.string().min(2),
       customerPhone: z.string().min(10),
-      customerEmail: z.string().email(),
       appointmentDate: z.string(), // YYYY-MM-DD formatında
       appointmentTime: z.string(), // HH:mm formatında
       serviceIds: z.array(z.string().uuid()), // Birden fazla hizmet
@@ -559,7 +558,7 @@ export const appointmentRouter = t.router({
       const guestUserId = crypto.randomUUID();
       
       // Geçici kullanıcı oluştur - e-posta adresini unique yapmak için timestamp ekle
-      const uniqueEmail = `guest_${Date.now()}_${input.customerEmail}`;
+      const uniqueEmail = `guest_${Date.now()}_${input.customerPhone}`;
       await pool.query(`
         INSERT INTO users (id, name, email, phone, role, password_hash, created_at, updated_at)
         VALUES ($1, $2, $3, $4, 'user', 'guest_user_no_password', NOW(), NOW())
@@ -597,23 +596,24 @@ export const appointmentRouter = t.router({
 
       // İşletmeye bildirim gönder
       try {
-        await sendNotificationToBusiness(input.businessId, {
-          title: 'Yeni Randevu Talebi',
-          body: `${input.customerName} ${input.customerSurname} adlı müşteri randevu talebinde bulundu.`,
-          data: { appointmentId, type: 'new_appointment' }
-        });
+        await sendNotificationToBusiness(
+          input.businessId,
+          'Yeni Randevu Talebi',
+          `${input.customerName} ${input.customerSurname} adlı müşteri randevu talebinde bulundu.`,
+          { appointmentId, type: 'new_appointment' }
+        );
       } catch (notificationError) {
         console.error('Bildirim gönderme hatası:', notificationError);
       }
 
       // WebSocket ile real-time güncelleme
       try {
-        const io = getSocketServer();
-        if (io) {
-          io.to(`business_${input.businessId}`).emit('appointment_created', {
+        const socketServer = getSocketServer();
+        if (socketServer) {
+          socketServer.emitAppointmentCreated({
             appointmentId,
             businessId: input.businessId,
-            customerName: `${input.customerName} ${input.customerSurname}`,
+            userId: guestUserId,
             appointmentDatetime: appointmentDatetime.toISOString(),
             services: servicesRes.rows.map(s => s.id)
           });

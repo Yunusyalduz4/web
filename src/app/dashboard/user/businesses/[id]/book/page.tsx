@@ -70,7 +70,6 @@ export default function BookAppointmentPage() {
         customerName: guestData.firstName,
         customerSurname: guestData.lastName,
         customerPhone: guestData.phone,
-        customerEmail: guestData.email,
         appointmentDate: selectedDate,
         appointmentTime: selectedTime,
         serviceIds: selectedServices.map(s => s.id),
@@ -413,7 +412,6 @@ export default function BookAppointmentPage() {
           customerName: guestData.firstName,
           customerSurname: guestData.lastName,
           customerPhone: guestData.phone,
-          customerEmail: guestData.email,
           appointmentDate: selectedDate,
           appointmentTime: selectedTime,
           serviceIds: selectedServices.map(s => s.id),
@@ -1149,10 +1147,6 @@ function ConfirmationStep({
               <div>
                 <span className="text-gray-600">Telefon:</span>
                 <div className="font-medium text-gray-900">{guestData.phone}</div>
-              </div>
-              <div className="sm:col-span-2">
-                <span className="text-gray-600">E-posta:</span>
-                <div className="font-medium text-gray-900">{guestData.email}</div>
               </div>
             </div>
           </div>
