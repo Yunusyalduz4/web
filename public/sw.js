@@ -16,9 +16,17 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Safari uyumluluğu için redirect kontrolü
   if (event.request.method !== 'GET') {
     return;
+  }
+  
+  // Dashboard sayfasını her zaman network'ten al (Safari PWA sorunu için)
+  if (event.request.url.includes('/dashboard') && 
+      !event.request.url.includes('/dashboard/')) {
+    return fetch(event.request, { 
+      cache: 'no-cache',
+      credentials: 'include'
+    });
   }
   
   // Safari'de redirect sorununu önle
