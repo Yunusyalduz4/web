@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 
-// Leaflet CSS'i dinamik olarak yükle
+// Leaflet CSS'i dinamik olarak yükle - Next.js 15 safe import
 const LeafletMap = dynamic(() => import('./LeafletMap'), { 
   ssr: false,
   loading: () => (

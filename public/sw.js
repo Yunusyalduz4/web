@@ -16,11 +16,31 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Safari uyumluluğu için redirect kontrolü
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
+  // Safari'de redirect sorununu önle
+  if (event.request.url.includes('redirect') || event.request.url.includes('redirect_uri')) {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
-        return response || fetch(event.request);
+        if (response) {
+          return response;
+        }
+        
+        // Safari için özel fetch handling
+        return fetch(event.request).catch(() => {
+          // Network hatası durumunda fallback
+          if (event.request.destination === 'document') {
+            return caches.match('/offline');
+          }
+        });
       })
   );
 });

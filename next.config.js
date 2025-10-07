@@ -14,6 +14,15 @@ const nextConfig = {
   experimental: {
     staticGenerationRetryCount: 0,
     optimizePackageImports: ['@tanstack/react-query'],
+    // Hot reload sorunlarını çöz
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
   
   // Next.js 15 için server external packages
@@ -22,16 +31,18 @@ const nextConfig = {
   // Next.js 15 için static file serving
   assetPrefix: process.env.NODE_ENV === 'development' ? '' : '',
   
-  // Development modunda static file serving'i devre dışı bırak
-  ...(process.env.NODE_ENV === 'development' && {
-    generateStaticParams: false,
-  }),
+  // Next.js 15 için generateStaticParams kaldırıldı
   
   // Development modunda cache sorunlarını çözmek için
   ...(process.env.NODE_ENV === 'development' && {
     onDemandEntries: {
       maxInactiveAge: 25 * 1000,
       pagesBufferLength: 2,
+    },
+    // Hot reload sorunlarını çöz
+    devIndicators: {
+      buildActivity: true,
+      buildActivityPosition: 'bottom-right',
     },
   }),
  
@@ -54,6 +65,15 @@ const nextConfig = {
           {
             key: 'Service-Worker-Allowed',
             value: '/',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript',
+          },
+          // Safari uyumluluğu için
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none',
           },
         ],
       },
@@ -124,37 +144,7 @@ const nextConfig = {
     ];
   },
   
-  // Webpack konfigürasyonu
-  webpack: (config, { dev, isServer }) => {
-    // Next.js 15 için webpack optimizasyonları
-    if (dev) {
-      // Development modunda static file serving'i optimize et
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-      };
-    }
-    
-    if (!dev && !isServer) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          // Next.js 15 için chunk optimizasyonu
-          framework: {
-            chunks: 'all',
-            name: 'framework',
-            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-            priority: 40,
-            enforce: true,
-          },
-        },
-      };
-    }
-    
-    return config;
-  },
+  // Webpack konfigürasyonu kaldırıldı - Next.js 15 default ayarları kullan
 };
 
 module.exports = nextConfig;
