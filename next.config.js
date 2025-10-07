@@ -144,7 +144,22 @@ const nextConfig = {
     ];
   },
   
-  // Webpack konfigürasyonu kaldırıldı - Next.js 15 default ayarları kullan
+  // Webpack konfigürasyonu - Production Leaflet optimizasyonu
+  webpack: (config, { dev, isServer }) => {
+    // Production'da Leaflet sorunlarını çöz
+    if (!dev && !isServer) {
+      config.resolve = {
+        ...config.resolve,
+        fallback: {
+          ...config.resolve?.fallback,
+          fs: false,
+          path: false,
+        },
+      };
+    }
+    
+    return config;
+  },
 };
 
 module.exports = nextConfig;
