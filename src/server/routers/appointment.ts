@@ -110,7 +110,7 @@ export const appointmentRouter = t.router({
 
       // 3. Ana randevuyu oluştur
       const appointmentResult = await pool.query(
-        `INSERT INTO appointments (user_id, business_id, appointment_datetime, status, reminder_sent) VALUES ($1, $2, $3, 'pending', false) RETURNING *`,
+        `INSERT INTO appointments (user_id, business_id, appointment_datetime, status, reminder_sent) VALUES ($1, $2, $3, 'confirmed', false) RETURNING *`,
         [input.userId, input.businessId, utcDateTime.toISOString()] // UTC olarak kaydet
       );
       const appointmentId = appointmentResult.rows[0].id;
@@ -176,7 +176,7 @@ export const appointmentRouter = t.router({
               appointmentDateTime: utcDateTime.toISOString(),
               services: serviceNames.split(', '),
               employeeId: input.services[0]?.employeeId,
-              status: 'pending',
+              status: 'confirmed',
               createdAt: new Date(),
               totalDuration,
               customerName: userName
@@ -569,7 +569,7 @@ export const appointmentRouter = t.router({
         INSERT INTO appointments (
           id, user_id, business_id, appointment_datetime, 
           status, notes, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, 'pending', $5, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, 'confirmed', $5, NOW(), NOW())
         RETURNING id
       `, [
         crypto.randomUUID(),

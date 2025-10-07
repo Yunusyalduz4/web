@@ -1221,9 +1221,9 @@ function ConfirmationStep({
               )}
               <div>
                 <span className="text-gray-600">Durum:</span>
-                <div className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  Onay Bekliyor
+                <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Onaylandı
                 </div>
               </div>
             </div>
@@ -1231,13 +1231,13 @@ function ConfirmationStep({
         </div>
 
         {/* Alt Bilgi */}
-        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
           <div className="text-center">
-            <p className="text-sm text-blue-800 mb-2">
-              <strong>Randevu onayı için işletme ile iletişime geçin.</strong>
+            <p className="text-sm text-green-800 mb-2">
+              <strong>Randevunuz başarıyla onaylandı!</strong>
             </p>
-            <p className="text-xs text-blue-600">
-              İşletme randevunuzu onayladığında size bilgi verilecektir.
+            <p className="text-xs text-green-600">
+              Randevu tarihinde işletmeye gidebilirsiniz.
             </p>
           </div>
         </div>

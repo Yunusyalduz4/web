@@ -5,7 +5,7 @@ import { trpc } from '../../../utils/trpcClient';
 import { skipToken } from '@tanstack/react-query';
 import { useMemo, useState, useEffect } from 'react';
 import ReviewModal from '../../../components/ReviewModal';
-import UserRescheduleModal from '../../../components/UserRescheduleModal';
+// UserRescheduleModal import'u kaldırıldı
 import NotificationsButton from '../../../components/NotificationsButton';
 import { useRealTimeAppointments, useRealTimeReviews } from '../../../hooks/useRealTimeUpdates';
 import { useWebSocketStatus } from '../../../hooks/useWebSocketEvents';
@@ -64,13 +64,17 @@ export default function UserDashboard() {
     employeeName: ''
   });
 
-  // Reschedule modal state
-  const [rescheduleModal, setRescheduleModal] = useState<{
+  // Reschedule modal state kaldırıldı
+
+  // Cancel confirmation modal state
+  const [cancelModal, setCancelModal] = useState<{
     isOpen: boolean;
-    appointment: any;
+    appointmentId: string;
+    businessName: string;
   }>({
     isOpen: false,
-    appointment: null
+    appointmentId: '',
+    businessName: ''
   });
 
   // History modal state
@@ -174,10 +178,22 @@ export default function UserDashboard() {
     );
   }
 
-  const handleCancel = async (id: string) => {
+  const handleCancel = (appointment: any) => {
+    setCancelModal({
+      isOpen: true,
+      appointmentId: appointment.id,
+      businessName: appointment.business_name || 'İşletme'
+    });
+  };
+
+  const handleCancelConfirm = async () => {
     if (!userId) return;
-    if (!confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) return;
-    await cancelMutation.mutateAsync({ id, userId });
+    await cancelMutation.mutateAsync({ id: cancelModal.appointmentId, userId });
+    setCancelModal({
+      isOpen: false,
+      appointmentId: '',
+      businessName: ''
+    });
     router.refresh();
   };
 
@@ -195,12 +211,7 @@ export default function UserDashboard() {
     });
   };
 
-  const handleRescheduleClick = (appointment: any) => {
-    setRescheduleModal({
-      isOpen: true,
-      appointment: appointment
-    });
-  };
+  // handleRescheduleClick fonksiyonu kaldırıldı
 
   const handleReviewSubmitted = () => {
     // Review modal'ı kapat
@@ -216,16 +227,7 @@ export default function UserDashboard() {
     router.refresh();
   };
 
-  const handleRescheduleSubmitted = () => {
-    // Reschedule modal'ı kapat
-    setRescheduleModal({
-      isOpen: false,
-      appointment: null
-    });
-    
-    // Sayfayı yenile ve randevu verilerini güncelle
-    router.refresh();
-  };
+  // handleRescheduleSubmitted fonksiyonu kaldırıldı
 
   return (
     <main className="relative max-w-md mx-auto p-3 pb-20 min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50">
@@ -372,10 +374,10 @@ export default function UserDashboard() {
             
             {/* Actions - Mobile Optimized */}
             <div className="flex gap-3 sm:gap-6">
-              {a.status === 'pending' && (
+              {(a.status === 'pending' || a.status === 'confirmed') && (
                 <button
                   className="text-sm font-medium text-rose-700 hover:text-rose-800 active:text-rose-900 touch-manipulation min-h-[44px] px-2 py-2 -mx-2 -my-2 rounded-lg hover:bg-rose-50 active:bg-rose-100 transition-colors"
-                  onClick={() => handleCancel(a.id)}
+                  onClick={() => handleCancel(a)}
                 >
                   İptal Et
                 </button>
@@ -391,18 +393,7 @@ export default function UserDashboard() {
                   Değerlendir
                 </button>
               )}
-              {a.status === 'confirmed' && (
-                <button
-                  className="flex items-center gap-2 text-sm font-medium text-blue-700 hover:text-blue-800 active:text-blue-900 touch-manipulation min-h-[44px] px-3 py-2 -mx-2 -my-2 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-colors"
-                  onClick={() => handleRescheduleClick(a)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-600">
-                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 11v4l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Ertele
-                </button>
-              )}
+              {/* Erteleme butonu kaldırıldı */}
               {a.status === 'cancelled' && (
                 <div className="text-sm text-gray-600 flex items-center min-h-[44px]">
                   <span className="inline-flex items-center gap-1">
@@ -488,13 +479,44 @@ export default function UserDashboard() {
         onReviewSubmitted={handleReviewSubmitted}
       />
 
-      {/* User Reschedule Modal */}
-      <UserRescheduleModal
-        isOpen={rescheduleModal.isOpen}
-        onClose={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
-        appointment={rescheduleModal.appointment}
-        onRescheduleSubmitted={handleRescheduleSubmitted}
-      />
+      {/* Cancel Confirmation Modal */}
+      {cancelModal.isOpen && (
+        <div className="modal-container">
+          <div className="modal-overlay-bg" onClick={() => setCancelModal(prev => ({ ...prev, isOpen: false }))} />
+          <div className="modal-wrapper">
+            <div className="bg-white rounded-2xl p-6 shadow-2xl border border-gray-200 max-w-sm mx-auto">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-red-600">
+                    <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Randevuyu İptal Et</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  <strong>{cancelModal.businessName}</strong> randevusunu iptal etmek istediğinize emin misiniz?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCancelModal(prev => ({ ...prev, isOpen: false }))}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Hayır
+                  </button>
+                  <button
+                    onClick={handleCancelConfirm}
+                    disabled={cancelMutation.isPending}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {cancelMutation.isPending ? 'İptal Ediliyor...' : 'Evet, İptal Et'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Reschedule Modal kaldırıldı */}
 
       {/* Modern History Modal */}
       {historyOpen && (

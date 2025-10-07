@@ -59,8 +59,8 @@ export default function BusinessAppointmentsPage() {
   // Aktif randevular için filtreleme ve sayfalama
   const [activeServiceFilters, setActiveServiceFilters] = useState<string[]>([]);
   const [activeEmployeeFilters, setActiveEmployeeFilters] = useState<string[]>([]);
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'all'|'pending'|'confirmed'>('all');
-  const [showPendingOnly, setShowPendingOnly] = useState(true); // Default: bekleyen randevular
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all'|'confirmed'>('all');
+  // Switch butonları kaldırıldı - sadece onaylanan randevular gösteriliyor
   const [activeDateFrom, setActiveDateFrom] = useState<string>('');
   const [activeDateTo, setActiveDateTo] = useState<string>('');
   const [activeCurrentPage, setActiveCurrentPage] = useState(1);
@@ -235,9 +235,8 @@ export default function BusinessAppointmentsPage() {
     if (!currentAppointments) return [];
     
     return currentAppointments.filter((a: any) => {
-      // Switch butonuna göre filtreleme
-      if (showPendingOnly && a.status !== 'pending') return false;
-      if (!showPendingOnly && a.status !== 'confirmed') return false;
+      // Sadece onaylanan randevuları göster
+      if (a.status !== 'confirmed') return false;
       
       // Status filtresi (ek filtreleme için)
       if (activeStatusFilter !== 'all' && a.status !== activeStatusFilter) return false;
@@ -266,7 +265,7 @@ export default function BusinessAppointmentsPage() {
       
       return true;
     });
-  }, [optimisticAppointments, appointments, showPendingOnly, activeStatusFilter, activeServiceFilters, activeEmployeeFilters, activeDateFrom, activeDateTo]);
+  }, [optimisticAppointments, appointments, activeStatusFilter, activeServiceFilters, activeEmployeeFilters, activeDateFrom, activeDateTo]);
 
   const activeAppointmentsCount = activeAppointments.length;
 
@@ -441,33 +440,7 @@ export default function BusinessAppointmentsPage() {
           </div>
         </div>
 
-        {/* Bekleyen/Onaylanan Switch - Mobile Optimized */}
-        <div className="mt-3 flex items-center justify-center">
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-sm">
-            <button
-              className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] border ${showPendingOnly ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95 border-white/40'}`}
-              onClick={() => setShowPendingOnly(true)}
-              aria-pressed={showPendingOnly}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`${showPendingOnly ? 'text-white' : 'text-yellow-600'}`}>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span>Bekleyen</span>
-            </button>
-            <button
-              className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 touch-manipulation min-h-[36px] ${!showPendingOnly ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' : 'text-gray-800 hover:bg-white/70 active:bg-white/80 active:scale-95 border-white/40'}`}
-              onClick={() => setShowPendingOnly(false)}
-              aria-pressed={!showPendingOnly}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`${!showPendingOnly ? 'text-white' : 'text-green-600'}`}>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>Onaylanan</span>
-            </button>
-          </div>
-        </div>
+        {/* Switch butonları kaldırıldı - sadece onaylanan randevular gösteriliyor */}
         
         {/* Filtreleme Kartı - Modern Design */}
         <div className="mt-3 sm:mt-4 bg-white/80 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-lg border-2"
@@ -576,7 +549,6 @@ export default function BusinessAppointmentsPage() {
                 style={{ fontSize: '16px' }}
               >
                 <option value="all">Tüm Durumlar</option>
-                <option value="pending">Bekliyor</option>
                 <option value="confirmed">Onaylandı</option>
               </select>
             </div>
@@ -767,54 +739,8 @@ export default function BusinessAppointmentsPage() {
               )}
             </div>
 
-            {/* Aksiyon Butonları - Eşit Genişlik */}
+            {/* Aksiyon Butonları - Sadece onaylanan randevular için */}
             <div className="grid grid-cols-2 gap-1.5">
-              {a.status === 'pending' && (
-                <>
-                  <button 
-                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
-                      updatingAppointmentId === a.id 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-md hover:shadow-lg border-emerald-300'
-                    }`} 
-                    onClick={() => handleStatus(a.id, 'confirmed')}
-                    disabled={updatingAppointmentId === a.id}
-                  >
-                    {updatingAppointmentId === a.id ? (
-                      <>
-                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
-                        <span>Güncelleniyor...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        <span>Onayla</span>
-                      </>
-                    )}
-                  </button>
-                  <button 
-                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 touch-manipulation min-h-[40px] border ${
-                      updatingAppointmentId === a.id 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
-                        : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg border-red-300'
-                    }`} 
-                    onClick={() => handleStatus(a.id, 'cancelled')}
-                    disabled={updatingAppointmentId === a.id}
-                  >
-                    {updatingAppointmentId === a.id ? (
-                      <>
-                        <span className="inline-block w-3 h-3 border-2 border-white/90 border-t-transparent rounded-full animate-spin"></span>
-                        <span>Güncelleniyor...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        <span>İptal Et</span>
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
               {a.status === 'confirmed' && (
                 <>
                   <button 
@@ -1075,7 +1001,6 @@ export default function BusinessAppointmentsPage() {
                   style={{ fontSize: '16px' }}
                 >
                   <option value="all">Tüm Durumlar</option>
-                  <option value="pending">Bekliyor</option>
                   <option value="confirmed">Onaylandı</option>
                   <option value="completed">Tamamlandı</option>
                   <option value="cancelled">İptal Edildi</option>
