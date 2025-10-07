@@ -623,6 +623,35 @@ export const appointmentRouter = t.router({
         console.error('WebSocket güncelleme hatası:', socketError);
       }
 
+      // WhatsApp bildirimi gönder (guest randevu için)
+      try {
+        const whatsappService = new WhatsAppNotificationService();
+        
+        // İşletme bilgilerini al
+        const businessRes = await pool.query(
+          `SELECT name FROM businesses WHERE id = $1`,
+          [input.businessId]
+        );
+        
+        if (businessRes.rows.length > 0) {
+          const businessName = businessRes.rows[0].name;
+          
+          // WhatsApp randevu oluşturuldu bildirimi gönder (guest için)
+          await whatsappService.sendManualAppointmentApprovalNotification(
+            appointmentId,
+            input.businessId,
+            input.customerPhone,
+            appointmentDatetime.toISOString(),
+            businessName,
+            `${input.customerName} ${input.customerSurname}`,
+            servicesRes.rows.map(s => s.name)
+          );
+        }
+      } catch (error) {
+        // WhatsApp hatası randevu oluşturmayı etkilemesin
+        console.error('Guest randevu WhatsApp bildirimi hatası:', error);
+      }
+
         return {
           success: true,
           appointmentId,

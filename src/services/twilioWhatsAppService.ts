@@ -34,7 +34,7 @@ export class TwilioWhatsAppService {
         otp: process.env.TWILIO_OTP_TEMPLATE_ID || '',
         approval: process.env.TWILIO_APPOINTMENT_APPROVAL_TEMPLATE_ID || '',
         reminder: process.env.TWILIO_APPOINTMENT_REMINDER_TEMPLATE_ID || '',
-        cancellation: process.env.TWILIO_APPOINTMENT_CANCELLATION_TEMPLATE_ID || undefined,
+        cancellation: process.env.TWILIO_APPOINTMENT_CANCELLED_ID || undefined,
         newAppointment: process.env.TWILIO_NEW_APPOINTMENT_TEMPLATE_ID || undefined
       }
     };

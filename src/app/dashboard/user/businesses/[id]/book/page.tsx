@@ -379,7 +379,10 @@ export default function BookAppointmentPage() {
 
   // Randevu oluşturma
   const handleCreateAppointment = async () => {
-    if ((!userId && !isGuest) || !selectedEmployee || selectedServices.length === 0 || !selectedDate || !selectedTime) {
+    // Misafir kullanıcı kontrolü - guestData varsa misafir kullanıcı
+    const isActuallyGuest = guestData && guestData.isGuest;
+    
+    if ((!userId && !isActuallyGuest) || !selectedEmployee || selectedServices.length === 0 || !selectedDate || !selectedTime) {
       setError('Tüm alanları doldurun.');
       return;
     }
@@ -398,15 +401,9 @@ export default function BookAppointmentPage() {
     const appointmentDatetime = `${selectedDate}T${selectedTime}:00`;
     
     try {
-      if (isGuest && guestData) {
-        // Misafir kullanıcı için OTP kontrolü
-        if (whatsappSettings?.whatsapp_otp_enabled) {
-          // OTP gerekli - OTP modal'ını aç
-          setOtpModalOpen(true);
-          return;
-        }
-        
-        // OTP gerekli değil - direkt randevu oluştur
+      if (isActuallyGuest && guestData) {
+        // Misafir kullanıcı - OTP kontrolü zaten ID sayfasında yapıldı
+        // Direkt randevu oluştur
         const result = await bookAsGuestMutation.mutateAsync({
           businessId,
           customerName: guestData.firstName,

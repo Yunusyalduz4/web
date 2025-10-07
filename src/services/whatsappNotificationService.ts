@@ -326,10 +326,12 @@ export class WhatsAppNotificationService {
       });
 
       // Template parametrelerini hazırla
+      // Template: "Merhaba {{1}}, {{2}} işletmesindeki {{3}} tarihindeki randevunuz oluşturulmuştur"
+      // {{1}} = Müşteri adı, {{2}} = İşletme adı, {{3}} = Tarih
       const templateParameters = [
-        businessName,
-        formattedDate,
-        serviceNames && serviceNames.length > 0 ? serviceNames.join(', ') : 'Genel Hizmet'
+        customerName || 'Müşteri', // {{1}} - Müşteri adı
+        businessName,              // {{2}} - İşletme adı  
+        formattedDate              // {{3}} - Tarih
       ];
 
       // Template ile WhatsApp mesajı gönder
@@ -389,24 +391,23 @@ export class WhatsAppNotificationService {
         minute: '2-digit'
       });
 
-      const serviceText = serviceNames && serviceNames.length > 0 
-        ? `\n\nHizmetler: ${serviceNames.join(', ')}` 
-        : '';
+      // Template parametrelerini hazırla
+      // Template: "Merhaba {{1}}, {{2}} işletmesindeki {{3}} tarihli randevunuz iptal edilmiştir. Yeni bir randevu oluşturmak istersen aşağıdaki bağlantıdan işlem yapabilirsiniz: {{4}}"
+      // {{1}} = Müşteri adı, {{2}} = İşletme adı, {{3}} = Tarih, {{4}} = Bağlantı
+      const templateParameters = [
+        customerName || 'Müşteri', // {{1}} - Müşteri adı
+        businessName,              // {{2}} - İşletme adı  
+        formattedDate,             // {{3}} - Tarih
+        'https://randevuo.com'     // {{4}} - Bağlantı
+      ];
 
-      // WhatsApp mesajı oluştur
-      const message = `❌ *Randevunuz İptal Edildi*\n\n` +
-        `📅 *Tarih:* ${formattedDate}\n` +
-        `🏢 *İşletme:* ${businessName}\n` +
-        `👤 *Müşteri:* ${customerName || 'Müşteri'}${serviceText}\n\n` +
-        `Maalesef randevunuz iptal edilmiştir. Yeni bir randevu oluşturmak için tekrar başvurabilirsiniz.`;
-
-      // WhatsApp mesajı gönder
-      return await this.sendWhatsAppMessage(
+      // Template ile WhatsApp mesajı gönder
+      return await this.sendWhatsAppTemplateMessage(
         userPhone,
-        message,
         'cancellation',
         businessId,
-        appointmentId
+        appointmentId,
+        templateParameters
       );
     } catch (error) {
       console.error('Randevu iptal bildirimi gönderilirken hata:', error);
@@ -520,23 +521,22 @@ export class WhatsAppNotificationService {
         minute: '2-digit'
       });
 
-      const serviceText = serviceNames && serviceNames.length > 0 
-        ? `\n\nHizmetler: ${serviceNames.join(', ')}` 
-        : '';
+      // Template parametrelerini hazırla
+      // Template: "Merhaba {{1}}, {{2}} işletmesindeki {{3}} tarihindeki randevunuz oluşturulmuştur"
+      // {{1}} = Müşteri adı, {{2}} = İşletme adı, {{3}} = Tarih
+      const templateParameters = [
+        customerName || 'Müşteri', // {{1}} - Müşteri adı
+        businessName,              // {{2}} - İşletme adı  
+        formattedDate              // {{3}} - Tarih
+      ];
 
-      // WhatsApp mesajı oluştur
-      const message = `✅ *Randevu Talebiniz Alındı*\n\n` +
-        `📅 *Tarih:* ${formattedDate}\n` +
-        `🏢 *İşletme:* ${businessName}${serviceText}\n\n` +
-        `Randevu talebiniz başarıyla alınmıştır. İşletme onayı beklenmektedir.`;
-
-      // WhatsApp mesajı gönder
-      return await this.sendWhatsAppMessage(
+      // Template ile WhatsApp mesajı gönder
+      return await this.sendWhatsAppTemplateMessage(
         userPhone,
-        message,
-        'new_appointment',
+        'approval',
         businessId,
-        appointmentId
+        appointmentId,
+        templateParameters
       );
     } catch (error) {
       console.error('Yeni randevu bildirimi gönderilirken hata:', error);
