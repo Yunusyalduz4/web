@@ -4,6 +4,7 @@ import { pool } from '../db';
 import { TRPCError } from '@trpc/server';
 import { sendNotificationToBusiness } from '../../utils/pushNotification';
 import { getSocketServer } from '../socket';
+import { WhatsAppNotificationService } from '../../services/whatsappNotificationService';
 
 export const appointmentRouter = t.router({
   book: t.procedure.use(isUser)
@@ -772,6 +773,50 @@ export const appointmentRouter = t.router({
         } catch (error) {
           // Socket.io hatası randevu oluşturmayı etkilemesin
         }
+
+      // WhatsApp bildirimi gönder (telefon numarası varsa)
+      if (input.customerPhone) {
+        try {
+          const whatsappService = new WhatsAppNotificationService();
+          
+          // İşletme bilgilerini al
+          const businessRes = await pool.query(
+            `SELECT name FROM businesses WHERE id = $1`,
+            [input.businessId]
+          );
+          
+          if (businessRes.rows.length > 0) {
+            const businessName = businessRes.rows[0].name;
+            const serviceNames = servicesRes.rows.map(s => s.name);
+            const employeeName = employeeRes.rows[0].name;
+            
+            // Tarihi formatla
+            const appointmentDate = appointmentDatetime.toLocaleDateString('tr-TR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            });
+            const appointmentTime = appointmentDatetime.toLocaleTimeString('tr-TR', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            // WhatsApp onay bildirimi gönder (manuel randevu için özel metod)
+            await whatsappService.sendManualAppointmentApprovalNotification(
+              appointmentId,
+              input.businessId,
+              input.customerPhone,
+              appointmentDatetime.toISOString(),
+              businessName,
+              `${input.customerName} ${input.customerSurname}`,
+              serviceNames
+            );
+          }
+        } catch (error) {
+          // WhatsApp hatası randevu oluşturmayı etkilemesin
+          console.error('Manuel randevu WhatsApp bildirimi hatası:', error);
+        }
+      }
 
       return appointmentResult.rows[0];
     }),

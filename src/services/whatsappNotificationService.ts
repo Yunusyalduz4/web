@@ -293,6 +293,60 @@ export class WhatsAppNotificationService {
   }
 
   /**
+   * Manuel randevu onay bildirimi gönder (direkt telefon numarası ile)
+   */
+  async sendManualAppointmentApprovalNotification(
+    appointmentId: string,
+    businessId: string,
+    customerPhone: string,
+    appointmentDateTime: string,
+    businessName: string,
+    customerName?: string,
+    serviceNames?: string[]
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // İşletme WhatsApp ayarlarını kontrol et
+      const businessSettings = await this.getBusinessWhatsAppSettings(businessId);
+      if (!businessSettings.whatsappNotificationsEnabled) {
+        return { success: true }; // WhatsApp bildirimleri kapalı, başarılı say
+      }
+
+      if (!customerPhone) {
+        return { success: false, error: 'Telefon numarası bulunamadı' };
+      }
+
+      // Tarihi formatla
+      const appointmentDate = new Date(appointmentDateTime);
+      const formattedDate = appointmentDate.toLocaleDateString('tr-TR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Template parametrelerini hazırla
+      const templateParameters = [
+        businessName,
+        formattedDate,
+        serviceNames && serviceNames.length > 0 ? serviceNames.join(', ') : 'Genel Hizmet'
+      ];
+
+      // Template ile WhatsApp mesajı gönder
+      return await this.sendWhatsAppTemplateMessage(
+        customerPhone,
+        'approval',
+        businessId,
+        appointmentId,
+        templateParameters
+      );
+    } catch (error) {
+      console.error('Manuel randevu onay bildirimi gönderilirken hata:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
+    }
+  }
+
+  /**
    * Randevu iptal bildirimi gönder
    */
   async sendAppointmentCancellationNotification(
